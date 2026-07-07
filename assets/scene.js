@@ -17,6 +17,7 @@ const VI = new THREE.Color('#9d78ff');
 
 const canvas = document.getElementById('hero-canvas');
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (canvas) canvas.setAttribute('aria-hidden', 'true');
 
 let renderer, scene, camera, composer, bloom;
 let pivot, ribbon, coreLine, particles, light1, light2;
@@ -122,7 +123,7 @@ function buildRibbon(t) {
 function init() {
   bakeShapes();
 
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
   renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -248,9 +249,18 @@ function animate() {
   camera.lookAt(pivot.position.x * 0.5, 0, 0);
 
   composer.render();
+  window.__heroPainted = true;
 }
 
-try { init(); animate(); }
+try {
+  if (reduced) {
+    if (canvas) canvas.style.display = 'none';
+    document.body.classList.add('reduced-motion-hero');
+  } else {
+    init();
+    animate();
+  }
+}
 catch (err) {
   console.warn('[hero] WebGL unavailable, static fallback', err);
   if (canvas) canvas.style.display = 'none';

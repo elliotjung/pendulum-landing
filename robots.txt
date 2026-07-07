@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://elliot-jung-17.github.io/pendulum-landing/sitemap.xml

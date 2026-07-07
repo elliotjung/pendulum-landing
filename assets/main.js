@@ -11,6 +11,48 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
+  // ---- Shared evidence summary --------------------------------------------
+  function applyEvidence(summary) {
+    if (!summary || !summary.tests) return;
+    const tests = summary.tests;
+    const validation = summary.validation || {};
+    const pd = validation.periodDoubling || {};
+    const sci = validation.scipyAgreement || {};
+    const setText = (key, value) => {
+      if (value === undefined || value === null) return;
+      $$(`[data-evidence="${key}"]`).forEach((el) => { el.textContent = String(value); });
+    };
+    const setCount = (key, value) => {
+      if (typeof value !== 'number' || !Number.isFinite(value)) return;
+      $$(`[data-evidence-count="${key}"]`).forEach((el) => {
+        el.dataset.count = String(value);
+        if (el.__done) {
+          const decimals = parseInt(el.dataset.decimals || '0', 10);
+          el.textContent = (el.dataset.prefix || '') + value.toFixed(decimals) + (el.dataset.suffix || '');
+        }
+      });
+    };
+
+    setText('tests.passLabel', tests.passLabel || `${tests.passed} / ${tests.total} pass`);
+    setText('tests.greenLabel', `${tests.passed} green`);
+    setText('validation.scipyAgreement', sci.display);
+    setText('validation.periodDoubling', typeof pd.computed === 'number' ? pd.computed.toFixed(4) : undefined);
+    setText('ledger.verify', `CSP-safe lint → strict typecheck → module-size ratchet → ${tests.total} unit tests → result-count guard → evidence summary → docs sync`);
+    setCount('tests.passed', tests.passed);
+    setCount('validation.periodDoublingComputed', pd.computed);
+
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta && typeof tests.total === 'number') {
+      const content = meta.getAttribute('content') || '';
+      meta.setAttribute('content', content.replace(/\d+ unit tests/, `${tests.total} unit tests`));
+    }
+  }
+
+  fetch('assets/evidence-summary.json', { cache: 'no-store' })
+    .then((response) => response.ok ? response.json() : null)
+    .then(applyEvidence)
+    .catch(() => {});
+
   // ---- NAV state, scrim, scroll progress ----------------------------------
   const nav = $('.nav');
   const scrim = $('.hero-scrim');
