@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check": "node scripts/check-static-assets.mjs",
+    "lighthouse": "node scripts/run-lighthouse.mjs",
+    "lighthouse:lhci": "npx --yes @lhci/cli@0.15.1 autorun",
     "test": "playwright test",
     "smoke": "playwright test tests/landing-smoke.spec.ts --project=chromium"
   },
