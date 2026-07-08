@@ -11,12 +11,16 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
   await expect(page.locator('#hero-canvas')).toBeAttached();
   await expect(page.locator('#orbit-console')).toBeVisible();
   await expect(page.locator('.app-preview img')).toBeVisible();
-  await page.waitForFunction(() => Boolean((window as unknown as { __heroPainted?: boolean }).__heroPainted) || document.body.classList.contains('no-webgl'), null, { timeout: 8_000 }).catch(() => undefined);
+  await page.waitForFunction(() => {
+    const fallback = document.body.classList.contains('no-webgl') || document.body.classList.contains('low-power-hero') || document.body.classList.contains('reduced-motion-hero');
+    return Boolean((window as unknown as { __heroPainted?: boolean }).__heroPainted) || fallback;
+  }, null, { timeout: 8_000 }).catch(() => undefined);
   await page.waitForFunction(() => Boolean((window as unknown as { __orbitConsolePainted?: boolean }).__orbitConsolePainted), null, { timeout: 8_000 });
 
   const nonBlank = await page.locator('#hero-canvas').evaluate((canvas: HTMLCanvasElement) => {
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-    if (!gl || canvas.width === 0 || canvas.height === 0) return document.body.classList.contains('no-webgl');
+    const fallback = document.body.classList.contains('no-webgl') || document.body.classList.contains('low-power-hero') || document.body.classList.contains('reduced-motion-hero');
+    if (!gl || canvas.width === 0 || canvas.height === 0) return fallback;
     const pixels = new Uint8Array(8 * 8 * 4);
     gl.readPixels(0, 0, 8, 8, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     for (let i = 0; i < pixels.length; i += 4) {
@@ -50,7 +54,15 @@ test('mobile launch CTA stays inside the viewport', async ({ page }) => {
 
 test('primary local assets and links are available', async ({ page, request }) => {
   await page.goto('/');
-  for (const href of ['assets/app-preview.png', 'assets/evidence-summary.json', 'robots.txt', 'sitemap.xml']) {
+  for (const href of [
+    'assets/app-preview.png',
+    'assets/evidence-summary.json',
+    'assets/vendor/three/three.module.js',
+    'assets/vendor/three/examples/jsm/postprocessing/EffectComposer.js',
+    'assets/vendor/gsap/gsap.min.js',
+    'robots.txt',
+    'sitemap.xml'
+  ]) {
     const response = await request.get(href);
     expect(response.ok(), href).toBeTruthy();
   }

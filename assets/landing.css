@@ -86,6 +86,7 @@ img{ max-width:100%; height:auto; }
   display:block;
 }
 .reduced-motion-hero .page-bg,
+.low-power-hero .page-bg,
 .no-webgl .page-bg{
   background:
     linear-gradient(180deg, rgba(5,6,15,.34), rgba(5,6,15,.96)),

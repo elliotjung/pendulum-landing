@@ -23,13 +23,48 @@
   let frame = 0;
   let pointerX = 0;
   let pointerY = 0;
+  let visible = false;
 
   const params = { m1: 1, m2: 1, l1: 1, l2: 1, g: 9.81 };
-  let primary = [2.18, 2.64, 0, 0];
-  let twin = [2.181, 2.64, 0, 0];
-  const trailA = [];
-  const trailB = [];
+  const primary = [2.18, 2.64, 0, 0];
+  const twin = [2.181, 2.64, 0, 0];
   const maxTrail = 520;
+  const trailA = makeTrail(maxTrail);
+  const trailB = makeTrail(maxTrail);
+  const workA = makeWork();
+  const workB = makeWork();
+  const pointA = makePoint();
+  const pointB = makePoint();
+  const pointDraw = makePoint();
+
+  function makeWork() {
+    return {
+      k1: [0, 0, 0, 0],
+      k2: [0, 0, 0, 0],
+      k3: [0, 0, 0, 0],
+      k4: [0, 0, 0, 0],
+      tmp: [0, 0, 0, 0]
+    };
+  }
+
+  function makePoint() {
+    return { px: 0, py: 0, jx: 0, jy: 0, bx: 0, by: 0 };
+  }
+
+  function makeTrail(capacity) {
+    return { x: new Float32Array(capacity), y: new Float32Array(capacity), head: 0, len: 0, capacity };
+  }
+
+  function pushTrailPoint(trail, x, y) {
+    trail.x[trail.head] = x;
+    trail.y[trail.head] = y;
+    trail.head = (trail.head + 1) % trail.capacity;
+    trail.len = Math.min(trail.capacity, trail.len + 1);
+  }
+
+  function trailIndex(trail, offset) {
+    return (trail.head - trail.len + offset + trail.capacity) % trail.capacity;
+  }
 
   function resize() {
     const rect = canvas.getBoundingClientRect();
@@ -41,7 +76,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  function deriv(s) {
+  function derivInto(s, out) {
     const a1 = s[0], a2 = s[1], v1 = s[2], v2 = s[3];
     const m1 = params.m1, m2 = params.m2, l1 = params.l1, l2 = params.l2;
     const g = params.g + pointerY * 0.45;
@@ -49,31 +84,41 @@
     const sd = Math.sin(d);
     const cd = Math.cos(d);
     const den = 2 * m1 + m2 - m2 * Math.cos(2 * d);
-    const a1acc = (
+    out[0] = v1;
+    out[1] = v2;
+    out[2] = (
       -g * (2 * m1 + m2) * Math.sin(a1)
       - m2 * g * Math.sin(a1 - 2 * a2)
       - 2 * sd * m2 * (v2 * v2 * l2 + v1 * v1 * l1 * cd)
     ) / (l1 * den);
-    const a2acc = (
+    out[3] = (
       2 * sd * (v1 * v1 * l1 * (m1 + m2) + g * (m1 + m2) * Math.cos(a1) + v2 * v2 * l2 * m2 * cd)
     ) / (l2 * den);
-    return [v1, v2, a1acc, a2acc];
   }
 
-  function rk4(s, dt) {
-    const k1 = deriv(s);
-    const k2 = deriv(s.map((v, i) => v + k1[i] * dt * 0.5));
-    const k3 = deriv(s.map((v, i) => v + k2[i] * dt * 0.5));
-    const k4 = deriv(s.map((v, i) => v + k3[i] * dt));
+  function stageInto(s, k, scale, out) {
+    out[0] = s[0] + k[0] * scale;
+    out[1] = s[1] + k[1] * scale;
+    out[2] = s[2] + k[2] * scale;
+    out[3] = s[3] + k[3] * scale;
+  }
+
+  function rk4Into(s, work, dt) {
+    derivInto(s, work.k1);
+    stageInto(s, work.k1, dt * 0.5, work.tmp);
+    derivInto(work.tmp, work.k2);
+    stageInto(s, work.k2, dt * 0.5, work.tmp);
+    derivInto(work.tmp, work.k3);
+    stageInto(s, work.k3, dt, work.tmp);
+    derivInto(work.tmp, work.k4);
     for (let i = 0; i < 4; i += 1) {
-      s[i] += (dt / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+      s[i] += (dt / 6) * (work.k1[i] + 2 * work.k2[i] + 2 * work.k3[i] + work.k4[i]);
     }
     s[2] *= 0.9996;
     s[3] *= 0.9996;
-    return s;
   }
 
-  function point(s) {
+  function pointInto(s, out) {
     const scale = Math.min(width, height) * 0.23;
     const cx = width * (0.5 + pointerX * 0.025);
     const cy = height * 0.29;
@@ -81,18 +126,20 @@
     const y1 = Math.cos(s[0]) * params.l1;
     const x2 = x1 + Math.sin(s[1]) * params.l2;
     const y2 = y1 + Math.cos(s[1]) * params.l2;
-    return {
-      pivot: [cx, cy],
-      joint: [cx + x1 * scale, cy + y1 * scale],
-      bob: [cx + x2 * scale, cy + y2 * scale]
-    };
+    out.px = cx;
+    out.py = cy;
+    out.jx = cx + x1 * scale;
+    out.jy = cy + y1 * scale;
+    out.bx = cx + x2 * scale;
+    out.by = cy + y2 * scale;
+    return out;
   }
 
   function pushTrail() {
-    trailA.push(point(primary).bob);
-    trailB.push(point(twin).bob);
-    while (trailA.length > maxTrail) trailA.shift();
-    while (trailB.length > maxTrail) trailB.shift();
+    pointInto(primary, pointA);
+    pointInto(twin, pointB);
+    pushTrailPoint(trailA, pointA.bx, pointA.by);
+    pushTrailPoint(trailB, pointB.bx, pointB.by);
   }
 
   function drawGrid() {
@@ -120,45 +167,47 @@
   }
 
   function drawTrail(trail, color) {
-    if (trail.length < 2) return;
+    if (trail.len < 2) return;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    for (let i = 1; i < trail.length; i += 1) {
-      const alpha = i / trail.length;
+    for (let i = 1; i < trail.len; i += 1) {
+      const alpha = i / trail.len;
+      const prev = trailIndex(trail, i - 1);
+      const curr = trailIndex(trail, i);
       ctx.strokeStyle = color.replace('ALPHA', (0.03 + alpha * 0.56).toFixed(3));
       ctx.lineWidth = 1 + alpha * 2.4;
       ctx.beginPath();
-      ctx.moveTo(trail[i - 1][0], trail[i - 1][1]);
-      ctx.lineTo(trail[i][0], trail[i][1]);
+      ctx.moveTo(trail.x[prev], trail.y[prev]);
+      ctx.lineTo(trail.x[curr], trail.y[curr]);
       ctx.stroke();
     }
   }
 
   function drawPendulum(s, color) {
-    const p = point(s);
+    const p = pointInto(s, pointDraw);
     ctx.lineWidth = 2;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.moveTo(p.pivot[0], p.pivot[1]);
-    ctx.lineTo(p.joint[0], p.joint[1]);
-    ctx.lineTo(p.bob[0], p.bob[1]);
+    ctx.moveTo(p.px, p.py);
+    ctx.lineTo(p.jx, p.jy);
+    ctx.lineTo(p.bx, p.by);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(p.joint[0], p.joint[1], 4.2, 0, Math.PI * 2);
-    ctx.arc(p.bob[0], p.bob[1], 7.2, 0, Math.PI * 2);
+    ctx.arc(p.jx, p.jy, 4.2, 0, Math.PI * 2);
+    ctx.arc(p.bx, p.by, 7.2, 0, Math.PI * 2);
     ctx.fill();
   }
 
   function updateReadouts() {
-    const pa = point(primary).bob;
-    const pb = point(twin).bob;
-    const drift = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]);
+    pointInto(primary, pointA);
+    pointInto(twin, pointB);
+    const drift = Math.hypot(pointA.bx - pointB.bx, pointA.by - pointB.by);
     const sep = Math.abs(primary[0] - twin[0]);
     if (readouts.separation) readouts.separation.textContent = sep.toExponential(2) + ' rad';
     if (readouts.drift) readouts.drift.textContent = drift.toFixed(2) + ' px';
-    if (readouts.trace) readouts.trace.textContent = trailA.length + ' pts';
-    if (readouts.mode) readouts.mode.textContent = reduced ? 'static' : 'live';
+    if (readouts.trace) readouts.trace.textContent = trailA.len + ' pts';
+    if (readouts.mode) readouts.mode.textContent = reduced ? 'static' : visible && !document.hidden ? 'live' : 'standby';
   }
 
   function draw() {
@@ -168,18 +217,23 @@
     drawPendulum(primary, 'rgba(24,212,248,.92)');
     drawPendulum(twin, 'rgba(255,95,143,.86)');
     ctx.fillStyle = 'rgba(244,248,255,.86)';
-    const pivot = point(primary).pivot;
+    pointInto(primary, pointA);
     ctx.beginPath();
-    ctx.arc(pivot[0], pivot[1], 4.6, 0, Math.PI * 2);
+    ctx.arc(pointA.px, pointA.py, 4.6, 0, Math.PI * 2);
     ctx.fill();
     window.__orbitConsolePainted = true;
   }
 
   function tick() {
+    raf = 0;
+    if (reduced || !visible || document.hidden) {
+      updateReadouts();
+      return;
+    }
     raf = window.requestAnimationFrame(tick);
     for (let i = 0; i < 3; i += 1) {
-      primary = rk4(primary, 1 / 150);
-      twin = rk4(twin, 1 / 150);
+      rk4Into(primary, workA, 1 / 150);
+      rk4Into(twin, workB, 1 / 150);
       pushTrail();
     }
     draw();
@@ -194,6 +248,13 @@
   function stop() {
     if (raf) window.cancelAnimationFrame(raf);
     raf = 0;
+  }
+
+  function setVisible(nextVisible) {
+    visible = nextVisible;
+    if (visible && !reduced && !document.hidden) start();
+    else stop();
+    updateReadouts();
   }
 
   canvas.addEventListener('pointermove', (event) => {
@@ -212,16 +273,25 @@
   }, { passive: true });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stop();
-    else if (!reduced) start();
+    else if (visible && !reduced) start();
+    updateReadouts();
   });
 
   resize();
   for (let i = 0; i < (reduced ? 360 : 80); i += 1) {
-    primary = rk4(primary, 1 / 150);
-    twin = rk4(twin, 1 / 150);
+    rk4Into(primary, workA, 1 / 150);
+    rk4Into(twin, workB, 1 / 150);
     pushTrail();
   }
   draw();
   updateReadouts();
-  if (!reduced) start();
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      setVisible(entries.some((entry) => entry.isIntersecting));
+    }, { rootMargin: '280px 0px' });
+    observer.observe(canvas);
+  } else {
+    setVisible(true);
+  }
 })();

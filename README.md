@@ -15,13 +15,15 @@ browser laboratory for nonlinear pendulum dynamics.
   the trajectory-console styling.
 - `assets/scene.js` - Three.js hero sculpture that morphs from order to chaos.
 - `assets/orbit-console.js` - lightweight RK4 double-pendulum canvas console
-  used in the new trajectory section.
+  used in the new trajectory section; it starts only near the viewport.
 - `assets/main.js` - page interactions: cursor light, scroll progress, GSAP
   choreography, counters, and evidence JSON hydration.
 - `assets/reactbits.js` - vanilla ports of the typewriter, text-decrypt, and
   card interaction effects.
 - `assets/evidence-summary.json` - shared validation numbers copied from the
   main lab reports.
+- `assets/vendor/` - pinned self-hosted Three.js `0.160.0` and GSAP `3.12.5`
+  files so GitHub Pages does not depend on runtime CDN availability.
 - `tests/landing-smoke.spec.ts` - Playwright smoke test for hero paint, console
   paint, mobile CTA bounds, and asset availability.
 

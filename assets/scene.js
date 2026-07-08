@@ -17,6 +17,9 @@ const VI = new THREE.Color('#9d78ff');
 
 const canvas = document.getElementById('hero-canvas');
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedData = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-data: reduce)').matches;
+const lowMemory = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 2;
+const staticHero = reduced || reducedData || lowMemory;
 if (canvas) canvas.setAttribute('aria-hidden', 'true');
 
 let renderer, scene, camera, composer, bloom;
@@ -253,9 +256,9 @@ function animate() {
 }
 
 try {
-  if (reduced) {
+  if (staticHero) {
     if (canvas) canvas.style.display = 'none';
-    document.body.classList.add('reduced-motion-hero');
+    document.body.classList.add(reduced ? 'reduced-motion-hero' : 'low-power-hero');
   } else {
     init();
     animate();
