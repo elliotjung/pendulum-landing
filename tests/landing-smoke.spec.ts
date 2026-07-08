@@ -9,8 +9,10 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
   await page.goto('/');
   await expect(page.locator('.nav')).toBeVisible();
   await expect(page.locator('#hero-canvas')).toBeAttached();
+  await expect(page.locator('#orbit-console')).toBeVisible();
   await expect(page.locator('.app-preview img')).toBeVisible();
   await page.waitForFunction(() => Boolean((window as unknown as { __heroPainted?: boolean }).__heroPainted) || document.body.classList.contains('no-webgl'), null, { timeout: 8_000 }).catch(() => undefined);
+  await page.waitForFunction(() => Boolean((window as unknown as { __orbitConsolePainted?: boolean }).__orbitConsolePainted), null, { timeout: 8_000 });
 
   const nonBlank = await page.locator('#hero-canvas').evaluate((canvas: HTMLCanvasElement) => {
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
@@ -24,6 +26,17 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
   }).catch(() => true);
 
   expect(nonBlank).toBeTruthy();
+
+  const consolePainted = await page.locator('#orbit-console').evaluate((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx || canvas.width === 0 || canvas.height === 0) return false;
+    const pixels = ctx.getImageData(0, 0, Math.min(32, canvas.width), Math.min(32, canvas.height)).data;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (pixels[i] !== 0 || pixels[i + 1] !== 0 || pixels[i + 2] !== 0 || pixels[i + 3] !== 0) return true;
+    }
+    return false;
+  });
+  expect(consolePainted).toBeTruthy();
   expect(errors).toEqual([]);
 });
 

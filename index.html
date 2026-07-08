@@ -85,6 +85,7 @@
   </a>
   <div class="nav-links">
     <a href="#science">Science</a>
+    <a href="#console">Console</a>
     <a href="#capabilities">Platform</a>
     <a href="#modes">Modes</a>
     <a href="#frontier">Frontier</a>
@@ -166,6 +167,31 @@
     <span class="dot">◆</span> Runge–Kutta 4 <span class="dot">◆</span> Dormand–Prince 5(4) <span class="dot">◆</span> Gragg–Bulirsch–Stoer <span class="dot">◆</span> Lyapunov Spectrum <span class="dot">◆</span> Covariant Lyapunov Vectors <span class="dot">◆</span> Poincaré Sections <span class="dot">◆</span> Kaplan–Yorke Dimension <span class="dot">◆</span> Melnikov Threshold <span class="dot">◆</span> Floquet Continuation <span class="dot">◆</span> Koopman–DMD <span class="dot">◆</span> HAVOK <span class="dot">◆</span> SINDy <span class="dot">◆</span> FTLE Ridges <span class="dot">◆</span> Basin Entropy <span class="dot">◆</span>
   </div>
 </div>
+
+<!-- ============================== TRAJECTORY CONSOLE ============================== -->
+<section class="band console-band" id="console">
+  <div class="wrap console-grid">
+    <div class="console-copy reveal">
+      <span class="kicker">Trajectory Console</span>
+      <h2 data-rise data-decrypt>Chaos you can feel before the app even opens.</h2>
+      <p>A lightweight canvas instrument draws two nearly identical double-pendulum releases in real time. The cyan and rose traces begin together, then peel apart as sensitivity takes over.</p>
+      <div class="console-readouts" aria-label="Live console readouts">
+        <div class="console-readout"><span>separation</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
+        <div class="console-readout"><span>drift</span><strong data-orbit-readout="drift">0.00 px</strong></div>
+        <div class="console-readout"><span>trace</span><strong data-orbit-readout="trace">warming</strong></div>
+        <div class="console-readout"><span>mode</span><strong data-orbit-readout="mode">live</strong></div>
+      </div>
+    </div>
+
+    <figure class="orbit-console reveal" data-wipe>
+      <canvas id="orbit-console" width="920" height="620" aria-label="Animated double-pendulum trajectory console"></canvas>
+      <figcaption>
+        <span>dual release</span>
+        <span>1.0e-3 rad apart</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
 
 <!-- ============================== LIVE APP PREVIEW ============================== -->
 <section class="band preview-band" id="preview">
@@ -560,6 +586,7 @@
   </div>
 </footer>
 
+<script src="assets/orbit-console.js"></script>
 <script src="assets/main.js"></script>
 <script src="assets/reactbits.js"></script>
 <script type="module" src="assets/scene.js"></script>
