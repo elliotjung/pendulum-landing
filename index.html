@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pendulum Lab — The Double-Pendulum Chaos Engine</title>
-<meta name="description" content="A framework-free TypeScript engine and browser laboratory for nonlinear pendulum dynamics — thirteen primary order-certified integrators, full Lyapunov diagnostics, CPU-oracle-gated WebGPU pipelines, and bit-reproducible research bundles. 982 unit tests, validated against SciPy and published literature." />
+<meta name="description" content="A framework-free TypeScript engine and browser laboratory for nonlinear pendulum dynamics — thirteen primary integrators, full Lyapunov diagnostics, CPU-oracle-gated WebGPU pipelines, and hash-verifiable research bundles. 982 unit tests, validated against SciPy and published literature." />
 <meta property="og:title" content="Pendulum Lab — The Double-Pendulum Chaos Engine" />
 <meta property="og:description" content="Order, undone by chaos. A validated chaotic-pendulum research laboratory that runs entirely in your browser." />
 <meta property="og:type" content="website" />
@@ -16,7 +16,7 @@
 <meta name="twitter:description" content="A browser-native nonlinear dynamics lab with synchronized test, reviewer, publication, and GPU evidence." />
 <meta name="twitter:image" content="https://elliot-jung-17.github.io/pendulum-landing/assets/app-preview.png" />
 <link rel="canonical" href="https://elliot-jung-17.github.io/pendulum-landing/" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fpj/MoPSjC7+ELpJH0JTT2lVmJvasSs82XfDvgabOD8=' 'sha256-3VQ3UA8uBrYUaXU9WF0atiJDiYuUhFcJsE+8thCmfRw='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="assets/landing.css" />
 
@@ -108,7 +108,7 @@
           A framework-free TypeScript engine for nonlinear pendulum dynamics —
           thirteen primary integrators measured at their theoretical order, full-spectrum
           Lyapunov diagnostics, WebGPU paths promoted only after CPU-oracle checks,
-          and results reproducible to the bit. Determinism, engineered for the
+          and hash-verifiable research bundles with deterministic replay metadata. Rigor, engineered for the
           very edge of predictability.
         </p>
         <div class="hero-actions" data-mouse="6">
@@ -119,7 +119,7 @@
         <div class="hero-type-line" data-mouse="7" aria-hidden="true">
           <span class="ty-dot"></span>
           <span data-typetext data-type-speed="46" data-pause="1700"
-                data-phrases='["Thirteen primary integrators, measured at order.","Full-spectrum Lyapunov diagnostics.","WebGPU kernels gated by CPU oracles.","Reproducible to the bit."]'></span>
+                data-phrases='["Thirteen primary integrators, measured at order.","Full-spectrum Lyapunov diagnostics.","WebGPU kernels gated by CPU oracles.","Hash-verifiable research bundles."]'></span>
         </div>
       </div>
 
@@ -143,7 +143,7 @@
           <div class="spec-row"><span class="k">vs SciPy DOP853</span><span class="v cy" data-evidence="validation.scipyAgreement">~6e-14</span></div>
           <div class="spec-row"><span class="k">unit tests</span><span class="v" data-evidence="tests.greenLabel">982 green</span></div>
           <div class="spec-row"><span class="k">period-doubling A</span><span class="v" data-evidence="validation.periodDoubling">1.0664</span></div>
-          <div class="spec-row"><span class="k">mutation tested</span><span class="v vi">Stryker aggregate</span></div>
+          <div class="spec-row"><span class="k">mutation tested</span><span class="v vi" data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span></div>
         </div>
       </aside>
     </div>
@@ -239,8 +239,8 @@
     <div class="science-grid">
       <div class="reveal">
         <span class="kicker">Sensitive Dependence</span>
-        <h2 data-rise style="font-size:clamp(30px,4.4vw,56px);margin:18px 0 18px;">A thousandth of a radian becomes a different universe.</h2>
-        <p class="lede" style="max-width:52ch;">
+        <h2 data-rise class="divergence-title">A thousandth of a radian becomes a different universe.</h2>
+        <p class="lede divergence-lede">
           Release two double pendulums a hair apart and they trace the same arc —
           until they don't. Trajectories peel away exponentially, prediction
           collapses into noise. That rate of divergence <em>is</em> the largest
@@ -272,17 +272,17 @@
             <line class="grid-line" x1="120" y1="0" x2="120" y2="320"/>
             <line class="grid-line" x1="240" y1="0" x2="240" y2="320"/>
             <path class="draw-path" d="M58 168 C 104 118, 150 132, 186 164 S 250 248, 300 150 S 360 92, 384 134"
-                  stroke="#18d4f8" stroke-width="2.4" style="filter:drop-shadow(0 0 6px rgba(24,212,248,.85));"/>
+                  stroke="#18d4f8" stroke-width="2.4" class="glow-cyan"/>
             <path class="draw-path" d="M58 168 C 104 118, 150 132, 186 164 S 250 96, 300 206 S 360 252, 384 212"
-                  stroke="#9d78ff" stroke-width="2.4" style="filter:drop-shadow(0 0 6px rgba(157,120,255,.85));"/>
-            <circle class="seed" cx="58" cy="168" r="4.4" style="filter:drop-shadow(0 0 8px rgba(223,246,255,.9));"/>
+                  stroke="#9d78ff" stroke-width="2.4" class="glow-violet"/>
+            <circle class="seed glow-seed" cx="58" cy="168" r="4.4"/>
           </svg>
           <div class="diverge-tag">
             <span><b class="a">●</b> θ₂ = 2.300</span>
             <span><b class="b">●</b> θ₂ = 2.301</span>
           </div>
         </div>
-        <p style="margin-top:14px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.04em;color:var(--muted);text-align:right;">
+        <p class="science-footnote">
           Identical start · 1.0e-3 rad apart → exponential divergence
         </p>
       </div>
@@ -312,7 +312,7 @@
         <span class="idx">02</span>
         <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 20 L9 6 L13 16 L17 9 L20 14"/></svg></span>
         <h3>Chaos diagnostics</h3>
-        <p>Maximal &amp; full-spectrum Lyapunov exponents, covariant Lyapunov vectors, Kaplan-Yorke dimension, SALI / FLI, Poincaré sections, the 0–1 test, RQA, basin entropy, and automated bifurcation sweeps — each with an uncertainty estimate.</p>
+        <p>Maximal &amp; full-spectrum Lyapunov exponents, covariant Lyapunov vectors, Kaplan-Yorke dimension, SALI / FLI, Poincaré sections, the 0–1 test, RQA, basin entropy, and automated bifurcation sweeps — with method-specific diagnostics and uncertainty where defined.</p>
         <div class="tags"><span class="tag">λ-spectrum</span><span class="tag">CLV</span><span class="tag">0–1 test</span><span class="tag">RQA</span></div>
       </article>
 
@@ -336,8 +336,8 @@
         <span class="idx">05</span>
         <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 L20 7 V13 C20 17 16 20 12 21 C8 20 4 17 4 13 V7 Z"/><path d="M9 12 l2 2 l4 -4"/></svg></span>
         <h3>Total reproducibility</h3>
-        <p>Hash-stamped run manifests that re-verify to the bit, real ZIP research bundles with per-file CRC32 checksums, an IndexedDB long-term store with archive import / export, and evidence attestation tying every report to its source commit.</p>
-        <div class="tags"><span class="tag">manifests</span><span class="tag">CRC32</span><span class="tag">attested</span></div>
+        <p>Hash-stamped run manifests with deterministic replay metadata, real ZIP research bundles with per-file SHA-256 integrity checks (plus CRC32 for ZIP compatibility), an IndexedDB long-term store, and evidence provenance tied to a source commit.</p>
+        <div class="tags"><span class="tag">manifests</span><span class="tag">SHA-256</span><span class="tag">provenance</span></div>
       </article>
 
       <article class="cap-card">
@@ -459,19 +459,19 @@
       <div class="val-board reveal" data-wipe>
         <div class="vb-head">
           <span>Long-run energy drift · conservative double · T = 200 s</span>
-          <span class="pass"><i></i> 12/12 within envelope</span>
+          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">13 methods profiled</span></span>
         </div>
         <table class="val-table">
           <thead>
             <tr><th>Integrator</th><th class="r">Order</th><th class="r">Max rel. drift |ΔE/E₀|</th><th></th></tr>
           </thead>
           <tbody>
-            <tr><td class="name">Gragg-Bulirsch-Stoer</td><td class="r">adaptive</td><td class="r drift">8.97e-13</td><td><i class="val-bar" style="width:96px"></i></td></tr>
-            <tr><td class="name">Dormand-Prince 5(4)</td><td class="r">5</td><td class="r drift">3.79e-10</td><td><i class="val-bar" style="width:78px"></i></td></tr>
-            <tr><td class="name">Gauss-Legendre 4</td><td class="r">implicit</td><td class="r drift">9.34e-10</td><td><i class="val-bar" style="width:72px"></i></td></tr>
-            <tr><td class="name">RKF45 Adaptive</td><td class="r">adaptive</td><td class="r drift">8.29e-9</td><td><i class="val-bar" style="width:60px"></i></td></tr>
-            <tr><td class="name">Runge-Kutta 4</td><td class="r">4</td><td class="r drift">5.45e-8</td><td><i class="val-bar" style="width:48px"></i></td></tr>
-            <tr><td class="name">Implicit Midpoint</td><td class="r">implicit</td><td class="r drift">4.34e-5</td><td><i class="val-bar" style="width:30px"></i></td></tr>
+            <tr><td class="name">Gragg-Bulirsch-Stoer</td><td class="r">adaptive</td><td class="r drift">8.97e-13</td><td><i class="val-bar bar-96"></i></td></tr>
+            <tr><td class="name">Dormand-Prince 5(4)</td><td class="r">5</td><td class="r drift">3.79e-10</td><td><i class="val-bar bar-78"></i></td></tr>
+            <tr><td class="name">Gauss-Legendre 4</td><td class="r">implicit</td><td class="r drift">9.34e-10</td><td><i class="val-bar bar-72"></i></td></tr>
+            <tr><td class="name">RKF45 Adaptive</td><td class="r">adaptive</td><td class="r drift">8.29e-9</td><td><i class="val-bar bar-60"></i></td></tr>
+            <tr><td class="name">Runge-Kutta 4</td><td class="r">4</td><td class="r drift">5.45e-8</td><td><i class="val-bar bar-48"></i></td></tr>
+            <tr><td class="name">Implicit Midpoint</td><td class="r">implicit</td><td class="r drift">4.34e-5</td><td><i class="val-bar bar-30"></i></td></tr>
           </tbody>
         </table>
       </div>
@@ -480,7 +480,7 @@
         <div class="val-stat reveal">
           <div class="big" data-count="982" data-decimals="0" data-evidence-count="tests.passed"></div>
           <div class="cap">Unit tests · all green</div>
-          <p>Plus Chromium, Firefox, WebKit and mobile end-to-end suites, mutation-tested with a published Stryker aggregate.</p>
+          <p>Plus Chromium, Firefox, WebKit and mobile end-to-end suites, with a machine-readable Stryker aggregate of <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span>.</p>
         </div>
         <div class="val-stat reveal">
           <div class="big" data-count="6" data-decimals="0" data-prefix="~" data-suffix="e-14" data-evidence="validation.scipyAgreement"></div>
@@ -506,7 +506,7 @@
         <div class="ledger-row"><span class="k">browsers</span><span class="v">Playwright e2e on Chromium, mobile-Chrome, Firefox and WebKit, with visual-regression baselines per host</span></div>
         <div class="ledger-row"><span class="k">memory</span><span class="v">Hard memory-regression gate against a committed browser-benchmark baseline</span></div>
         <div class="ledger-row"><span class="k">evidence</span><span class="v">Reports attest their source commit; a reviewer console reads the machine-readable certification chain</span></div>
-        <div class="ledger-row"><span class="k">mutation</span><span class="v">Stryker mutation testing with a published aggregate score — the tests are tested</span></div>
+        <div class="ledger-row"><span class="k">mutation</span><span class="v">Stryker aggregate: <span data-evidence="mutation.detailLabel">65.32% total · 68.34% covered · low band · 29 shards</span></span></div>
       </div>
     </div>
   </div>
@@ -538,7 +538,7 @@
         <span class="line"></span>
         <span class="no">03</span>
         <h3>Diagnose &amp; export</h3>
-        <p>Run the Lyapunov spectrum, Poincaré sections, and bifurcation sweeps, then export a bit-reproducible research bundle — PNGs, CSVs, checksums, manifest.</p>
+        <p>Run the Lyapunov spectrum, Poincaré sections, and bifurcation sweeps, then export a hash-verifiable research bundle — PNGs, CSVs, SHA-256 checksums, and a replay manifest.</p>
       </article>
     </div>
 
@@ -554,7 +554,7 @@
   <div class="wrap">
     <span class="kicker center">Open the Engine</span>
     <h2 class="display" data-rise><span class="grad">Release it. Watch it </span><span class="dissolve">diverge.</span></h2>
-    <p class="lede">The full simulator runs in your browser — thirteen primary integrators, every analysis tab, reproducible to the bit. No install, no account. Just the unvarnished mathematics of chaos.</p>
+    <p class="lede">The full simulator runs in your browser — thirteen primary integrators, every analysis tab, and hash-verifiable research exports. No install, no account. Just the unvarnished mathematics of chaos.</p>
     <div class="launch-actions">
       <a class="btn primary" href="https://elliot-jung-17.github.io/pendulum-lab/?tab=lab" data-app-link>Open Lab <span class="arrow">→</span></a>
       <a class="btn ghost" href="https://elliot-jung-17.github.io/pendulum-lab/?tab=lab&quality=performance" data-app-link>Try Performance Mode</a>
@@ -588,13 +588,11 @@
       <a href="https://elliot-jung-17.github.io/pendulum-lab/reviewer.html">Reviewer console</a>
       <a href="https://elliot-jung-17.github.io/pendulum-lab/paper/">Mini-paper</a>
     </div>
-    <div class="cite">MIT-licensed · <b>Cite this repository</b> · <a href="https://github.com/Elliot-Jung-17/pendulum-lab/blob/master/CITATION.cff" style="color:inherit">CITATION.cff</a></div>
+    <div class="cite">MIT-licensed · <b>Cite this repository</b> · <a class="inherit-color" href="https://github.com/Elliot-Jung-17/pendulum-lab/blob/master/CITATION.cff">CITATION.cff</a></div>
   </div>
 </footer>
 
-<script defer src="./assets/vendor/gsap/gsap.min.js"></script>
-<script defer src="./assets/vendor/gsap/ScrollTrigger.min.js"></script>
-<script defer src="assets/orbit-console.js"></script>
+<script type="module" src="assets/orbit-console.js"></script>
 <script defer src="assets/main.js"></script>
 <script defer src="assets/reactbits.js"></script>
 </body>

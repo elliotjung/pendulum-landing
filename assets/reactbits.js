@@ -130,6 +130,8 @@
   function startScramble(el, delay) {
     if (el.__decrypted) return;
     el.__decrypted = true;
+    const accessibleText = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (accessibleText && !el.hasAttribute('aria-label')) el.setAttribute('aria-label', accessibleText);
     const nodes = collectTextNodes(el);
     if (!nodes.length) return;
     let total = 0;

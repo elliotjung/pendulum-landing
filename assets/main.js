@@ -16,6 +16,8 @@
     if (!summary || !summary.tests) return;
     const tests = summary.tests;
     const validation = summary.validation || {};
+    const mutation = summary.mutation || {};
+    const energy = summary.energy || {};
     const pd = validation.periodDoubling || {};
     const sci = validation.scipyAgreement || {};
     const setText = (key, value) => {
@@ -37,6 +39,15 @@
     setText('tests.greenLabel', `${tests.passed} green`);
     setText('validation.scipyAgreement', sci.display);
     setText('validation.periodDoubling', typeof pd.computed === 'number' ? pd.computed.toFixed(4) : undefined);
+    if (typeof mutation.score === 'number') {
+      const shards = typeof mutation.reportCount === 'number' ? mutation.reportCount : 0;
+      const band = typeof mutation.status === 'string' ? mutation.status : 'unrated';
+      setText('mutation.scoreLabel', `${mutation.score.toFixed(2)}% · ${band} band · ${shards} shards`);
+      setText('mutation.detailLabel', `${mutation.score.toFixed(2)}% total · ${Number(mutation.coveredScore || 0).toFixed(2)}% covered · ${band} band · ${shards} shards`);
+    }
+    if (typeof energy.profiledMethods === 'number') {
+      setText('energy.profileLabel', `${energy.profiledMethods} methods profiled`);
+    }
     setText('ledger.verify', `CSP-safe lint → strict typecheck → module-size ratchet → ${tests.total} unit tests → result-count guard → evidence summary → docs sync`);
     setCount('tests.passed', tests.passed);
     setCount('validation.periodDoublingComputed', pd.computed);
@@ -77,9 +88,10 @@
     requestHeroScene();
   } else {
     const intentOptions = { once: true, passive: true };
-    window.addEventListener('pointermove', requestHeroScene, intentOptions);
-    window.addEventListener('pointerdown', requestHeroScene, intentOptions);
-    window.addEventListener('touchstart', requestHeroScene, intentOptions);
+    const hero = document.querySelector('.hero');
+    hero?.addEventListener('pointermove', requestHeroScene, intentOptions);
+    hero?.addEventListener('pointerdown', requestHeroScene, intentOptions);
+    hero?.addEventListener('touchstart', requestHeroScene, intentOptions);
     window.addEventListener('scroll', requestHeroScene, intentOptions);
     window.addEventListener('keydown', requestHeroScene, { once: true });
     window.addEventListener('load', () => window.setTimeout(requestHeroScene, 9000), { once: true });
@@ -138,8 +150,10 @@
       btn.addEventListener('pointerleave', () => { btn.style.transform = ''; });
     });
 
-    (function tick() {
-      requestAnimationFrame(tick);
+    let pointerRaf = 0;
+    function tick() {
+      pointerRaf = 0;
+      if (document.hidden) return;
       pointer.x += (pointer.tx - pointer.x) * 0.08;
       pointer.y += (pointer.ty - pointer.y) * 0.08;
       for (const p of parallaxEls) {
@@ -148,7 +162,18 @@
       spot.x += (spot.tx - spot.x) * 0.12;
       spot.y += (spot.ty - spot.y) * 0.12;
       if (glow) glow.style.transform = `translate3d(${spot.x}px, ${spot.y}px, 0)`;
-    })();
+      pointerRaf = requestAnimationFrame(tick);
+    }
+    function syncPointerLoop() {
+      if (document.hidden) {
+        if (pointerRaf) cancelAnimationFrame(pointerRaf);
+        pointerRaf = 0;
+      } else if (!pointerRaf) {
+        pointerRaf = requestAnimationFrame(tick);
+      }
+    }
+    document.addEventListener('visibilitychange', syncPointerLoop);
+    syncPointerLoop();
   }
 
   // ---- GSAP cinematic scroll ----------------------------------------------

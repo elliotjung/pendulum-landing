@@ -1,6 +1,7 @@
 import { access, readdir, readFile, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const html = await readFile(join(root, 'index.html'), 'utf8');
@@ -22,8 +23,13 @@ const mojibakeRegexes = [
 for (const forbidden of ['fonts.googleapis.com', 'fonts.gstatic.com']) {
   if (html.includes(forbidden)) failures.push(`external font host still referenced: ${forbidden}`);
 }
-if (/Content-Security-Policy/i.test(html) && html.includes("'unsafe-inline'")) {
-  warnings.push('CSP still allows unsafe-inline; move inline styles/scripts to hashed or external assets before a hardened release');
+const csp = html.match(/<meta[^>]+http-equiv="Content-Security-Policy"[^>]+content="([^"]+)"/i)?.[1] ?? '';
+const scriptPolicy = csp.match(/(?:^|;)\s*script-src\s+([^;]+)/i)?.[1] ?? '';
+if (scriptPolicy.includes("'unsafe-inline'")) {
+  failures.push('CSP script-src must not allow unsafe-inline');
+}
+if (/style-src-attr[^;]*'unsafe-inline'/i.test(csp)) {
+  warnings.push('CSP style-src-attr remains narrowly enabled for runtime animation state');
 }
 
 const attrPattern = /\b(?:href|src|srcset)=["']([^"']+)["']/g;
@@ -44,6 +50,14 @@ for (const match of html.matchAll(attrPattern)) {
 }
 
 const evidence = JSON.parse(await readFile(join(root, 'assets', 'evidence-summary.json'), 'utf8'));
+const kernelManifest = JSON.parse(await readFile(join(root, 'assets', 'demo-kernel-manifest.json'), 'utf8'));
+const kernelBytes = await readFile(join(root, kernelManifest.kernel));
+if (createHash('sha256').update(kernelBytes).digest('hex') !== kernelManifest.sha256) {
+  failures.push('demo kernel SHA-256 does not match its manifest');
+}
+if (kernelManifest.sourceCommit !== evidence.provenance?.sourceCommit) {
+  failures.push('demo kernel sourceCommit does not match the evidence summary');
+}
 if (evidence.schemaVersion !== 'pendulum-evidence-summary/v1') {
   failures.push(`unexpected evidence schema: ${evidence.schemaVersion ?? 'missing'}`);
 }
@@ -90,6 +104,15 @@ function checkEvidenceFreshness(summary) {
   if (ageDays > maxAgeDays) {
     warnings.push(`evidence summary is ${ageDays.toFixed(1)} days old; refresh from the main repo before release`);
   }
+  const expiresAt = Date.parse(summary.provenance?.expiresAt || '');
+  if (!Number.isFinite(expiresAt)) failures.push('evidence provenance.expiresAt is missing or invalid');
+  else if (Date.now() > expiresAt) failures.push('evidence summary has expired; regenerate it from the main repo');
+  if (!/^[a-f0-9]{40}$/i.test(summary.provenance?.sourceCommit || '')) failures.push('evidence provenance.sourceCommit is missing or invalid');
+  if (!/^[a-f0-9]{64}$/i.test(summary.provenance?.lockfileSha256 || '')) failures.push('evidence provenance.lockfileSha256 is missing or invalid');
+  const expectedCommit = process.env.PENDULUM_EXPECTED_SOURCE_COMMIT;
+  if (expectedCommit && summary.provenance?.sourceCommit !== expectedCommit) {
+    failures.push(`evidence source commit ${summary.provenance?.sourceCommit ?? 'missing'} does not match dispatched release ${expectedCommit}`);
+  }
 }
 
 async function compareMainEvidenceIfProvided(summary) {
@@ -104,6 +127,8 @@ async function compareMainEvidenceIfProvided(summary) {
   }
   if (source.gpu?.status !== summary.gpu?.status) failures.push(`evidence gpu.status mismatch: landing=${summary.gpu?.status} main=${source.gpu?.status}`);
   if (source.publication?.status !== summary.publication?.status) failures.push(`evidence publication.status mismatch: landing=${summary.publication?.status} main=${source.publication?.status}`);
+  if (source.provenance?.sourceCommit !== summary.provenance?.sourceCommit) failures.push('evidence provenance.sourceCommit mismatch');
+  if (source.provenance?.lockfileSha256 !== summary.provenance?.lockfileSha256) failures.push('evidence provenance.lockfileSha256 mismatch');
 }
 
 async function checkTextEncoding() {

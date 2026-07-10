@@ -9,6 +9,7 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
 
   await page.goto('/?captureHero=1', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.nav')).toBeVisible();
+  await expect(page.locator('h1')).toHaveAccessibleName('Order, undone by chaos.');
   await expect(page.locator('#hero-canvas')).toBeAttached();
   await expect(page.locator('#orbit-console')).toBeVisible();
   await expect(page.locator('.app-preview img')).toBeVisible();
@@ -43,6 +44,7 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
   });
   expect(consolePainted).toBeTruthy();
   expect(errors).toEqual([]);
+  await expect(page.locator('[data-evidence="mutation.scoreLabel"]').first()).toContainText('65.32%');
 });
 
 test('mobile launch CTA stays inside the viewport', async ({ page }) => {
@@ -51,6 +53,8 @@ test('mobile launch CTA stays inside the viewport', async ({ page }) => {
   const box = await page.locator('.nav-launch').boundingBox();
   expect(box).toBeTruthy();
   expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
+  const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(horizontalOverflow).toBeLessThanOrEqual(0);
 });
 
 test('primary local assets and links are available', async ({ page, request }) => {
@@ -58,6 +62,8 @@ test('primary local assets and links are available', async ({ page, request }) =
   for (const href of [
     'assets/app-preview.png',
     'assets/evidence-summary.json',
+    'assets/pendulum-demo-kernel.js',
+    'assets/demo-kernel-manifest.json',
     'assets/vendor/three/three.module.js',
     'assets/vendor/three/examples/jsm/postprocessing/EffectComposer.js',
     'assets/vendor/gsap/gsap.min.js',
@@ -68,4 +74,24 @@ test('primary local assets and links are available', async ({ page, request }) =
     expect(response.ok(), href).toBeTruthy();
   }
   await expect(page.locator('.recipe-card[href*="preset=butterfly"]')).toBeVisible();
+});
+
+test('shared demo kernel matches main rhsDouble fixtures', async ({ page }) => {
+  await page.goto('/');
+  const rows = await page.evaluate(async () => {
+    const kernel = await import('/assets/pendulum-demo-kernel.js');
+    const params = { m1: 1, m2: 1, l1: 1, l2: 1, g: 9.81 };
+    return [[0.2, -0.3, 0.4, -0.5], [2.18, 2.64, 0, 0]].map((state) => {
+      const out = [0, 0, 0, 0];
+      kernel.rhsDoubleInto(state, out, params);
+      return out;
+    });
+  });
+  const expected = [
+    [0.4, -0.5, -5.390276136585902, 7.706173654766009],
+    [0, 0, -9.910597545905812, 4.163545829940606]
+  ];
+  rows.forEach((row, rowIndex) => row.forEach((value, columnIndex) => {
+    expect(value).toBeCloseTo(expected[rowIndex]![columnIndex]!, 12);
+  }));
 });

@@ -11,6 +11,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
 const CY = new THREE.Color('#18d4f8');
 const VI = new THREE.Color('#9d78ff');
@@ -43,32 +44,17 @@ function bakeShapes() {
   }
 
   // CHAOS: one double-pendulum trajectory, integrated ONCE and frozen.
-  const P = { a1: 2.4, a2: 2.7, v1: 0, v2: 0, l1: 1.1, l2: 0.95, g: 9.81 };
+  const P = { m1: 1, m2: 1, l1: 1.1, l2: 0.95, g: 9.81 };
   const raw = [];
   const dt = 1 / 240;
-  const deriv = (a1, a2, v1, v2) => {
-    const m1 = 1, m2 = 1, l1 = P.l1, l2 = P.l2, g = P.g;
-    const d = a1 - a2, sd = Math.sin(d), cd = Math.cos(d);
-    const den1 = l1 * (2 * m1 + m2 - m2 * Math.cos(2 * d));
-    const den2 = l2 * (2 * m1 + m2 - m2 * Math.cos(2 * d));
-    const a1a = (-g * (2 * m1 + m2) * Math.sin(a1) - m2 * g * Math.sin(a1 - 2 * a2) - 2 * sd * m2 * (v2 * v2 * l2 + v1 * v1 * l1 * cd)) / den1;
-    const a2a = (2 * sd * (v1 * v1 * l1 * (m1 + m2) + g * (m1 + m2) * Math.cos(a1) + v2 * v2 * l2 * m2 * cd)) / den2;
-    return [v1, v2, a1a, a2a];
-  };
-  let a1 = P.a1, a2 = P.a2, v1 = P.v1, v2 = P.v2;
+  const state = [2.4, 2.7, 0, 0];
+  const work = createRk4Work();
   const sampleEvery = 8;
   for (let s = 0; s < N * sampleEvery; s++) {
-    const k1 = deriv(a1, a2, v1, v2);
-    const k2 = deriv(a1 + k1[0] * dt / 2, a2 + k1[1] * dt / 2, v1 + k1[2] * dt / 2, v2 + k1[3] * dt / 2);
-    const k3 = deriv(a1 + k2[0] * dt / 2, a2 + k2[1] * dt / 2, v1 + k2[2] * dt / 2, v2 + k2[3] * dt / 2);
-    const k4 = deriv(a1 + k3[0] * dt, a2 + k3[1] * dt, v1 + k3[2] * dt, v2 + k3[3] * dt);
-    a1 += dt / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
-    a2 += dt / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
-    v1 += dt / 6 * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]);
-    v2 += dt / 6 * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3]);
+    rk4StepDouble(state, P, dt, work);
     if (s % sampleEvery === 0) {
-      const x1 = P.l1 * Math.sin(a1), y1 = -P.l1 * Math.cos(a1);
-      const x2 = x1 + P.l2 * Math.sin(a2), y2 = y1 - P.l2 * Math.cos(a2);
+      const x1 = P.l1 * Math.sin(state[0]), y1 = -P.l1 * Math.cos(state[0]);
+      const x2 = x1 + P.l2 * Math.sin(state[1]), y2 = y1 - P.l2 * Math.cos(state[1]);
       raw.push(new THREE.Vector3(x2, y2, x1 * 0.85)); // x1 → depth ⇒ a 3D tangle
     }
   }

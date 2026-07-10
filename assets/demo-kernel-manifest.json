@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "pendulum-demo-kernel-manifest/v1",
+  "kernel": "assets/pendulum-demo-kernel.js",
+  "kernelVersion": "pendulum-demo-kernel/v1",
+  "sourcePackageVersion": "10.35.0",
+  "sourceCommit": "0ab1623294657ee1cf8f6d38e1bb095bf9fd177b",
+  "sha256": "5a63bbfea2df3a62ec5b299c4474c122b0dcc1a2ad49f21f318ff87480de1bf4"
+}

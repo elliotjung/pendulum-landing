@@ -1,3 +1,5 @@
+import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
+
 // Animated double-pendulum trajectory console for the landing page.
 // Decorative only: it runs a small local RK4 integration and never calls the app.
 (function () {
@@ -26,26 +28,17 @@
   let visible = false;
 
   const params = { m1: 1, m2: 1, l1: 1, l2: 1, g: 9.81 };
+  const runtimeParams = { ...params };
   const primary = [2.18, 2.64, 0, 0];
   const twin = [2.181, 2.64, 0, 0];
   const maxTrail = 520;
   const trailA = makeTrail(maxTrail);
   const trailB = makeTrail(maxTrail);
-  const workA = makeWork();
-  const workB = makeWork();
+  const workA = createRk4Work();
+  const workB = createRk4Work();
   const pointA = makePoint();
   const pointB = makePoint();
   const pointDraw = makePoint();
-
-  function makeWork() {
-    return {
-      k1: [0, 0, 0, 0],
-      k2: [0, 0, 0, 0],
-      k3: [0, 0, 0, 0],
-      k4: [0, 0, 0, 0],
-      tmp: [0, 0, 0, 0]
-    };
-  }
 
   function makePoint() {
     return { px: 0, py: 0, jx: 0, jy: 0, bx: 0, by: 0 };
@@ -76,44 +69,9 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  function derivInto(s, out) {
-    const a1 = s[0], a2 = s[1], v1 = s[2], v2 = s[3];
-    const m1 = params.m1, m2 = params.m2, l1 = params.l1, l2 = params.l2;
-    const g = params.g + pointerY * 0.45;
-    const d = a1 - a2;
-    const sd = Math.sin(d);
-    const cd = Math.cos(d);
-    const den = 2 * m1 + m2 - m2 * Math.cos(2 * d);
-    out[0] = v1;
-    out[1] = v2;
-    out[2] = (
-      -g * (2 * m1 + m2) * Math.sin(a1)
-      - m2 * g * Math.sin(a1 - 2 * a2)
-      - 2 * sd * m2 * (v2 * v2 * l2 + v1 * v1 * l1 * cd)
-    ) / (l1 * den);
-    out[3] = (
-      2 * sd * (v1 * v1 * l1 * (m1 + m2) + g * (m1 + m2) * Math.cos(a1) + v2 * v2 * l2 * m2 * cd)
-    ) / (l2 * den);
-  }
-
-  function stageInto(s, k, scale, out) {
-    out[0] = s[0] + k[0] * scale;
-    out[1] = s[1] + k[1] * scale;
-    out[2] = s[2] + k[2] * scale;
-    out[3] = s[3] + k[3] * scale;
-  }
-
   function rk4Into(s, work, dt) {
-    derivInto(s, work.k1);
-    stageInto(s, work.k1, dt * 0.5, work.tmp);
-    derivInto(work.tmp, work.k2);
-    stageInto(s, work.k2, dt * 0.5, work.tmp);
-    derivInto(work.tmp, work.k3);
-    stageInto(s, work.k3, dt, work.tmp);
-    derivInto(work.tmp, work.k4);
-    for (let i = 0; i < 4; i += 1) {
-      s[i] += (dt / 6) * (work.k1[i] + 2 * work.k2[i] + 2 * work.k3[i] + work.k4[i]);
-    }
+    runtimeParams.g = params.g + pointerY * 0.45;
+    rk4StepDouble(s, runtimeParams, dt, work);
     s[2] *= 0.9996;
     s[3] *= 0.9996;
   }
