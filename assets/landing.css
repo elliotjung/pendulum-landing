@@ -205,6 +205,27 @@ section{ position:relative; z-index:2; }
 .nav-links a:hover::after{ width:100%; }
 .nav-cta{ display:flex; align-items:center; gap:14px; }
 
+/* ---- LANGUAGE TOGGLE (static anchor; ko.html is built by build-ko-page) ----*/
+.lang-toggle{
+  appearance:none; background:transparent; cursor:pointer;
+  display:inline-flex; align-items:center; text-decoration:none;
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.1em;
+  color:var(--text); border:1px solid rgba(154,168,196,.35); border-radius:999px;
+  padding:7px 14px; line-height:1;
+  transition:color .25s var(--ease), border-color .25s var(--ease), background .25s var(--ease);
+}
+.lang-toggle:hover{ color:var(--ink); border-color:rgba(24,212,248,.6); background:rgba(24,212,248,.08); }
+.lang-toggle:focus-visible{ outline:2px solid var(--cyan); outline-offset:2px; }
+
+/* Korean rendering: prepend Hangul-native families so KO text does not fall
+   back to per-glyph font linking; EN keeps the original stacks. */
+html[lang="ko"]{
+  --font-display:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','Segoe UI',system-ui,sans-serif;
+  --font-sans:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','Segoe UI',system-ui,sans-serif;
+}
+html[lang="ko"] h1,html[lang="ko"] h2,html[lang="ko"] h3{ letter-spacing:-.01em; }
+html[lang="ko"] .nav-links a{ letter-spacing:.06em; }
+
 /* ---- BUTTONS ---------------------------------------------------------------*/
 .btn{
   --glow:rgba(24,212,248,.5);
@@ -845,6 +866,8 @@ body.cursor-active .cursor-glow{ opacity:1; }
   .nav-launch{ width:76px; max-width:76px; min-height:38px; padding:9px 9px; gap:0; }
   .nav-launch .cta-full,.nav-launch .arrow{ display:none; }
   .nav-launch .cta-short{ display:inline; }
+  .nav-cta{ gap:8px; }
+  .lang-toggle{ padding:8px 10px; font-size:11px; letter-spacing:.04em; min-height:38px; }
   .cap-grid{ grid-template-columns:1fr; }
   .frontier-grid{ grid-template-columns:1fr; }
   .hero-actions{ flex-direction:column; align-items:stretch; }

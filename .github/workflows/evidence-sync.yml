@@ -1,0 +1,78 @@
+name: Evidence Sync
+
+# Structural fix for cross-repo evidence drift (the old flow copied
+# assets/evidence-summary.json by hand). The simulation repo dispatches
+# `evidence-updated` whenever its committed evidence summary changes
+# (.github/workflows/evidence-dispatch.yml over there); this workflow pulls
+# the summary, realigns the demo-kernel manifest provenance, re-runs the full
+# static gate + smoke suite (which pins the kernel's numeric parity with the
+# main repo), and only then commits the sync to main — which GitHub Pages
+# serves directly. A weekly cron catches missed dispatches.
+
+on:
+  repository_dispatch:
+    types: [evidence-updated]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: evidence-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Fetch evidence summary from the simulation repo
+        shell: bash
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ github.event.client_payload.source_commit || '' }}
+        run: |
+          # raw.githubusercontent.com can lag a push by a few seconds; when the
+          # dispatch names the expected source commit, retry until it matches.
+          url="https://raw.githubusercontent.com/Elliot-Jung-17/pendulum-lab/master/reports/evidence-summary.json"
+          for attempt in 1 2 3 4 5 6; do
+            curl --fail --silent --show-error -o assets/evidence-summary.json "$url"
+            actual="$(node -e "process.stdout.write(require('./assets/evidence-summary.json').provenance.sourceCommit)")"
+            if [ -z "$EXPECTED_SOURCE_COMMIT" ] || [ "$actual" = "$EXPECTED_SOURCE_COMMIT" ]; then
+              echo "fetched evidence for source commit $actual"
+              exit 0
+            fi
+            echo "attempt $attempt: raw served $actual, expected $EXPECTED_SOURCE_COMMIT; retrying…"
+            sleep 10
+          done
+          echo "raw content never caught up with the dispatched commit" >&2
+          exit 1
+      - name: Align demo-kernel manifest provenance
+        run: node scripts/sync-kernel-manifest.mjs
+      - name: Full static gate against the synced evidence
+        env:
+          PENDULUM_EXPECTED_SOURCE_COMMIT: ${{ github.event.client_payload.source_commit || '' }}
+        run: npm run check
+      - run: npx playwright install --with-deps chromium
+      # The smoke suite includes the kernel-parity fixture test, which is what
+      # makes the manifest realignment above honest (see sync-kernel-manifest.mjs).
+      - run: npm run smoke
+      - name: Commit and push the sync if anything changed
+        shell: bash
+        run: |
+          if git diff --quiet -- assets/evidence-summary.json assets/demo-kernel-manifest.json; then
+            echo "evidence already in sync; nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          source_commit="$(node -e "process.stdout.write(require('./assets/evidence-summary.json').provenance.sourceCommit.slice(0, 12))")"
+          git add assets/evidence-summary.json assets/demo-kernel-manifest.json
+          git commit -m "chore: sync evidence from pendulum-lab@${source_commit}"
+          git push

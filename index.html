@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pendulum Lab — The Double-Pendulum Chaos Engine</title>
-<meta name="description" content="A framework-free TypeScript engine and browser laboratory for nonlinear pendulum dynamics — thirteen primary integrators, full Lyapunov diagnostics, CPU-oracle-gated WebGPU pipelines, and hash-verifiable research bundles. 982 unit tests, validated against SciPy and published literature." />
+<meta name="description" content="A framework-free TypeScript engine and browser laboratory for nonlinear pendulum dynamics — thirteen primary integrators, full Lyapunov diagnostics, CPU-oracle-gated WebGPU pipelines, and hash-verifiable research bundles. 1,003 unit tests, validated against SciPy and published literature." />
 <meta property="og:title" content="Pendulum Lab — The Double-Pendulum Chaos Engine" />
 <meta property="og:description" content="Order, undone by chaos. A validated chaotic-pendulum research laboratory that runs entirely in your browser." />
 <meta property="og:type" content="website" />
@@ -16,7 +16,16 @@
 <meta name="twitter:description" content="A browser-native nonlinear dynamics lab with synchronized test, reviewer, publication, and GPU evidence." />
 <meta name="twitter:image" content="https://elliot-jung-17.github.io/pendulum-landing/assets/app-preview.png" />
 <link rel="canonical" href="https://elliot-jung-17.github.io/pendulum-landing/" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fpj/MoPSjC7+ELpJH0JTT2lVmJvasSs82XfDvgabOD8=' 'sha256-3VQ3UA8uBrYUaXU9WF0atiJDiYuUhFcJsE+8thCmfRw='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests" />
+<link rel="alternate" hreflang="en" href="https://elliot-jung-17.github.io/pendulum-landing/" />
+<link rel="alternate" hreflang="ko" href="https://elliot-jung-17.github.io/pendulum-landing/ko.html" />
+<link rel="alternate" hreflang="x-default" href="https://elliot-jung-17.github.io/pendulum-landing/" />
+<!-- Language boot: honor an explicit ?lang=, then the stored choice, then the
+     browser locale — and hop to the statically generated Korean page before
+     anything paints. ko.html is built by scripts/build-ko-page.mjs, so Korean
+     visitors get a plain static page (no runtime translation cost). The CSP
+     pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
+<script id="lang-boot">(function(){try{var q=new URLSearchParams(location.search);if(q.get("lang")==="en"){localStorage.setItem("pendulum-landing/lang","en");return}var s=null;try{s=localStorage.getItem("pendulum-landing/lang")}catch(e){}var ko=(navigator.languages||[navigator.language||""]).some(function(t){return String(t).toLowerCase().indexOf("ko")===0});if(q.get("lang")==="ko"||s==="ko"||(!s&&ko))location.replace("ko.html"+location.hash)}catch(e){}})();</script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fpj/MoPSjC7+ELpJH0JTT2lVmJvasSs82XfDvgabOD8=' 'sha256-3VQ3UA8uBrYUaXU9WF0atiJDiYuUhFcJsE+8thCmfRw=' 'sha256-GDtFcHQOJD3hSQ6Lhx2FU6602NjifYCO19uTPHghSnA='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="assets/landing.css" />
 
@@ -87,6 +96,7 @@
     <a href="#guide">Guide</a>
   </div>
   <div class="nav-cta">
+    <a id="lang-toggle" class="lang-toggle" href="ko.html?lang=ko" hreflang="ko" aria-label="한국어로 전환">한국어</a>
     <a class="btn primary sm nav-launch" href="https://elliot-jung-17.github.io/pendulum-lab/?tab=lab" data-app-link aria-label="Open Pendulum Lab simulation"><span class="cta-full">Open Lab</span><span class="cta-short">Open</span><span class="arrow">→</span></a>
   </div>
 </nav>
@@ -138,10 +148,10 @@
         <div class="spec-card" data-tilt>
           <div class="spec-head">
             <span class="label">Credibility</span>
-            <span class="live-dot"><i></i> <span data-evidence="tests.passLabel">982 / 982 pass</span></span>
+            <span class="live-dot"><i></i> <span data-evidence="tests.passLabel">1003 / 1003 pass</span></span>
           </div>
           <div class="spec-row"><span class="k">vs SciPy DOP853</span><span class="v cy" data-evidence="validation.scipyAgreement">~6e-14</span></div>
-          <div class="spec-row"><span class="k">unit tests</span><span class="v" data-evidence="tests.greenLabel">982 green</span></div>
+          <div class="spec-row"><span class="k">unit tests</span><span class="v" data-evidence="tests.greenLabel">1003 green</span></div>
           <div class="spec-row"><span class="k">period-doubling A</span><span class="v" data-evidence="validation.periodDoubling">1.0664</span></div>
           <div class="spec-row"><span class="k">mutation tested</span><span class="v vi" data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span></div>
         </div>
@@ -478,7 +488,7 @@
 
       <div class="val-side">
         <div class="val-stat reveal">
-          <div class="big" data-count="982" data-decimals="0" data-evidence-count="tests.passed"></div>
+          <div class="big" data-count="1003" data-decimals="0" data-evidence-count="tests.passed"></div>
           <div class="cap">Unit tests · all green</div>
           <p>Plus Chromium, Firefox, WebKit and mobile end-to-end suites, with a machine-readable Stryker aggregate of <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span>.</p>
         </div>
@@ -502,7 +512,7 @@
         <span class="pass"><i></i> enforced in CI</span>
       </div>
       <div class="ledger-rows">
-        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 982 unit tests → result-count guard → docs sync</span></div>
+        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 1003 unit tests → result-count guard → docs sync</span></div>
         <div class="ledger-row"><span class="k">browsers</span><span class="v">Playwright e2e on Chromium, mobile-Chrome, Firefox and WebKit, with visual-regression baselines per host</span></div>
         <div class="ledger-row"><span class="k">memory</span><span class="v">Hard memory-regression gate against a committed browser-benchmark baseline</span></div>
         <div class="ledger-row"><span class="k">evidence</span><span class="v">Reports attest their source commit; a reviewer console reads the machine-readable certification chain</span></div>

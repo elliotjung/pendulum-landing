@@ -1,0 +1,11 @@
+# Keep every text file LF in the worktree as well as the repository.
+# The CSP pins inline <script> blocks in index.html by SHA-256 of their raw
+# bytes; a CRLF checkout on Windows silently changes those bytes, breaks the
+# hashes, and CSP would then block the import map in production. eol=lf makes
+# the working tree byte-identical to what GitHub Pages serves.
+* text=auto eol=lf
+*.png binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.pdf binary

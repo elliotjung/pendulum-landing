@@ -3,6 +3,7 @@ import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createGzip } from 'node:zlib';
 
 const root = resolve(join(fileURLToPath(import.meta.url), '..', '..'));
 const host = '127.0.0.1';
@@ -39,9 +40,25 @@ const server = createServer(async (request, response) => {
   try {
     const info = await stat(candidate);
     if (!info.isFile()) throw new Error('not a file');
+    const type = mimeTypes.get(extname(candidate)) ?? 'application/octet-stream';
+    // GitHub Pages (production) serves text assets gzip-compressed; mirror
+    // that here so local Lighthouse runs measure production-like transfer
+    // sizes instead of penalizing readable (unminified) source files.
+    const compressible = /^(text\/|application\/json|image\/svg)/.test(type);
+    const acceptsGzip = /\bgzip\b/.test(String(request.headers['accept-encoding'] ?? ''));
+    if (compressible && acceptsGzip) {
+      response.writeHead(200, {
+        'Content-Type': type,
+        'Content-Encoding': 'gzip',
+        'Vary': 'Accept-Encoding',
+        'Cache-Control': 'no-store',
+      });
+      createReadStream(candidate).pipe(createGzip({ level: 6 })).pipe(response);
+      return;
+    }
     response.writeHead(200, {
       'Content-Length': info.size,
-      'Content-Type': mimeTypes.get(extname(candidate)) ?? 'application/octet-stream',
+      'Content-Type': type,
       'Cache-Control': 'no-store',
     });
     createReadStream(candidate).pipe(response);

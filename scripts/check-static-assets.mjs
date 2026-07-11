@@ -4,9 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const html = await readFile(join(root, 'index.html'), 'utf8');
 const failures = [];
 const warnings = [];
+// English source page + the generated Korean page (scripts/build-ko-page.mjs):
+// both must satisfy the same CSP/inline-hash and local-asset invariants.
+const PAGES = ['index.html', 'ko.html'];
 
 const ignoredDirs = new Set(['.git', '.lighthouseci', 'node_modules', 'reports', 'test-results', 'assets/vendor']);
 const textExtensions = new Set(['.css', '.html', '.js', '.json', '.md', '.mjs', '.txt', '.xml']);
@@ -20,31 +22,41 @@ const mojibakeRegexes = [
   ['known-rendered-mojibake-token', new RegExp(mojibakeTokens.map(escapeRegExp).join('|'))]
 ];
 
-for (const forbidden of ['fonts.googleapis.com', 'fonts.gstatic.com']) {
-  if (html.includes(forbidden)) failures.push(`external font host still referenced: ${forbidden}`);
-}
-const csp = html.match(/<meta[^>]+http-equiv="Content-Security-Policy"[^>]+content="([^"]+)"/i)?.[1] ?? '';
-const scriptPolicy = csp.match(/(?:^|;)\s*script-src\s+([^;]+)/i)?.[1] ?? '';
-if (scriptPolicy.includes("'unsafe-inline'")) {
-  failures.push('CSP script-src must not allow unsafe-inline');
-}
-if (/style-src-attr[^;]*'unsafe-inline'/i.test(csp)) {
-  warnings.push('CSP style-src-attr remains narrowly enabled for runtime animation state');
-}
+for (const pageName of PAGES) {
+  let html;
+  try {
+    html = await readFile(join(root, pageName), 'utf8');
+  } catch {
+    failures.push(`${pageName}: page is missing (run npm run build:ko for the Korean page)`);
+    continue;
+  }
+  for (const forbidden of ['fonts.googleapis.com', 'fonts.gstatic.com']) {
+    if (html.includes(forbidden)) failures.push(`${pageName}: external font host still referenced: ${forbidden}`);
+  }
+  const csp = html.match(/<meta[^>]+http-equiv="Content-Security-Policy"[^>]+content="([^"]+)"/i)?.[1] ?? '';
+  const scriptPolicy = csp.match(/(?:^|;)\s*script-src\s+([^;]+)/i)?.[1] ?? '';
+  if (scriptPolicy.includes("'unsafe-inline'")) {
+    failures.push(`${pageName}: CSP script-src must not allow unsafe-inline`);
+  }
+  verifyCspInlineScriptHashes(pageName, html, scriptPolicy);
+  if (pageName === 'index.html' && /style-src-attr[^;]*'unsafe-inline'/i.test(csp)) {
+    warnings.push('CSP style-src-attr remains narrowly enabled for runtime animation state');
+  }
 
-const attrPattern = /\b(?:href|src|srcset)=["']([^"']+)["']/g;
-for (const match of html.matchAll(attrPattern)) {
-  const refs = match[0].startsWith('srcset=')
-    ? match[1].split(',').map((candidate) => candidate.trim().split(/\s+/)[0]).filter(Boolean)
-    : [match[1]];
-  for (const ref of refs) {
-    if (!ref || shouldSkip(ref)) continue;
-    const clean = ref.split('#')[0].split('?')[0];
-    if (!clean) continue;
-    try {
-      await access(join(root, clean));
-    } catch {
-      failures.push(`missing local asset: ${ref}`);
+  const attrPattern = /\b(?:href|src|srcset)=["']([^"']+)["']/g;
+  for (const match of html.matchAll(attrPattern)) {
+    const refs = match[0].startsWith('srcset=')
+      ? match[1].split(',').map((candidate) => candidate.trim().split(/\s+/)[0]).filter(Boolean)
+      : [match[1]];
+    for (const ref of refs) {
+      if (!ref || shouldSkip(ref)) continue;
+      const clean = ref.split('#')[0].split('?')[0];
+      if (!clean) continue;
+      try {
+        await access(join(root, clean));
+      } catch {
+        failures.push(`${pageName}: missing local asset: ${ref}`);
+      }
     }
   }
 }
@@ -77,6 +89,46 @@ if (warnings.length > 0) {
   console.warn(warnings.map((warning) => `- warning: ${warning}`).join('\n'));
 }
 console.log('static asset check passed');
+
+/**
+ * The CSP pins inline <script> blocks by SHA-256, and those hashes are
+ * maintained by hand. Editing the inline importmap without updating the hash
+ * silently breaks the hero (CSP blocks the import map, Three.js never loads,
+ * the page "cleanly" falls back to the static background). Recompute both
+ * directions here:
+ *   - every executable inline script (importmap / module / classic JS) must
+ *     have its exact hash present in script-src;
+ *   - every sha256 token in script-src must correspond to some inline script
+ *     (otherwise it is a stale leftover that no longer covers anything).
+ * Data blocks (application/ld+json) are not executed and need no allowance,
+ * but their hashes are still legal in the policy, so the reverse check
+ * accepts them.
+ */
+function verifyCspInlineScriptHashes(pageName, pageHtml, policy) {
+  const cspHashes = new Set([...policy.matchAll(/'sha256-([A-Za-z0-9+/=]+)'/g)].map((match) => match[1]));
+  const executableTypes = new Set(['', 'text/javascript', 'application/javascript', 'module', 'importmap']);
+  const inline = [];
+  for (const match of pageHtml.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+    const attrs = match[1] ?? '';
+    if (/\bsrc\s*=/i.test(attrs)) continue;
+    const type = (attrs.match(/type\s*=\s*"([^"]*)"/i)?.[1] ?? '').trim().toLowerCase();
+    const hash = createHash('sha256').update(match[2] ?? '', 'utf8').digest('base64');
+    inline.push({ type, hash, executable: executableTypes.has(type) });
+  }
+  for (const script of inline) {
+    if (script.executable && !cspHashes.has(script.hash)) {
+      failures.push(
+        `${pageName}: CSP script-src is missing the hash of an inline ${script.type || 'classic'} script: 'sha256-${script.hash}' — update the CSP after editing the inline block`
+      );
+    }
+  }
+  const inlineHashes = new Set(inline.map((script) => script.hash));
+  for (const hash of cspHashes) {
+    if (!inlineHashes.has(hash)) {
+      failures.push(`${pageName}: CSP script-src lists a stale sha256 that matches no inline script: 'sha256-${hash}'`);
+    }
+  }
+}
 
 function shouldSkip(ref) {
   return (

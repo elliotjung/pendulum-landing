@@ -76,6 +76,57 @@ test('primary local assets and links are available', async ({ page, request }) =
   await expect(page.locator('.recipe-card[href*="preset=butterfly"]')).toBeVisible();
 });
 
+test('KO/EN static pages: toggle, translation, app links, persistence', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+
+  await page.goto('/');
+  // Default is English (Playwright reports an en locale, no stored choice).
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  const toggle = page.locator('#lang-toggle');
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveText('한국어');
+
+  // The toggle navigates to the statically generated Korean page.
+  await toggle.click();
+  await page.waitForURL(/ko\.html\?lang=ko$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
+  await expect(page.locator('h1')).toContainText('질서,');
+  await expect(page.locator('.hero-copy .lede')).toContainText('비선형 진자 동역학');
+  // App deep links preload the simulator's Korean menu guide.
+  const launchHref = await page.locator('a.nav-launch').getAttribute('href');
+  expect(launchHref).toContain('lang=ko');
+  await expect(page.locator('#lang-toggle')).toHaveText('English');
+
+  // The choice persists: a bare visit to the root now lands on Korean.
+  await page.goto('/').catch(() => undefined);
+  await page.waitForURL(/ko\.html(?:#.*)?$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
+
+  // Switching back to English sticks for the next bare visit.
+  await page.locator('#lang-toggle').click();
+  await page.waitForURL(/index\.html\?lang=en$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('h1')).toHaveAccessibleName('Order, undone by chaos.');
+  expect(errors).toEqual([]);
+});
+
+test.describe('ko-locale first visit', () => {
+  test.use({ locale: 'ko-KR' });
+
+  test('redirects to the static Korean page', async ({ page }) => {
+    await page.goto('/').catch(() => undefined);
+    await page.waitForURL(/ko\.html(?:#.*)?$/);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
+    await expect(page.locator('h1')).toContainText('질서,');
+    await expect(page.locator('.hero-copy .lede')).toContainText('비선형 진자 동역학');
+  });
+});
+
 test('shared demo kernel matches main rhsDouble fixtures', async ({ page }) => {
   await page.goto('/');
   const rows = await page.evaluate(async () => {

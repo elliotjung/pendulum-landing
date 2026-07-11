@@ -29,6 +29,10 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npx playwright install --with-deps chromium
+      # ko.html is generated from index.html + the dictionary
+      # (scripts/build-ko-page.mjs); fail if the committed page drifted.
+      - run: npm run build:ko
+      - run: git diff --exit-code -- ko.html
       - run: npm run smoke
       - uses: actions/upload-artifact@v4
         if: always()

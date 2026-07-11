@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "check": "node scripts/check-static-assets.mjs",
+    "build:ko": "node scripts/build-ko-page.mjs",
     "lighthouse": "node scripts/run-lighthouse.mjs",
     "lighthouse:lhci": "npx --yes @lhci/cli@0.15.1 autorun",
     "test": "playwright test",
