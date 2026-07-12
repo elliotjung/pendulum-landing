@@ -67,7 +67,7 @@ try {
       if (csp) csp.setAttribute('content', csp.getAttribute('content').replace(enHash, koHash));
 
       // This page's own canonical identity.
-      const koUrl = 'https://elliot-jung-17.github.io/pendulum-landing/ko.html';
+      const koUrl = 'https://elliotjung.github.io/pendulum-landing/ko.html';
       const canonical = doc.querySelector('link[rel="canonical"]');
       if (canonical) canonical.setAttribute('href', koUrl);
       const ogUrl = doc.querySelector('meta[property="og:url"]');

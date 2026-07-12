@@ -40,7 +40,7 @@ jobs:
         run: |
           # raw.githubusercontent.com can lag a push by a few seconds; when the
           # dispatch names the expected source commit, retry until it matches.
-          url="https://raw.githubusercontent.com/Elliot-Jung-17/pendulum-lab/master/reports/evidence-summary.json"
+          url="https://raw.githubusercontent.com/elliotjung/pendulum-lab/master/reports/evidence-summary.json"
           for attempt in 1 2 3 4 5 6; do
             curl --fail --silent --show-error -o assets/evidence-summary.json "$url"
             actual="$(node -e "process.stdout.write(require('./assets/evidence-summary.json').provenance.sourceCommit)")"

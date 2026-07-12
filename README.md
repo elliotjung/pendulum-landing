@@ -1,12 +1,12 @@
 # Pendulum Lab Landing Page
 
 Static cinematic landing page for
-[Pendulum Lab](https://github.com/Elliot-Jung-17/pendulum-lab), a validated
+[Pendulum Lab](https://github.com/elliotjung/pendulum-lab), a validated
 browser laboratory for nonlinear pendulum dynamics.
 
-- Live app: https://elliot-jung-17.github.io/pendulum-lab/
-- Landing page: https://elliot-jung-17.github.io/pendulum-landing/
-- Reviewer console: https://elliot-jung-17.github.io/pendulum-lab/reviewer.html
+- Live app: https://elliotjung.github.io/pendulum-lab/
+- Landing page: https://elliotjung.github.io/pendulum-landing/
+- Reviewer console: https://elliotjung.github.io/pendulum-lab/reviewer.html
 
 ## What Is In This Site
 
@@ -64,7 +64,7 @@ assets are reachable.
 
 ## Deployment Pipeline
 
-- Production URL: https://elliot-jung-17.github.io/pendulum-landing/
+- Production URL: https://elliotjung.github.io/pendulum-landing/
 - Preview: use GitHub Actions artifacts from pull requests, or run the local
   static server from Playwright/Lighthouse.
 - Rollback: redeploy the previous landing commit or revert the Pages deployment.
