@@ -18,9 +18,11 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # build:ko renders index.html in headless Chromium, so browsers must be
+      # installed before it (this workflow's first live run failed here).
+      - run: npx playwright install --with-deps chromium
       - run: npm run build:ko
       - run: npm run check
-      - run: npx playwright install --with-deps chromium
       - run: npm run smoke
       - run: npm run lighthouse:lhci
       - name: Prepare static mirror artifact
