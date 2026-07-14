@@ -324,7 +324,7 @@
 
   const TITLE_KO = 'Pendulum Lab — 질서, 카오스에 무너지다';
   const META_DESCRIPTION_KO =
-    '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,090개 단위 테스트, SciPy와 출판 문헌으로 검증.';
+    '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,233개 단위 테스트, SciPy와 출판 문헌으로 검증.';
 
   function normalize(text) {
     return text.replace(/\s+/g, ' ').trim();

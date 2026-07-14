@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
@@ -88,15 +89,32 @@ test('WebGL context loss fails over to the static artwork', async ({ page }) => 
 });
 
 test('content stays readable when the interaction script fails to load', async ({ page }) => {
+  // The static no-JS cards must lead with the same release highlight the
+  // hydrator would render, so the expectation is derived from the synced
+  // changelog-highlights.json rather than hardcoded prose.
+  const changelog = JSON.parse(
+    await readFile(new URL('../assets/changelog-highlights.json', import.meta.url), 'utf8')
+  ) as { highlights: Array<{ title: string }> };
+
   await page.route('**/assets/main.js', (route) => route.abort());
   await page.goto('/');
   await expect(page.locator('#validation .sec-head')).toBeVisible();
   await expect(page.locator('#validation .sec-head')).toHaveCSS('opacity', '1');
   await expect(page.locator('[data-changelog-list] .changelog-card')).toHaveCount(3);
-  await expect(page.locator('[data-changelog-list] .changelog-card').first()).toContainText('The light theme is now whole');
+  await expect(page.locator('[data-changelog-list] .changelog-card').first()).toContainText(
+    changelog.highlights[0].title
+  );
 });
 
 test('expired or malformed evidence is fail-closed and visibly labelled', async ({ page }) => {
+  // The baked static copy equals the committed evidence summary
+  // (scripts/check-static-assets.mjs pins that), so the fail-closed
+  // expectation is derived from the same file instead of hardcoded.
+  const committed = JSON.parse(
+    await readFile(new URL('../assets/evidence-summary.json', import.meta.url), 'utf8')
+  ) as { tests: { total: number } };
+  const staticCount = new Intl.NumberFormat('en-US').format(committed.tests.total);
+
   await page.route('**/assets/evidence-summary.json', async (route) => {
     const response = await route.fetch();
     const summary = await response.json();
@@ -108,7 +126,7 @@ test('expired or malformed evidence is fail-closed and visibly labelled', async 
   await page.goto('/?captureHero=1');
   await expect(page.locator('body')).toHaveClass(/evidence-stale/);
   await expect(page.locator('[data-evidence-freshness]')).toContainText('Evidence expired');
-  await expect(page.locator('[data-evidence="tests.formatted"]')).toHaveText('1,090');
+  await expect(page.locator('[data-evidence="tests.formatted"]')).toHaveText(staticCount);
 
   await page.unroute('**/assets/evidence-summary.json');
   await page.route('**/assets/evidence-summary.json', (route) => route.fulfill({
@@ -118,7 +136,7 @@ test('expired or malformed evidence is fail-closed and visibly labelled', async 
   await page.reload();
   await expect(page.locator('body')).toHaveClass(/evidence-invalid/);
   await expect(page.locator('[data-evidence-freshness]')).toContainText('Evidence unavailable');
-  await expect(page.locator('[data-evidence="tests.formatted"]')).toHaveText('1,090');
+  await expect(page.locator('[data-evidence="tests.formatted"]')).toHaveText(staticCount);
 });
 
 test('mobile launch CTA stays inside the viewport', async ({ page }) => {

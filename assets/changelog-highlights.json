@@ -1,20 +1,20 @@
 {
   "schemaVersion": "pendulum-changelog-highlights/v1",
-  "generatedAt": "2026-07-14T03:32:54.795Z",
-  "sourceCommit": "9d27c99cf99852edb2b2c57bc3286fe79800a387",
-  "sourceUrl": "https://github.com/elliotjung/pendulum-lab/blob/9d27c99cf99852edb2b2c57bc3286fe79800a387/CHANGELOG.md",
+  "generatedAt": "2026-07-14T06:24:08.228Z",
+  "sourceCommit": "3110964fd0b2cd909a8cfc140ce12d7446df45d6",
+  "sourceUrl": "https://github.com/elliotjung/pendulum-lab/blob/3110964fd0b2cd909a8cfc140ce12d7446df45d6/CHANGELOG.md",
   "highlights": [
     {
-      "title": "The light theme is now whole.",
-      "summary": "The old light block lived in css/09 inside <head>, before layers 01–08 — so every :root token those layers re-declared unconditionally (--bg-mesh, --cyan, --focus, the --pm-, --hud- and --ko- families) flipped light mode back to dark…"
+      "title": "Numerical work budgets with explicit contracts",
+      "summary": "every chaos-diagnostic entry point (Lyapunov, FTLE, basin and Wada convergence, CLV, RQA, 0-1 test, codimension-two scans, Poincaré sections, event detection, parameter estimation) now validates dt, step counts, horizons, and state f…"
     },
     {
-      "title": "Shared finish, baseline-frozen dark",
-      "summary": "analysis canvases get an idle \"instrument face\" (faint reticle grid plus vignette) instead of a dead black void, and the workflow strip gains engraved step indices on desktop."
+      "title": "FTLE horizons integrate the exact residual time",
+      "summary": "(no more full-dt rounding for T < dt), and the maximal singular value of the state-transition matrix comes from a scaled symmetric Jacobi eigensolver, so near-orthogonal power-iteration seeds and overflow/underflow in MᵀM can no long…"
     },
     {
-      "title": "Locale contract restored",
-      "summary": "menu tooltips keep the canonical English tool name in every locale (\"Simulation Lab — 실시간 …\"), as the guided-ui and audience-mode suites pin; the Korean switch had regressed them to fully localized names."
+      "title": "Event detection is time-ordered and exact at the cap",
+      "summary": "multiple crossings inside one step are refined then sorted by time (not registration order), and hitting maxEvents returns the last refined crossing state instead of the enclosing step end."
     }
   ]
 }
