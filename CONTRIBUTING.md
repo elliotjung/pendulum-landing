@@ -13,7 +13,7 @@ npm run smoke
 ```
 
 For cross-repository evidence and release rules, see the simulator's
-[cross-project release guide](https://github.com/elliotjung/pendulum-lab/blob/master/docs/cross-project-release.md).
+[cross-project release guide](https://github.com/elliotjung/pendulum-lab/blob/master/documents/cross-project-release.md).
 Visual changes should preserve reduced-motion, keyboard, mobile, and both
 language paths. Security issues belong in the private channel documented in
 [SECURITY.md](SECURITY.md).

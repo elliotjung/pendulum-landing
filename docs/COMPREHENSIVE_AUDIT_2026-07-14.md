@@ -2,7 +2,7 @@
 
 감사일: 2026-07-14
 대상: `pendulum-landing` 정적 EN/KO 랜딩 사이트
-연계 감사: [Pendulum Lab 본체 종합 감사](https://github.com/elliotjung/pendulum-lab/blob/master/docs/COMPREHENSIVE_AUDIT_2026-07-14.md)
+연계 감사: [Pendulum Lab 본체 종합 감사](https://github.com/elliotjung/pendulum-lab/blob/master/documents/COMPREHENSIVE_AUDIT_2026-07-14.md)
 
 ## 범위와 판정 기준
 

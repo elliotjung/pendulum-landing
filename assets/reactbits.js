@@ -294,39 +294,66 @@
     document.body.appendChild(spotlight);
     const proximity = radius * 0.5, fade = radius * 0.75;
 
-    function onMove(e) {
-      const section = grid.getBoundingClientRect();
-      const inside = e.clientX >= section.left - 40 && e.clientX <= section.right + 40 &&
-        e.clientY >= section.top - 40 && e.clientY <= section.bottom + 40;
-      const cards = $$('.mb-card', grid);
+    // Grid + card rects are cached and refreshed only on scroll/resize, so this
+    // document-level handler never measures layout per pointermove. Movement is
+    // coalesced into one animation frame that writes glow vars — previously it
+    // read the grid plus every card rect on every mouse move (for two grids),
+    // the dominant source of hover jank on the card sections.
+    let cards = $$('.mb-card', grid);
+    let gridRect = grid.getBoundingClientRect();
+    let cardRects = cards.map((card) => card.getBoundingClientRect());
+    let measured = true;
+    function measure() {
+      cards = $$('.mb-card', grid);
+      gridRect = grid.getBoundingClientRect();
+      cardRects = cards.map((card) => card.getBoundingClientRect());
+      measured = true;
+    }
+    const invalidate = () => { measured = false; };
+    window.addEventListener('scroll', invalidate, { passive: true });
+    window.addEventListener('resize', invalidate, { passive: true });
+
+    let lastX = 0, lastY = 0, raf = 0;
+    function paint() {
+      raf = 0;
+      if (!measured) measure();
+      const section = gridRect;
+      const inside = lastX >= section.left - 40 && lastX <= section.right + 40 &&
+        lastY >= section.top - 40 && lastY <= section.bottom + 40;
       if (!inside) {
         spotlight.style.opacity = '0';
-        cards.forEach((c) => c.style.setProperty('--mb-glow', '0'));
+        for (const card of cards) card.style.setProperty('--mb-glow', '0');
         return;
       }
       let minDist = Infinity;
-      cards.forEach((card) => {
-        const r = card.getBoundingClientRect();
+      for (let i = 0; i < cards.length; i++) {
+        const r = cardRects[i];
+        if (!r) continue;
+        const card = cards[i];
         const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-        const d = Math.hypot(e.clientX - cx, e.clientY - cy) - Math.max(r.width, r.height) / 2;
+        const d = Math.hypot(lastX - cx, lastY - cy) - Math.max(r.width, r.height) / 2;
         const eff = Math.max(0, d);
         minDist = Math.min(minDist, eff);
         let glow = 0;
         if (eff <= proximity) glow = 1;
         else if (eff <= fade) glow = (fade - eff) / (fade - proximity);
-        card.style.setProperty('--mb-glow-x', `${((e.clientX - r.left) / r.width) * 100}%`);
-        card.style.setProperty('--mb-glow-y', `${((e.clientY - r.top) / r.height) * 100}%`);
+        card.style.setProperty('--mb-glow-x', `${((lastX - r.left) / r.width) * 100}%`);
+        card.style.setProperty('--mb-glow-y', `${((lastY - r.top) / r.height) * 100}%`);
         card.style.setProperty('--mb-glow', glow.toFixed(3));
-      });
-      spotlight.style.left = e.clientX + 'px';
-      spotlight.style.top = e.clientY + 'px';
+      }
+      spotlight.style.left = lastX + 'px';
+      spotlight.style.top = lastY + 'px';
       spotlight.style.opacity = minDist <= proximity ? '0.9'
         : minDist <= fade ? (((fade - minDist) / (fade - proximity)) * 0.9).toFixed(3) : '0';
     }
-    document.addEventListener('pointermove', onMove, { passive: true });
+    document.addEventListener('pointermove', (e) => {
+      lastX = e.clientX; lastY = e.clientY;
+      if (!raf && !document.hidden) raf = requestAnimationFrame(paint);
+    }, { passive: true });
     document.addEventListener('pointerleave', () => {
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
       spotlight.style.opacity = '0';
-      $$('.mb-card', grid).forEach((c) => c.style.setProperty('--mb-glow', '0'));
+      for (const card of cards) card.style.setProperty('--mb-glow', '0');
     });
   }
 

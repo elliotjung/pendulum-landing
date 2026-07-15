@@ -262,13 +262,14 @@
   const scrim = $('.hero-scrim');
   const progress = $('.scroll-progress');
   function onScroll() {
+    // Read layout first, then write — reading scrollHeight after touching
+    // scrim/progress styles would force a synchronous reflow every frame.
     const sy = window.scrollY;
+    const viewport = window.innerHeight;
+    const max = document.documentElement.scrollHeight - viewport;
     nav.classList.toggle('scrolled', sy > 40);
-    if (scrim) scrim.style.opacity = Math.min(0.92, sy / (window.innerHeight * 0.9) * 0.92).toFixed(3);
-    if (progress) {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      progress.style.width = (max > 0 ? (sy / max) * 100 : 0).toFixed(2) + '%';
-    }
+    if (scrim) scrim.style.opacity = Math.min(0.92, sy / (viewport * 0.9) * 0.92).toFixed(3);
+    if (progress) progress.style.width = (max > 0 ? (sy / max) * 100 : 0).toFixed(2) + '%';
   }
   let scrollFrame = 0;
   function scheduleScroll() {
@@ -321,6 +322,39 @@
   const pointer = { tx: 0, ty: 0, x: 0, y: 0 };   // normalised -0.5..0.5
   const spot = { tx: window.innerWidth / 2, ty: window.innerHeight / 2, x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
+  // Element rects only move on scroll/resize, so cache them behind a generation
+  // counter and re-measure lazily. This keeps per-pointermove effects off the
+  // synchronous-reflow path — at most one measurement per frame, never one per
+  // event — which is what stops the hover jank on dense card grids.
+  let rectGeneration = 0;
+  const rectCache = new WeakMap();
+  const bumpRects = () => { rectGeneration += 1; };
+  window.addEventListener('scroll', bumpRects, { passive: true });
+  window.addEventListener('resize', bumpRects, { passive: true });
+  function rectOf(el) {
+    const cached = rectCache.get(el);
+    if (cached && cached.generation === rectGeneration) return cached.rect;
+    const rect = el.getBoundingClientRect();
+    rectCache.set(el, { generation: rectGeneration, rect });
+    return rect;
+  }
+
+  // Coalesce pointer-driven style writes into a single animation frame: read in
+  // the event handler, write once in the frame. Keyed by element so rapid moves
+  // collapse to the latest value instead of thrashing layout every event.
+  const pendingWrites = new Map();
+  let writeRaf = 0;
+  function flushWrites() {
+    writeRaf = 0;
+    for (const write of pendingWrites.values()) write();
+    pendingWrites.clear();
+  }
+  function queueWrite(key, write) {
+    pendingWrites.set(key, write);
+    if (!writeRaf && !document.hidden) writeRaf = requestAnimationFrame(flushWrites);
+  }
+  function cancelWrite(key) { pendingWrites.delete(key); }
+
   if (fine && !reducedEffects && !captureMode) {
     document.body.classList.add('cursor-active');
     window.addEventListener('pointermove', (e) => {
@@ -330,26 +364,30 @@
       schedulePointerLoop();
     }, { passive: true });
 
-    // per-card 3D tilt
+    // per-card 3D tilt (rect cached, transform written on the next frame)
     tiltEls.forEach((card) => {
       card.addEventListener('pointermove', (e) => {
-        const r = card.getBoundingClientRect();
+        const r = rectOf(card);
+        if (!r.width || !r.height) return;
         const px = (e.clientX - r.left) / r.width - 0.5;
         const py = (e.clientY - r.top) / r.height - 0.5;
-        card.style.transform = `rotateY(${px * 10}deg) rotateX(${-py * 10}deg) translateZ(8px)`;
-      });
-      card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+        queueWrite(card, () => {
+          card.style.transform = `rotateY(${(px * 10).toFixed(2)}deg) rotateX(${(-py * 10).toFixed(2)}deg) translateZ(8px)`;
+        });
+      }, { passive: true });
+      card.addEventListener('pointerleave', () => { cancelWrite(card); card.style.transform = ''; });
     });
 
     // magnetic buttons
     $$('.btn').forEach((btn) => {
       btn.addEventListener('pointermove', (e) => {
-        const r = btn.getBoundingClientRect();
+        const r = rectOf(btn);
+        if (!r.width || !r.height) return;
         const mx = (e.clientX - r.left - r.width / 2) * 0.3;
         const my = (e.clientY - r.top - r.height / 2) * 0.4;
-        btn.style.transform = `translate(${mx}px, ${my - 2}px)`;
-      });
-      btn.addEventListener('pointerleave', () => { btn.style.transform = ''; });
+        queueWrite(btn, () => { btn.style.transform = `translate(${mx.toFixed(2)}px, ${(my - 2).toFixed(2)}px)`; });
+      }, { passive: true });
+      btn.addEventListener('pointerleave', () => { cancelWrite(btn); btn.style.transform = ''; });
     });
 
     let pointerRaf = 0;
@@ -485,11 +523,20 @@
   }
 
   // ---- capability card cursor glow ----------------------------------------
-  $$('.cap-card').forEach((card) => {
-    card.addEventListener('pointermove', (e) => {
-      const r = card.getBoundingClientRect();
-      card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
-      card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+  // Fine-pointer only (touch has no hover) and rect-cached + frame-batched like
+  // the other pointer effects, so scrubbing across the grid never thrashes.
+  if (fine && !reducedEffects && !captureMode) {
+    $$('.cap-card').forEach((card) => {
+      card.addEventListener('pointermove', (e) => {
+        const r = rectOf(card);
+        if (!r.width || !r.height) return;
+        const mx = (e.clientX - r.left) / r.width * 100;
+        const my = (e.clientY - r.top) / r.height * 100;
+        queueWrite(card, () => {
+          card.style.setProperty('--mx', mx.toFixed(1) + '%');
+          card.style.setProperty('--my', my.toFixed(1) + '%');
+        });
+      }, { passive: true });
     });
-  });
+  }
 })();

@@ -304,11 +304,15 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     updateReadouts();
   }
 
+  // Cache the canvas rect so pointer tracking never forces a reflow per move;
+  // invalidate it whenever the canvas can shift (scroll/resize).
+  let canvasRect = null;
   canvas.addEventListener('pointermove', (event) => {
-    const rect = canvas.getBoundingClientRect();
-    pointerX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-    pointerY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+    if (!canvasRect) canvasRect = canvas.getBoundingClientRect();
+    pointerX = ((event.clientX - canvasRect.left) / canvasRect.width - 0.5) * 2;
+    pointerY = ((event.clientY - canvasRect.top) / canvasRect.height - 0.5) * 2;
   }, { passive: true });
+  window.addEventListener('scroll', () => { canvasRect = null; }, { passive: true });
   canvas.addEventListener('pointerleave', () => {
     pointerX = 0;
     pointerY = 0;
@@ -324,9 +328,15 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   controls.reset?.addEventListener('click', resetSimulation);
   controls.toggle?.addEventListener('click', () => setPaused(!paused));
 
+  let resizeRaf = 0;
   window.addEventListener('resize', () => {
-    resize();
-    draw();
+    canvasRect = null;
+    if (resizeRaf) return;
+    resizeRaf = window.requestAnimationFrame(() => {
+      resizeRaf = 0;
+      resize();
+      draw();
+    });
   }, { passive: true });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stop();

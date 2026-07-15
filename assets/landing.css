@@ -399,14 +399,14 @@ html[lang="ko"] .nav-links a{ letter-spacing:.06em; }
 .btn.sm{ padding:10px 18px; font-size:12px; }
 .cta-short{ display:none; }
 
-/* sheen sweep on primary */
+/* sheen sweep on primary — animate transform (compositor) not left (layout) */
 .btn.primary::after{
   content:""; position:absolute; top:0; left:-120%; width:60%; height:100%;
   background:linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent);
-  transform:skewX(-18deg);
-  transition:left .7s var(--ease);
+  transform:translateX(0) skewX(-18deg);
+  transition:transform .7s var(--ease);
 }
-.btn.primary:hover::after{ left:160%; }
+.btn.primary:hover::after{ transform:translateX(466%) skewX(-18deg); }
 
 /* ============================================================================
    HERO
