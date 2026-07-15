@@ -12,6 +12,15 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
   const captureMode = new URLSearchParams(window.location.search).has('captureHero');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches || captureMode;
+  const korean = document.documentElement.lang === 'ko';
+  const lowPower = window.matchMedia('(max-width: 720px), (pointer: coarse)').matches
+    || navigator.connection?.saveData === true
+    || (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 4)
+    || (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4);
+  const targetFps = lowPower ? 30 : 60;
+  const frameInterval = 1000 / targetFps;
+  const physicsStepsPerFrame = lowPower ? 6 : 3;
+  const trailStride = lowPower ? 3 : 2;
   const readouts = {
     separation: document.querySelector('[data-orbit-readout="separation"]'),
     drift: document.querySelector('[data-orbit-readout="drift"]'),
@@ -24,6 +33,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     thetaOutput: document.querySelector('[data-orbit-output="theta"]'),
     dampingOutput: document.querySelector('[data-orbit-output="damping"]'),
     reset: document.querySelector('[data-orbit-reset]'),
+    toggle: document.querySelector('[data-orbit-toggle]'),
     launch: document.querySelector('[data-orbit-launch]')
   };
 
@@ -35,6 +45,8 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   let pointerX = 0;
   let pointerY = 0;
   let visible = false;
+  let paused = false;
+  let lastTick = 0;
 
   const params = { m1: 1, m2: 1, l1: 1, l2: 1, g: 9.81 };
   const runtimeParams = { ...params };
@@ -42,7 +54,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   const twin = [2.181, 2.64, 0, 0];
   let initialTheta = 2.18;
   let damping = 0.06;
-  const maxTrail = 520;
+  const maxTrail = lowPower ? 300 : 420;
   const trailA = makeTrail(maxTrail);
   const trailB = makeTrail(maxTrail);
   const workA = createRk4Work();
@@ -74,10 +86,13 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     const rect = canvas.getBoundingClientRect();
     width = Math.max(320, rect.width || 920);
     height = Math.max(240, rect.height || width * 620 / 920);
-    dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    const pixelBudget = lowPower ? 720_000 : 1_450_000;
+    const budgetDpr = Math.sqrt(pixelBudget / Math.max(1, width * height));
+    dpr = Math.max(0.8, Math.min(window.devicePixelRatio || 1, lowPower ? 1.2 : 1.6, budgetDpr));
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    window.__orbitConsoleQuality = { dpr, targetFps, maxTrail, lowPower };
   }
 
   function rk4Into(s, work, dt) {
@@ -140,9 +155,9 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     if (trail.len < 2) return;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    for (let i = 1; i < trail.len; i += 1) {
+    for (let i = trailStride; i < trail.len; i += trailStride) {
       const alpha = i / trail.len;
-      const prev = trailIndex(trail, i - 1);
+      const prev = trailIndex(trail, i - trailStride);
       const curr = trailIndex(trail, i);
       ctx.strokeStyle = color.replace('ALPHA', (0.03 + alpha * 0.56).toFixed(3));
       ctx.lineWidth = 1 + alpha * 2.4;
@@ -177,7 +192,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     if (readouts.separation) readouts.separation.textContent = sep.toExponential(2) + ' rad';
     if (readouts.drift) readouts.drift.textContent = drift.toFixed(2) + ' px';
     if (readouts.trace) readouts.trace.textContent = trailA.len + ' pts';
-    if (readouts.mode) readouts.mode.textContent = reduced ? 'static' : visible && !document.hidden ? 'live' : 'standby';
+    if (readouts.mode) readouts.mode.textContent = paused ? 'paused' : reduced ? 'static' : visible && !document.hidden ? 'live' : 'standby';
   }
 
   function updateControlSurface() {
@@ -238,14 +253,16 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     window.__orbitConsolePainted = true;
   }
 
-  function tick() {
+  function tick(timestamp) {
     raf = 0;
     if (reduced || !visible || document.hidden) {
       updateReadouts();
       return;
     }
     raf = window.requestAnimationFrame(tick);
-    for (let i = 0; i < 3; i += 1) {
+    if (lastTick && timestamp - lastTick < frameInterval) return;
+    lastTick = timestamp;
+    for (let i = 0; i < physicsStepsPerFrame; i += 1) {
       rk4Into(primary, workA, 1 / 150);
       rk4Into(twin, workB, 1 / 150);
       pushTrail();
@@ -256,7 +273,10 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   }
 
   function start() {
-    if (!raf) raf = window.requestAnimationFrame(tick);
+    if (!paused && !raf) {
+      lastTick = 0;
+      raf = window.requestAnimationFrame(tick);
+    }
   }
 
   function stop() {
@@ -268,6 +288,19 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     visible = nextVisible;
     if (visible && !reduced && !document.hidden) start();
     else stop();
+    updateReadouts();
+  }
+
+  function setPaused(nextPaused) {
+    paused = nextPaused;
+    if (controls.toggle instanceof HTMLButtonElement) {
+      controls.toggle.setAttribute('aria-pressed', String(paused));
+      controls.toggle.textContent = paused
+        ? korean ? '움직임 재개' : 'Resume motion'
+        : korean ? '움직임 일시정지' : 'Pause motion';
+    }
+    if (paused) stop();
+    else if (visible && !reduced && !document.hidden) start();
     updateReadouts();
   }
 
@@ -289,6 +322,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     resetSimulation();
   });
   controls.reset?.addEventListener('click', resetSimulation);
+  controls.toggle?.addEventListener('click', () => setPaused(!paused));
 
   window.addEventListener('resize', () => {
     resize();

@@ -24,10 +24,9 @@ const edits = [
   {
     file: 'index.html',
     replacements: [
-      [/[\d,]+ unit tests, validated against SciPy/, `${comma} unit tests, validated against SciPy`],
+      [/[\d,]+ verified tests/, `${comma} verified tests`],
       [/[\d,]+ tests and SciPy-validated\./g, `${comma} tests and SciPy-validated.`],
-      [/(data-evidence="tests\.passLabel">)[^<]*(<)/, `$1${passed} / ${total} pass$2`],
-      [/(data-evidence="tests\.greenLabel">)[^<]*(<)/, `$1${passed} green$2`],
+      [/(data-evidence="tests\.formatted">)[^<]*(<)/, `$1${comma}$2`],
       [/(data-count=")[\d,]+(" data-decimals="0" data-evidence-count="tests\.passed")/, `$1${passed}$2`],
       [
         /(data-evidence="ledger\.verify">)[^<]*(<)/,

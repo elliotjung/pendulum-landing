@@ -143,7 +143,13 @@ function verifyCspInlineScriptHashes(pageName, pageHtml, policy) {
 function verifySocialMetadata(pageName, html) {
   const expectedLocale = pageName === 'ko.html' ? 'ko_KR' : 'en_US';
   const expectedAlternate = pageName === 'ko.html' ? 'en_US' : 'ko_KR';
+  const expectedTitle = pageName === 'ko.html'
+    ? 'Pendulum Lab — 질서, 카오스에 무너지다'
+    : 'Pendulum Lab — Order, Undone by Chaos';
   const required = [
+    [`<title>${expectedTitle}</title>`, 'canonical page title'],
+    [`property="og:title" content="${expectedTitle}"`, 'canonical OG title'],
+    [`name="twitter:title" content="${expectedTitle}"`, 'canonical Twitter title'],
     [`property="og:locale" content="${expectedLocale}"`, 'primary OG locale'],
     [`property="og:locale:alternate" content="${expectedAlternate}"`, 'alternate OG locale'],
     ['property="og:image" content="https://elliotjung.github.io/pendulum-landing/assets/og-card.png"', 'dedicated OG image'],
@@ -162,6 +168,11 @@ function checkChangelog(summary, evidenceSummary) {
   if (!Array.isArray(summary.highlights) || summary.highlights.length !== 3) failures.push('changelog highlights must contain exactly three entries');
   else if (summary.highlights.some((item) => typeof item.title !== 'string' || !item.title.trim() || typeof item.summary !== 'string' || !item.summary.trim())) {
     failures.push('changelog highlights contain an empty title or summary');
+  }
+  const suspiciousEncoding = /(?:\uFFFD|\u00C3.|\u00C2.|\u00E2\u20AC|\u00F0\u0178|\?{3,})/u;
+  if (Array.isArray(summary.highlights) && summary.highlights.some((item) =>
+    suspiciousEncoding.test(String(item?.title ?? '')) || suspiciousEncoding.test(String(item?.summary ?? '')))) {
+    failures.push('changelog highlights contain likely mojibake');
   }
   if (summary.sourceCommit !== evidenceSummary.provenance?.sourceCommit) failures.push('changelog sourceCommit does not match evidence sourceCommit');
   if (!/^https:\/\/github\.com\/elliotjung\/pendulum-lab\/blob\/[a-f0-9]{40}\/CHANGELOG\.md$/i.test(summary.sourceUrl ?? '')) {
@@ -185,7 +196,7 @@ async function checkCopyCounts(summary) {
     const html = await readFile(join(root, pageName), 'utf8').catch(() => null);
     if (html === null) continue; // missing page already reported
     const description = html.match(/<meta[^>]+name="description"[^>]+content="([^"]*)"/i)?.[1] ?? '';
-    const descCount = description.match(/([\d,]+) unit tests/)?.[1] ?? description.match(/([\d,]+)개 단위 테스트/)?.[1];
+    const descCount = description.match(/([\d,]+) (?:verified |unit )?tests/)?.[1] ?? description.match(/([\d,]+)개 단위 테스트/)?.[1];
     if (!descCount || parseCount(descCount) !== total) {
       failures.push(`${pageName}: meta description test count (${descCount ?? 'none'}) != evidence total ${total} — run scripts/sync-copy-counts.mjs and npm run build:ko`);
     }
@@ -198,8 +209,7 @@ async function checkCopyCounts(summary) {
   }
   const indexHtml = await readFile(join(root, 'index.html'), 'utf8').catch(() => '');
   const fallbacks = [
-    [/data-evidence="tests\.passLabel">([^<]*)</, `${passed} / ${total} pass`],
-    [/data-evidence="tests\.greenLabel">([^<]*)</, `${passed} green`],
+    [/data-evidence="tests\.formatted">([^<]*)</, total.toLocaleString('en-US')],
     [/data-count="(\d+)" data-decimals="0" data-evidence-count="tests\.passed"/, String(passed)]
   ];
   for (const [pattern, expected] of fallbacks) {
@@ -219,6 +229,8 @@ async function checkCopyCounts(summary) {
     failures.push('assets/og-card-meta.json missing or wrong schema — run node scripts/generate-og-card.mjs');
   } else if (ogMeta.testsTotal !== total) {
     failures.push(`og-card pixels quote ${ogMeta.testsTotal} tests but evidence says ${total} — run node scripts/generate-og-card.mjs`);
+  } else if (ogMeta.sourceEvidenceCommit !== summary.provenance?.sourceCommit) {
+    failures.push(`og-card provenance ${ogMeta.sourceEvidenceCommit || 'missing'} does not match evidence ${summary.provenance?.sourceCommit || 'missing'} — regenerate the social card from current evidence`);
   }
 }
 

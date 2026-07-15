@@ -6,9 +6,13 @@
 // ============================================================================
 (function () {
   'use strict';
+  document.documentElement.classList.add('js-ready');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const compactViewport = window.matchMedia('(max-width: 720px)').matches;
+  const reducedEffects = reduced || compactViewport;
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const captureMode = new URLSearchParams(window.location.search).has('captureHero') || window.__PENDULUM_CAPTURE_HERO === true;
+  const koreanPage = document.documentElement.lang === 'ko';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   if (captureMode) document.body.classList.add('capture-mode');
@@ -30,12 +34,71 @@
   });
 
   // ---- Shared evidence summary --------------------------------------------
+  function evidenceIsUsable(summary) {
+    const tests = summary?.tests;
+    const provenance = summary?.provenance;
+    const validation = summary?.validation;
+    const mutation = summary?.mutation;
+    const energy = summary?.energy;
+    const gpu = summary?.gpu;
+    const publication = summary?.publication;
+    return summary?.schemaVersion === 'pendulum-evidence-summary/v1'
+      && Number.isInteger(tests?.total) && tests.total > 0
+      && Number.isInteger(tests?.passed) && tests.passed === tests.total
+      && tests?.failed === 0 && tests?.success === true
+      && /^[a-f0-9]{40}$/i.test(String(provenance?.sourceCommit || ''))
+      && Number.isFinite(Date.parse(String(provenance?.expiresAt || '')))
+      && typeof validation?.scipyAgreement?.display === 'string'
+      && Number.isFinite(validation?.periodDoubling?.computed)
+      && Number.isFinite(mutation?.score)
+      && Number.isInteger(energy?.profiledMethods) && energy.profiledMethods > 0
+      && typeof energy?.bestMethod === 'string' && Number.isFinite(energy?.bestMaxRelativeDrift)
+      && Number.isInteger(gpu?.passedVendors) && Number.isInteger(gpu?.requiredVendors)
+      && typeof publication?.status === 'string';
+  }
+
+  function markEvidenceState(kind, expiresAt) {
+    document.body.classList.remove('evidence-stale', 'evidence-invalid');
+    const status = $('[data-evidence-freshness]');
+    if (kind === 'invalid') {
+      document.body.classList.add('evidence-invalid');
+      if (status) status.textContent = koreanPage
+        ? '검증 근거를 확인할 수 없음 · 정적 스냅숏 표시 중'
+        : 'Evidence unavailable · showing the static snapshot';
+      return;
+    }
+    if (kind === 'stale') {
+      document.body.classList.add('evidence-stale');
+      if (status) status.textContent = koreanPage
+        ? '검증 근거 만료 · 동적 주장을 업데이트하지 않음'
+        : 'Evidence expired · dynamic claims were not updated';
+      return;
+    }
+    if (status && Number.isFinite(expiresAt)) {
+      const date = new Intl.DateTimeFormat(koreanPage ? 'ko-KR' : 'en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'
+      }).format(new Date(expiresAt));
+      status.textContent = koreanPage ? `검증 근거 최신 · ${date}까지 유효` : `Evidence current · valid through ${date}`;
+    }
+  }
+
   function applyEvidence(summary) {
-    if (!summary || !summary.tests) return;
+    if (!evidenceIsUsable(summary)) {
+      markEvidenceState('invalid');
+      return;
+    }
+    const expiresAt = Date.parse(summary.provenance.expiresAt);
+    if (Date.now() > expiresAt) {
+      markEvidenceState('stale', expiresAt);
+      return;
+    }
+    markEvidenceState('current', expiresAt);
     const tests = summary.tests;
     const validation = summary.validation || {};
     const mutation = summary.mutation || {};
     const energy = summary.energy || {};
+    const gpu = summary.gpu || {};
+    const publication = summary.publication || {};
     const pd = validation.periodDoubling || {};
     const sci = validation.scipyAgreement || {};
     const setText = (key, value) => {
@@ -55,18 +118,52 @@
 
     setText('tests.passLabel', tests.passLabel || `${tests.passed} / ${tests.total} pass`);
     setText('tests.greenLabel', `${tests.passed} green`);
+    setText('tests.formatted', Number(tests.total).toLocaleString('en-US'));
     setText('validation.scipyAgreement', sci.display);
+    setText('validation.periodDoublingDisplay', pd.display);
     setText('validation.periodDoubling', typeof pd.computed === 'number' ? pd.computed.toFixed(4) : undefined);
     if (typeof mutation.score === 'number') {
       const shards = typeof mutation.reportCount === 'number' ? mutation.reportCount : 0;
       const band = typeof mutation.status === 'string' ? mutation.status : 'unrated';
-      setText('mutation.scoreLabel', `${mutation.score.toFixed(2)}% · ${band} band · ${shards} shards`);
-      setText('mutation.detailLabel', `${mutation.score.toFixed(2)}% total · ${Number(mutation.coveredScore || 0).toFixed(2)}% covered · ${band} band · ${shards} shards`);
+      const bandLabel = koreanPage ? (band === 'low' ? '낮음' : band) : `${band} band`;
+      setText('mutation.scoreLabel', koreanPage
+        ? `${mutation.score.toFixed(2)}% · ${bandLabel} 등급 · ${shards}개 샤드`
+        : `${mutation.score.toFixed(2)}% · ${bandLabel} · ${shards} shards`);
+      setText('mutation.detailLabel', koreanPage
+        ? `${mutation.score.toFixed(2)}% 전체 · ${Number(mutation.coveredScore || 0).toFixed(2)}% 커버됨 · ${bandLabel} 등급 · ${shards}개 샤드`
+        : `${mutation.score.toFixed(2)}% total · ${Number(mutation.coveredScore || 0).toFixed(2)}% covered · ${bandLabel} · ${shards} shards`);
     }
     if (typeof energy.profiledMethods === 'number') {
-      setText('energy.profileLabel', `${energy.profiledMethods} methods profiled`);
+      setText('energy.profileLabel', koreanPage ? `${energy.profiledMethods}개 방법 프로파일링` : `${energy.profiledMethods} methods profiled`);
     }
-    setText('ledger.verify', `CSP-safe lint → strict typecheck → module-size ratchet → ${tests.total} unit tests → result-count guard → docs sync → format gate`);
+    setText('energy.bestMethod', energy.bestMethod);
+    if (typeof energy.bestMaxRelativeDrift === 'number' && Number.isFinite(energy.bestMaxRelativeDrift)) {
+      setText('energy.bestDrift', koreanPage
+        ? `${energy.bestMaxRelativeDrift.toExponential(3)} 최대 상대 드리프트`
+        : `${energy.bestMaxRelativeDrift.toExponential(3)} max relative drift`);
+    }
+    if (typeof gpu.passedVendors === 'number' && typeof gpu.requiredVendors === 'number') {
+      setText('gpu.vendorLabel', koreanPage
+        ? `${gpu.passedVendors} / ${gpu.requiredVendors} 공급업체`
+        : `${gpu.passedVendors} / ${gpu.requiredVendors} vendors`);
+    }
+    if (Array.isArray(gpu.missingVendors) && gpu.missingVendors.length) {
+      const missing = gpu.missingVendors.map((vendor) => String(vendor).toUpperCase()).join(' + ');
+      setText('gpu.missingLabel', koreanPage ? `${missing} 대기 중` : `${missing} pending`);
+    }
+    setText('publication.statusLabel', koreanPage && publication.status === 'partial' ? '부분 완료' : publication.status);
+    setText('publication.availableLabel', publication.githubReleaseUrl && publication.pagesUrl
+      ? koreanPage ? 'GitHub 릴리스 + Pages 공개' : 'GitHub release + Pages live'
+      : koreanPage ? '공개 산출물 미완료' : 'Public artifacts incomplete');
+    const missingPublication = [];
+    if (publication.npmPublished === false) missingPublication.push('npm');
+    if (publication.zenodoPublished === false) missingPublication.push('Zenodo');
+    if (missingPublication.length) setText('publication.missingLabel', koreanPage
+      ? `${missingPublication.join(' + ')} 대기 중`
+      : `${missingPublication.join(' + ')} pending`);
+    setText('ledger.verify', koreanPage
+      ? `CSP 안전 린트 → 엄격 타입 검사 → 모듈 크기 래칫 → ${tests.total}개 단위 테스트 → 결과 수 가드 → 문서 동기화 → 포맷 게이트`
+      : `CSP-safe lint → strict typecheck → module-size ratchet → ${tests.total} unit tests → result-count guard → docs sync → format gate`);
     setCount('tests.passed', tests.passed);
     setCount('validation.periodDoublingComputed', pd.computed);
 
@@ -74,52 +171,67 @@
     if (meta && typeof tests.total === 'number') {
       const content = meta.getAttribute('content') || '';
       // Comma-aware: the static description writes "1,090 unit tests".
-      meta.setAttribute('content', content.replace(/[\d,]+ unit tests/, `${tests.total.toLocaleString('en-US')} unit tests`));
+      meta.setAttribute('content', content.replace(/[\d,]+ (verified|unit) tests/, `${tests.total.toLocaleString('en-US')} $1 tests`));
     }
   }
 
-  fetch('assets/evidence-summary.json', { cache: 'no-store' })
+  fetch('assets/evidence-summary.json', { cache: 'default' })
     .then((response) => response.ok ? response.json() : null)
     .then(applyEvidence)
-    .catch(() => {});
+    .catch(() => applyEvidence(null));
 
   function applyChangelog(summary) {
-    if (!summary || summary.schemaVersion !== 'pendulum-changelog-highlights/v1' || !Array.isArray(summary.highlights)) return;
+    const valid = summary?.schemaVersion === 'pendulum-changelog-highlights/v1'
+      && /^[a-f0-9]{40}$/i.test(String(summary?.sourceCommit || ''))
+      && /^https:\/\/github\.com\/elliotjung\/pendulum-lab\/blob\/[a-f0-9]{40}\/CHANGELOG\.md$/i.test(String(summary?.sourceUrl || ''))
+      && Array.isArray(summary?.highlights) && summary.highlights.length === 3
+      && summary.highlights.every((item) => typeof item?.title === 'string' && item.title.trim()
+        && typeof item?.summary === 'string' && item.summary.trim());
+    if (!valid) {
+      document.body.classList.add('changelog-invalid');
+      const provenance = $('[data-changelog-provenance]');
+      if (provenance) provenance.textContent = koreanPage ? '정적 릴리스 요약 표시 중' : 'Showing the static release summary';
+      return;
+    }
+    document.body.classList.remove('changelog-invalid');
     const cards = $$('[data-changelog-list] .changelog-card');
     summary.highlights.slice(0, 3).forEach((highlight, index) => {
       const card = cards[index];
       if (!card) return;
       const title = $('h3', card);
       const description = $('p', card);
-      if (title) title.textContent = String(highlight.title || 'Release update');
-      if (description) description.textContent = String(highlight.summary || 'See the full changelog for details.');
+      if (!koreanPage && title) title.textContent = String(highlight.title || 'Release update');
+      if (!koreanPage && description) description.textContent = String(highlight.summary || 'See the full changelog for details.');
       card.dataset.ready = 'true';
     });
     const source = $('[data-changelog-source]');
     if (source && typeof summary.sourceUrl === 'string') source.href = summary.sourceUrl;
     const provenance = $('[data-changelog-provenance]');
     if (provenance && typeof summary.sourceCommit === 'string') {
-      provenance.textContent = `Synced from pendulum-lab@${summary.sourceCommit.slice(0, 12)}`;
+      provenance.textContent = koreanPage
+        ? `pendulum-lab@${summary.sourceCommit.slice(0, 12)}에서 동기화`
+        : `Synced from pendulum-lab@${summary.sourceCommit.slice(0, 12)}`;
     }
   }
 
-  fetch('assets/changelog-highlights.json', { cache: 'no-store' })
+  fetch('assets/changelog-highlights.json', { cache: 'default' })
     .then((response) => response.ok ? response.json() : null)
     .then(applyChangelog)
-    .catch(() => {});
+    .catch(() => applyChangelog(null));
 
   // ---- Deferred hero scene --------------------------------------------------
   const mainScriptUrl = document.currentScript?.src || new URL('assets/main.js', window.location.href).href;
   const sceneUrl = new URL('scene.bundle.js', mainScriptUrl).href;
   const captureHero = captureMode;
-  const reducedData = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-data: reduce)').matches;
+  const reducedData = (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-data: reduce)').matches)
+    || navigator.connection?.saveData === true;
   const lowMemory = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 2;
   let heroSceneRequested = false;
   function requestHeroScene() {
     if (heroSceneRequested) return;
     heroSceneRequested = true;
-    if (!captureHero && (reduced || reducedData || lowMemory)) {
-      document.body.classList.add('reduced-motion-hero');
+    if (!captureHero && (reducedEffects || reducedData || lowMemory)) {
+      document.body.classList.add(reduced ? 'reduced-motion-hero' : 'low-power-hero');
       window.__heroPainted = true;
       return;
     }
@@ -138,7 +250,11 @@
     hero?.addEventListener('touchstart', requestHeroScene, intentOptions);
     window.addEventListener('scroll', requestHeroScene, intentOptions);
     window.addEventListener('keydown', requestHeroScene, { once: true });
-    window.addEventListener('load', () => window.setTimeout(requestHeroScene, 9000), { once: true });
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(requestHeroScene, { timeout: 1200 });
+    } else {
+      window.setTimeout(requestHeroScene, 450);
+    }
   }
 
   // ---- NAV state, scrim, scroll progress ----------------------------------
@@ -154,7 +270,15 @@
       progress.style.width = (max > 0 ? (sy / max) * 100 : 0).toFixed(2) + '%';
     }
   }
-  window.addEventListener('scroll', onScroll, { passive: true });
+  let scrollFrame = 0;
+  function scheduleScroll() {
+    if (scrollFrame) return;
+    scrollFrame = requestAnimationFrame(() => {
+      scrollFrame = 0;
+      onScroll();
+    });
+  }
+  window.addEventListener('scroll', scheduleScroll, { passive: true });
   onScroll();
 
   // ---- Small-screen menu: close after navigating (works without JS too) ----
@@ -197,12 +321,13 @@
   const pointer = { tx: 0, ty: 0, x: 0, y: 0 };   // normalised -0.5..0.5
   const spot = { tx: window.innerWidth / 2, ty: window.innerHeight / 2, x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
-  if (fine && !reduced && !captureMode) {
+  if (fine && !reducedEffects && !captureMode) {
     document.body.classList.add('cursor-active');
     window.addEventListener('pointermove', (e) => {
       pointer.tx = e.clientX / window.innerWidth - 0.5;
       pointer.ty = e.clientY / window.innerHeight - 0.5;
       spot.tx = e.clientX; spot.ty = e.clientY;
+      schedulePointerLoop();
     }, { passive: true });
 
     // per-card 3D tilt
@@ -239,22 +364,25 @@
       spot.x += (spot.tx - spot.x) * 0.12;
       spot.y += (spot.ty - spot.y) * 0.12;
       if (glow) glow.style.transform = `translate3d(${spot.x}px, ${spot.y}px, 0)`;
-      pointerRaf = requestAnimationFrame(tick);
+      const moving = Math.abs(pointer.tx - pointer.x) + Math.abs(pointer.ty - pointer.y)
+        + Math.abs(spot.tx - spot.x) / 100 + Math.abs(spot.ty - spot.y) / 100;
+      if (moving > 0.005) pointerRaf = requestAnimationFrame(tick);
+    }
+    function schedulePointerLoop() {
+      if (!document.hidden && !pointerRaf) pointerRaf = requestAnimationFrame(tick);
     }
     function syncPointerLoop() {
       if (document.hidden) {
         if (pointerRaf) cancelAnimationFrame(pointerRaf);
         pointerRaf = 0;
-      } else if (!pointerRaf) {
-        pointerRaf = requestAnimationFrame(tick);
-      }
+      } else schedulePointerLoop();
     }
     document.addEventListener('visibilitychange', syncPointerLoop);
     syncPointerLoop();
   }
 
   // ---- GSAP cinematic scroll ----------------------------------------------
-  if (window.gsap && window.ScrollTrigger && !reduced && !captureMode) {
+  if (window.gsap && window.ScrollTrigger && !reducedEffects && !captureMode) {
     gsap.registerPlugin(ScrollTrigger);
 
     // Keep above-the-fold copy paintable immediately for LCP. GSAP owns only
@@ -322,7 +450,7 @@
         scrollTrigger: { trigger: path.closest('.diverge-stage'), start: 'top 80%', end: 'bottom 55%', scrub: 0.6 } });
     });
   } else {
-    $$('.reveal, [data-wipe], [data-rise], .hero-copy .lede, .hero-actions, .hero-type-line').forEach((el) => { el.style.opacity = 1; el.style.clipPath = 'none'; el.style.transform = 'none'; el.style.filter = 'none'; });
+    $$('.reveal, [data-wipe], [data-rise]').forEach((el) => { el.style.opacity = 1; el.style.clipPath = 'none'; el.style.transform = 'none'; el.style.filter = 'none'; });
     $$('.sec-head').forEach((el) => el.classList.add('lit'));
     $$('.draw-path').forEach((p) => { p.style.strokeDasharray = 'none'; p.style.strokeDashoffset = 0; });
   }
@@ -344,7 +472,7 @@
     })(start);
   }
   const counters = $$('[data-count]');
-  if (reduced || captureMode) {
+  if (reducedEffects || captureMode) {
     counters.forEach((el) => { el.__done = true; el.textContent = (el.dataset.prefix || '') + parseFloat(el.dataset.count).toFixed(parseInt(el.dataset.decimals || '0', 10)) + (el.dataset.suffix || ''); });
   } else {
     if ('IntersectionObserver' in window) {

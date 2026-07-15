@@ -32,11 +32,15 @@
     'Frontier': '프런티어',
     'Validation': '검증',
     'Guide': '가이드',
+    'Explore': '탐색',
+    'Methods': '방법',
+    'Evidence': '검증 근거',
     'Open Lab': '랩 열기',
     'Open': '열기',
     'Skip to content': '본문 바로가기',
     // ---- hero --------------------------------------------------------------
     'Double-Pendulum Chaos Engine': '이중진자 카오스 엔진',
+    'Pendulum Lab · Nonlinear Dynamics': 'Pendulum Lab · 비선형 동역학',
     'Order,': '질서,',
     'undone by': '카오스에',
     'chaos.': '무너지다.',
@@ -44,6 +48,14 @@
       '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진 — 이론 차수를 실측으로 확인한 13종의 주력 적분기, 전체 스펙트럼 랴푸노프 진단, CPU 오러클 검증을 통과해야만 승격되는 WebGPU 경로, 결정론적 재생 메타데이터를 담은 해시 검증 연구 번들. 예측 가능성의 가장자리를 위해 설계된 엄밀함.',
     'Try Performance Mode': '퍼포먼스 모드 체험',
     'View Research Evidence': '연구 증거 보기',
+    'Release two nearly identical pendulums. Watch certainty split into two universes — then measure exactly how fast prediction disappears.':
+      '거의 같은 두 진자를 놓아 보세요. 확실성이 두 개의 세계로 갈라지는 순간을 보고, 예측이 얼마나 빠르게 사라지는지 정확히 측정할 수 있습니다.',
+    'Run the Experiment': '실험 실행',
+    'tests': '테스트',
+    '-validated': '-검증',
+    'reproducible by design': '설계부터 재현 가능',
+    'Explore the divergence': '발산 탐색',
+    'Move for parallax · drag the field to orbit': '움직여 시차 효과 · 드래그해 궤도 회전',
     'Engine Spec': '엔진 사양',
     'Verified': '검증됨',
     'system': '시스템',
@@ -172,6 +184,24 @@
     // ---- validation ------------------------------------------------------------------
     'Validation & Credibility': '검증과 신뢰성',
     'Numbers you can check — not claims you must trust.': '믿으라는 주장이 아니라, 직접 확인할 수 있는 숫자.',
+    'Release evidence · synchronized and reproducible': '릴리스 검증 근거 · 동기화 및 재현 가능',
+    'Evidence snapshot from the simulation repository, including measured limitations.':
+      '측정된 한계까지 포함한 시뮬레이션 저장소의 검증 근거 스냅숏.',
+    'Measured result': '측정 결과',
+    'Scope': '범위',
+    'Status': '상태',
+    'Best energy profile': '최상 에너지 프로파일',
+    'regular reference cases': '규칙 레퍼런스 사례',
+    'computed vs literature': '계산값과 문헌값 비교',
+    'Physical GPU matrix': '실물 GPU 매트릭스',
+    'NVIDIA + AMD pending': 'NVIDIA + AMD 대기 중',
+    'Public release chain': '공개 릴리스 체인',
+    'GitHub release + Pages live': 'GitHub 릴리스 + Pages 공개',
+    'npm + Zenodo pending': 'npm + Zenodo 대기 중',
+    'measured': '측정됨',
+    'passed': '통과',
+    'partial': '부분 완료',
+    'Evidence snapshot · valid through 27 Jul 2026': '검증 근거 스냅숏 · 2026년 7월 27일까지 유효',
     'Every integrator is cross-checked against closed-form, energy, and reference-method criteria, then externally cross-validated against an independent SciPy DOP853 reference for both the double and triple pendulum.':
       '모든 적분기를 닫힌형 해·에너지·레퍼런스 방법 기준으로 교차 점검한 뒤, 이중·삼중 진자 모두 독립적인 SciPy DOP853 레퍼런스와 외부 교차 검증합니다.',
     'Long-run energy drift · conservative double · T = 200 s': '장기 에너지 드리프트 · 보존계 이중진자 · T = 200 s',
@@ -232,6 +262,7 @@
     'initial angle θ₁': '초기각 θ₁',
     'damping γ': '감쇠 계수 γ',
     'Reset trace': '궤적 초기화',
+    'Pause motion': '움직임 일시정지',
     // ---- TCAD mapping ------------------------------------------------------
     'Why this maps to TCAD': '이 경험이 TCAD로 이어지는 이유',
     'A chaos lab built with device-simulation discipline.': '소자 시뮬레이션의 원칙으로 만든 카오스 실험실.',
@@ -259,8 +290,15 @@
     'What changed — from the source, not a marketing rewrite.': '마케팅 문구가 아닌 원본에서 가져온 변경 사항.',
     'These highlights are synchronized from the simulation repository at the same evidence commit used by this page.':
       '이 요약은 이 페이지의 검증 수치와 같은 커밋에 있는 시뮬레이션 저장소에서 동기화됩니다.',
-    'Loading release evidence…': '릴리스 증거를 불러오는 중…',
-    'The synchronized changelog summary will appear here.': '동기화된 변경 요약이 여기에 표시됩니다.',
+    'The light theme is now whole.': '라이트 테마가 이제 완전해졌습니다.',
+    'A final-position porcelain theme now covers every surface, component, and adopted stylesheet.':
+      '최종 순서의 포슬린 테마가 모든 표면, 컴포넌트, 채택된 스타일시트를 포괄합니다.',
+    'Shared finish, baseline-frozen dark': '공통 마감, 기준선이 고정된 다크 테마',
+    'Analysis canvases gain an instrument-face idle state while existing dark visual baselines remain pinned.':
+      '분석 캔버스에 계기판형 대기 화면을 더하면서 기존 다크 시각 기준선은 그대로 고정했습니다.',
+    'Locale contract restored': '로케일 계약 복구',
+    'Localized tooltips retain the canonical English tool name alongside translated guidance.':
+      '현지화된 툴팁이 번역 안내와 함께 표준 영어 도구 이름을 유지합니다.',
     'Read the full changelog': '전체 변경 기록 읽기',
     'Synced with release evidence': '릴리스 증거와 동기화됨'
   };
@@ -268,6 +306,7 @@
   const ATTRS = [
     ['a.brand', 'aria-label', 'Pendulum Lab 홈'],
     ['a.nav-launch', 'aria-label', 'Pendulum Lab 시뮬레이션 열기'],
+    ['#nav-menu summary', 'aria-label', '섹션 메뉴'],
     ['.console-readouts', 'aria-label', '실시간 콘솔 판독'],
     ['.orbit-controls', 'aria-label', '미니 실험실 조절기'],
     ['.recipe-grid', 'aria-label', '30초 실험 레시피'],
@@ -283,9 +322,9 @@
     '해시로 검증되는 연구 번들.'
   ];
 
-  const TITLE_KO = 'Pendulum Lab — 이중진자 카오스 엔진';
+  const TITLE_KO = 'Pendulum Lab — 질서, 카오스에 무너지다';
   const META_DESCRIPTION_KO =
-    '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,090개 단위 테스트, SciPy와 출판 문헌으로 검증.';
+    '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,233개 단위 테스트, SciPy와 출판 문헌으로 검증.';
 
   function normalize(text) {
     return text.replace(/\s+/g, ' ').trim();

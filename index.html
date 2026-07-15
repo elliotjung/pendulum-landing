@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pendulum Lab — The Double-Pendulum Chaos Engine</title>
-<meta name="description" content="A framework-free TypeScript engine and browser laboratory for nonlinear pendulum dynamics — thirteen primary integrators, full Lyapunov diagnostics, CPU-oracle-gated WebGPU pipelines, and hash-verifiable research bundles. 1,090 unit tests, validated against SciPy and published literature." />
-<meta property="og:title" content="Pendulum Lab — The Double-Pendulum Chaos Engine" />
+<title>Pendulum Lab — Order, Undone by Chaos</title>
+<meta name="description" content="Explore nonlinear pendulum dynamics in a browser lab with 1,233 verified tests, SciPy cross-validation, Lyapunov analysis, WebGPU, and reproducible exports." />
+<meta name="theme-color" content="#02040b" />
+<meta name="color-scheme" content="dark" />
+<meta property="og:title" content="Pendulum Lab — Order, Undone by Chaos" />
 <meta property="og:description" content="Order, undone by chaos. A validated chaotic-pendulum research laboratory that runs entirely in your browser." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://elliotjung.github.io/pendulum-landing/" />
@@ -15,12 +17,12 @@
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,090 tests and SciPy-validated." />
+<meta property="og:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,233 tests and SciPy-validated." />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Pendulum Lab - The Double-Pendulum Chaos Engine" />
+<meta name="twitter:title" content="Pendulum Lab — Order, Undone by Chaos" />
 <meta name="twitter:description" content="A browser-native nonlinear dynamics lab with synchronized test, reviewer, publication, and GPU evidence." />
 <meta name="twitter:image" content="https://elliotjung.github.io/pendulum-landing/assets/og-card.png" />
-<meta name="twitter:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,090 tests and SciPy-validated." />
+<meta name="twitter:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,233 tests and SciPy-validated." />
 <link rel="canonical" href="https://elliotjung.github.io/pendulum-landing/" />
 <link rel="alternate" hreflang="en" href="https://elliotjung.github.io/pendulum-landing/" />
 <link rel="alternate" hreflang="ko" href="https://elliotjung.github.io/pendulum-landing/ko.html" />
@@ -31,10 +33,12 @@
      visitors get a plain static page (no runtime translation cost). The CSP
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
 <script id="lang-boot">(function(){document.documentElement.classList.remove("no-js");try{var q=new URLSearchParams(location.search);if(q.get("lang")==="en"){localStorage.setItem("pendulum-landing/lang","en");return}var s=null;try{s=localStorage.getItem("pendulum-landing/lang")}catch(e){}var ko=(navigator.languages||[navigator.language||""]).some(function(t){return String(t).toLowerCase().indexOf("ko")===0});if(q.get("lang")==="ko"||s==="ko"||(!s&&ko))location.replace("ko.html"+location.hash)}catch(e){}})();</script>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-c+LgjLHLLAQTdNv4CGkuywYEyFKSiWTVEYk+HC/hLeI=' 'sha256-ymSqYLl7rXygLfZS3sozKl35jW0CVidp7BU96LyH2dU='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-brHKPU7ueAOegRjIqA9K2muTfGdUoLE1ObflMJsBTZo=' 'sha256-ymSqYLl7rXygLfZS3sozKl35jW0CVidp7BU96LyH2dU='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E" />
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
+<link rel="preload" href="assets/hero-fallback.webp" as="image" type="image/webp" media="(min-width: 761px)" fetchpriority="high" />
+<link rel="preload" href="assets/hero-fallback-960.webp" as="image" type="image/webp" media="(max-width: 760px)" fetchpriority="high" />
 <link rel="stylesheet" href="assets/landing.css" />
 
 <script type="application/ld+json">
@@ -48,6 +52,8 @@
       "programmingLanguage": "TypeScript",
       "runtimePlatform": "Web browser",
       "license": "https://opensource.org/license/mit",
+      "author": { "@type": "Person", "name": "Elliot Jung" },
+      "dateModified": "2026-07-14",
       "applicationCategory": "EducationalApplication",
       "description": "A browser-native nonlinear pendulum dynamics workbench with reproducible validation evidence."
     },
@@ -55,6 +61,7 @@
       "@type": "ScholarlyArticle",
       "headline": "Measuring the gap between the Melnikov threshold and the period-doubling cascade in the damped driven pendulum",
       "isPartOf": "Pendulum Lab",
+      "author": { "@type": "Person", "name": "Elliot Jung" },
       "url": "https://elliotjung.github.io/pendulum-lab/paper/",
       "about": ["nonlinear dynamics", "Melnikov theory", "period-doubling", "chaos"]
     }
@@ -66,6 +73,7 @@
 
 <div class="page-bg"></div>
 <div class="page-grain"></div>
+<div class="hero-static-art" aria-hidden="true"></div>
 <canvas id="hero-canvas" aria-hidden="true"></canvas>
 <div class="hero-scrim"></div>
 <div class="cursor-glow"></div>
@@ -86,12 +94,9 @@
     <span><span class="name">Pendulum Lab</span></span>
   </a>
   <div class="nav-links">
-    <a href="#science">Science</a>
-    <a href="#console">Console</a>
-    <a href="#capabilities">Platform</a>
-    <a href="#modes">Modes</a>
-    <a href="#frontier">Frontier</a>
-    <a href="#validation">Validation</a>
+    <a href="#console">Explore</a>
+    <a href="#capabilities">Methods</a>
+    <a href="#validation">Evidence</a>
     <a href="#guide">Guide</a>
   </div>
   <div class="nav-cta">
@@ -102,12 +107,9 @@
     <details class="nav-menu" id="nav-menu">
       <summary aria-label="Section menu"><span class="nav-menu-bars" aria-hidden="true"><i></i><i></i><i></i></span></summary>
       <div class="nav-menu-panel">
-        <a href="#science">Science</a>
-        <a href="#console">Console</a>
-        <a href="#capabilities">Platform</a>
-        <a href="#modes">Modes</a>
-        <a href="#frontier">Frontier</a>
-        <a href="#validation">Validation</a>
+        <a href="#console">Explore</a>
+        <a href="#capabilities">Methods</a>
+        <a href="#validation">Evidence</a>
         <a href="#guide">Guide</a>
       </div>
     </details>
@@ -121,59 +123,38 @@
   <div class="wrap">
     <div class="hero-grid">
       <div class="hero-copy">
-        <span class="kicker" data-mouse="6">Double-Pendulum Chaos Engine</span>
-        <h1 class="display" data-mouse="16">
+        <span class="kicker" data-mouse="6">Pendulum Lab · Nonlinear Dynamics</span>
+        <h1 class="display" data-mouse="12">
           <span class="grad">Order,</span><br />
           <span class="dissolve">undone by</span><br />
           <span class="grad">chaos.</span>
         </h1>
-        <p class="lede" data-mouse="9">
-          A framework-free TypeScript engine for nonlinear pendulum dynamics —
-          thirteen primary integrators measured at their theoretical order, full-spectrum
-          Lyapunov diagnostics, WebGPU paths promoted only after CPU-oracle checks,
-          and hash-verifiable research bundles with deterministic replay metadata. Rigor, engineered for the
-          very edge of predictability.
+        <p class="lede" data-mouse="7">
+          Release two nearly identical pendulums. Watch certainty split into two
+          universes — then measure exactly how fast prediction disappears.
         </p>
         <div class="hero-actions" data-mouse="6">
           <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&preset=butterfly&tab=lab" data-app-link>Open Lab <span class="arrow">→</span></a>
-          <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&quality=performance" data-app-link>Try Performance Mode</a>
-          <a class="btn ghost" href="#validation">View Research Evidence</a>
+          <a class="btn ghost" href="#console">Run the Experiment</a>
         </div>
-        <div class="hero-type-line" data-mouse="7" aria-hidden="true">
-          <span class="ty-dot"></span>
-          <span data-typetext data-type-speed="46" data-pause="1700"
-                data-phrases='["Thirteen primary integrators, measured at order.","Full-spectrum Lyapunov diagnostics.","WebGPU kernels gated by CPU oracles.","Hash-verifiable research bundles."]'></span>
-        </div>
+        <p class="hero-trust-line" data-mouse="5">
+          <strong data-evidence="tests.formatted">1,233</strong> tests
+          <span aria-hidden="true">·</span>
+          <strong>SciPy</strong>-validated
+          <span aria-hidden="true">·</span>
+          reproducible by design
+        </p>
       </div>
 
-      <aside class="hero-spec" data-mouse="22">
-        <div class="spec-card" data-tilt>
-          <div class="spec-head">
-            <span class="label">Engine Spec</span>
-            <span class="live-dot"><i></i> Verified</span>
-          </div>
-          <div class="spec-row"><span class="k">system</span><span class="v">double · triple · N-link</span></div>
-          <div class="spec-row"><span class="k">integrator</span><span class="v cy">GBS · order 6</span></div>
-          <div class="spec-row"><span class="k">energy drift</span><span class="v">8.97e-13</span></div>
-          <div class="spec-row"><span class="k">λ-max</span><span class="v vi">positive (chaotic)</span></div>
-          <div class="spec-row"><span class="k">backend</span><span class="v">worker · WebGPU</span></div>
-        </div>
-        <div class="spec-card" data-tilt>
-          <div class="spec-head">
-            <span class="label">Credibility</span>
-            <span class="live-dot"><i></i> <span data-evidence="tests.passLabel">1090 / 1090 pass</span></span>
-          </div>
-          <div class="spec-row"><span class="k">vs SciPy DOP853</span><span class="v cy" data-evidence="validation.scipyAgreement">~6e-14</span></div>
-          <div class="spec-row"><span class="k">unit tests</span><span class="v" data-evidence="tests.greenLabel">1090 green</span></div>
-          <div class="spec-row"><span class="k">period-doubling A</span><span class="v" data-evidence="validation.periodDoubling">1.0664</span></div>
-          <div class="spec-row"><span class="k">mutation tested</span><span class="v vi" data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span></div>
-        </div>
-      </aside>
+      <div class="hero-stage" aria-hidden="true">
+        <div class="hero-stage-status"><span><i></i> Live RK4</span><b>240 Hz physics</b></div>
+        <div class="hero-stage-axis"><span>θ₁</span><span>θ₂</span><span>Δθ₀ = 8×10⁻⁴ rad</span></div>
+      </div>
     </div>
 
     <div class="hero-foot" data-mouse="4">
-      <span class="scroll-cue"><i></i> Scroll to descend</span>
-      <span>Drag to orbit · move to parallax</span>
+      <span class="scroll-cue"><i></i> Explore the divergence</span>
+      <span>Move for parallax · drag the field to orbit</span>
     </div>
   </div>
 </header>
@@ -210,7 +191,10 @@
           <output for="orbit-damping" data-orbit-output="damping">0.06</output>
         </label>
         <input id="orbit-damping" data-orbit-control="damping" type="range" min="0" max="0.80" step="0.01" value="0.06" />
-        <button class="orbit-reset" type="button" data-orbit-reset>Reset trace</button>
+        <div class="orbit-button-row">
+          <button class="orbit-reset" type="button" data-orbit-reset>Reset trace</button>
+          <button class="orbit-reset" type="button" data-orbit-toggle aria-pressed="false">Pause motion</button>
+        </div>
       </div>
       <div class="console-actions">
         <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&tab=lab&sysType=double&th1=2.18&th2=2.64&iw1=0&iw2=0&m1=1&m2=1&l1=1&l2=1&g=9.81&gamma=0.06" data-app-link data-orbit-launch>Open This State <span class="arrow">→</span></a>
@@ -219,7 +203,9 @@
     </div>
 
     <figure class="orbit-console reveal" data-wipe>
-      <canvas id="orbit-console" width="920" height="620" aria-label="Animated double-pendulum trajectory console"></canvas>
+      <canvas id="orbit-console" width="920" height="620" role="img" aria-label="Animated double-pendulum trajectory console">
+        Two simulated double pendulums begin 0.001 radians apart. Their cyan and rose trajectories separate over time.
+      </canvas>
       <figcaption>
         <span>dual release</span>
         <span>1.0e-3 rad apart</span>
@@ -526,27 +512,53 @@
     <div class="valid-grid">
       <div class="val-board reveal" data-wipe>
         <div class="vb-head">
-          <span>Long-run energy drift · conservative double · T = 200 s</span>
-          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">13 methods profiled</span></span>
+          <span>Release evidence · synchronized and reproducible</span>
+          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">14 methods profiled</span></span>
         </div>
         <table class="val-table">
+          <caption>Evidence snapshot from the simulation repository, including measured limitations.</caption>
           <thead>
-            <tr><th>Integrator</th><th class="r">Order</th><th class="r">Max rel. drift |ΔE/E₀|</th><th></th></tr>
+            <tr><th scope="col">Evidence</th><th scope="col">Measured result</th><th scope="col">Scope</th><th scope="col">Status</th></tr>
           </thead>
           <tbody>
-            <tr><td class="name">Gragg-Bulirsch-Stoer</td><td class="r">adaptive</td><td class="r drift">8.97e-13</td><td><i class="val-bar bar-96"></i></td></tr>
-            <tr><td class="name">Dormand-Prince 5(4)</td><td class="r">5</td><td class="r drift">3.79e-10</td><td><i class="val-bar bar-78"></i></td></tr>
-            <tr><td class="name">Gauss-Legendre 4</td><td class="r">implicit</td><td class="r drift">9.34e-10</td><td><i class="val-bar bar-72"></i></td></tr>
-            <tr><td class="name">RKF45 Adaptive</td><td class="r">adaptive</td><td class="r drift">8.29e-9</td><td><i class="val-bar bar-60"></i></td></tr>
-            <tr><td class="name">Runge-Kutta 4</td><td class="r">4</td><td class="r drift">5.45e-8</td><td><i class="val-bar bar-48"></i></td></tr>
-            <tr><td class="name">Implicit Midpoint</td><td class="r">implicit</td><td class="r drift">4.34e-5</td><td><i class="val-bar bar-30"></i></td></tr>
+            <tr>
+              <th scope="row" class="name">Best energy profile</th>
+              <td><strong data-evidence="energy.bestMethod">DOP853 8(5,3)</strong><small data-evidence="energy.bestDrift">1.612e-14 max relative drift</small></td>
+              <td data-evidence="energy.profileLabel">14 methods profiled</td>
+              <td><span class="evidence-status measured">measured</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="name">SciPy DOP853 agreement</th>
+              <td class="drift" data-evidence="validation.scipyAgreement">~6e-14</td>
+              <td>regular reference cases</td>
+              <td><span class="evidence-status passed">passed</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="name">Period-doubling anchor</th>
+              <td class="drift" data-evidence="validation.periodDoublingDisplay">1.066372 vs 1.066300</td>
+              <td>computed vs literature</td>
+              <td><span class="evidence-status passed">passed</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="name">Physical GPU matrix</th>
+              <td class="drift" data-evidence="gpu.vendorLabel">1 / 3 vendors</td>
+              <td data-evidence="gpu.missingLabel">NVIDIA + AMD pending</td>
+              <td><span class="evidence-status partial">partial</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="name">Public release chain</th>
+              <td data-evidence="publication.availableLabel">GitHub release + Pages live</td>
+              <td data-evidence="publication.missingLabel">npm + Zenodo pending</td>
+              <td><span class="evidence-status partial" data-evidence="publication.statusLabel">partial</span></td>
+            </tr>
           </tbody>
         </table>
+        <p class="evidence-freshness" data-evidence-freshness role="status">Evidence snapshot · valid through 27 Jul 2026</p>
       </div>
 
       <div class="val-side">
         <div class="val-stat reveal">
-          <div class="big" data-count="1090" data-decimals="0" data-evidence-count="tests.passed"></div>
+          <div class="big" data-count="1233" data-decimals="0" data-evidence-count="tests.passed"></div>
           <div class="cap">Unit tests · all green</div>
           <p>Plus Chromium, Firefox, WebKit and mobile end-to-end suites, with a machine-readable Stryker aggregate of <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span>.</p>
         </div>
@@ -570,7 +582,7 @@
         <span class="pass"><i></i> enforced in CI</span>
       </div>
       <div class="ledger-rows">
-        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 1090 unit tests → result-count guard → docs sync → format gate</span></div>
+        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 1233 unit tests → result-count guard → docs sync → format gate</span></div>
         <div class="ledger-row"><span class="k">browsers</span><span class="v">Playwright e2e on Chromium, mobile-Chrome, Firefox and WebKit, with visual-regression baselines per host</span></div>
         <div class="ledger-row"><span class="k">memory</span><span class="v">Hard memory-regression gate against a committed browser-benchmark baseline</span></div>
         <div class="ledger-row"><span class="k">evidence</span><span class="v">Reports attest their source commit; a reviewer console reads the machine-readable certification chain</span></div>
@@ -600,10 +612,10 @@
       <h2 data-rise>What changed — from the source, not a marketing rewrite.</h2>
       <p>These highlights are synchronized from the simulation repository at the same evidence commit used by this page.</p>
     </div>
-    <div class="changelog-grid" data-changelog-list aria-live="polite">
-      <article class="changelog-card"><span>01</span><h3>Loading release evidence…</h3><p>The synchronized changelog summary will appear here.</p></article>
-      <article class="changelog-card"><span>02</span><h3>Loading release evidence…</h3><p>The synchronized changelog summary will appear here.</p></article>
-      <article class="changelog-card"><span>03</span><h3>Loading release evidence…</h3><p>The synchronized changelog summary will appear here.</p></article>
+    <div class="changelog-grid" data-changelog-list>
+      <article class="changelog-card"><span>01</span><h3>Numerical work budgets with explicit contracts</h3><p>Every chaos diagnostic now validates steps, horizons, and state up front and refuses out-of-budget work with typed errors.</p></article>
+      <article class="changelog-card"><span>02</span><h3>FTLE horizons integrate the exact residual time</h3><p>Finite-time exponents keep the precise horizon, with a Jacobi-based singular value immune to seed and overflow bias.</p></article>
+      <article class="changelog-card"><span>03</span><h3>Event detection is time-ordered and exact at the cap</h3><p>Simultaneous crossings are refined and sorted by time, and the event cap returns the last refined crossing.</p></article>
     </div>
     <div class="guide-foot reveal">
       <a class="btn ghost" data-changelog-source href="https://github.com/elliotjung/pendulum-lab/blob/master/CHANGELOG.md">Read the full changelog</a>

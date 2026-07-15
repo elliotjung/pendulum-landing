@@ -2,10 +2,12 @@
 <html lang="ko" class="no-js"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pendulum Lab — 이중진자 카오스 엔진</title>
-<meta name="description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,090개 단위 테스트, SciPy와 출판 문헌으로 검증.">
-<meta property="og:title" content="Pendulum Lab — 이중진자 카오스 엔진">
-<meta property="og:description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,090개 단위 테스트, SciPy와 출판 문헌으로 검증.">
+<title>Pendulum Lab — 질서, 카오스에 무너지다</title>
+<meta name="description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,233개 단위 테스트, SciPy와 출판 문헌으로 검증.">
+<meta name="theme-color" content="#02040b">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="Pendulum Lab — 질서, 카오스에 무너지다">
+<meta property="og:description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,233개 단위 테스트, SciPy와 출판 문헌으로 검증.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://elliotjung.github.io/pendulum-landing/ko.html">
 <meta property="og:locale" content="ko_KR">
@@ -14,12 +16,12 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,090 tests and SciPy-validated.">
+<meta property="og:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,233 tests and SciPy-validated.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Pendulum Lab — 이중진자 카오스 엔진">
-<meta name="twitter:description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,090개 단위 테스트, SciPy와 출판 문헌으로 검증.">
+<meta name="twitter:title" content="Pendulum Lab — 질서, 카오스에 무너지다">
+<meta name="twitter:description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,233개 단위 테스트, SciPy와 출판 문헌으로 검증.">
 <meta name="twitter:image" content="https://elliotjung.github.io/pendulum-landing/assets/og-card.png">
-<meta name="twitter:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,090 tests and SciPy-validated.">
+<meta name="twitter:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,233 tests and SciPy-validated.">
 <link rel="canonical" href="https://elliotjung.github.io/pendulum-landing/ko.html">
 <link rel="alternate" hreflang="en" href="https://elliotjung.github.io/pendulum-landing/">
 <link rel="alternate" hreflang="ko" href="https://elliotjung.github.io/pendulum-landing/ko.html">
@@ -30,10 +32,12 @@
      visitors get a plain static page (no runtime translation cost). The CSP
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
 <script id="lang-boot">(function(){document.documentElement.classList.remove("no-js");try{var q=new URLSearchParams(location.search);if(q.get("lang")==="ko"||!localStorage.getItem("pendulum-landing/lang"))localStorage.setItem("pendulum-landing/lang","ko")}catch(e){}})();</script>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-c+LgjLHLLAQTdNv4CGkuywYEyFKSiWTVEYk+HC/hLeI=' 'sha256-CgfnmsLZA+2pvMoWlhl2HNa17aW3YaTQBCxuHuHDsp4='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-brHKPU7ueAOegRjIqA9K2muTfGdUoLE1ObflMJsBTZo=' 'sha256-CgfnmsLZA+2pvMoWlhl2HNa17aW3YaTQBCxuHuHDsp4='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/hero-fallback.webp" as="image" type="image/webp" media="(min-width: 761px)" fetchpriority="high">
+<link rel="preload" href="assets/hero-fallback-960.webp" as="image" type="image/webp" media="(max-width: 760px)" fetchpriority="high">
 <link rel="stylesheet" href="assets/landing.css">
 
 <script type="application/ld+json">
@@ -47,6 +51,8 @@
       "programmingLanguage": "TypeScript",
       "runtimePlatform": "Web browser",
       "license": "https://opensource.org/license/mit",
+      "author": { "@type": "Person", "name": "Elliot Jung" },
+      "dateModified": "2026-07-14",
       "applicationCategory": "EducationalApplication",
       "description": "A browser-native nonlinear pendulum dynamics workbench with reproducible validation evidence."
     },
@@ -54,6 +60,7 @@
       "@type": "ScholarlyArticle",
       "headline": "Measuring the gap between the Melnikov threshold and the period-doubling cascade in the damped driven pendulum",
       "isPartOf": "Pendulum Lab",
+      "author": { "@type": "Person", "name": "Elliot Jung" },
       "url": "https://elliotjung.github.io/pendulum-lab/paper/",
       "about": ["nonlinear dynamics", "Melnikov theory", "period-doubling", "chaos"]
     }
@@ -65,6 +72,7 @@
 
 <div class="page-bg"></div>
 <div class="page-grain"></div>
+<div class="hero-static-art" aria-hidden="true"></div>
 <canvas id="hero-canvas" aria-hidden="true"></canvas>
 <div class="hero-scrim"></div>
 <div class="cursor-glow"></div>
@@ -85,12 +93,9 @@
     <span><span class="name">Pendulum Lab</span></span>
   </a>
   <div class="nav-links">
-    <a href="#science">과학</a>
-    <a href="#console">콘솔</a>
-    <a href="#capabilities">플랫폼</a>
-    <a href="#modes">모드</a>
-    <a href="#frontier">프런티어</a>
-    <a href="#validation">검증</a>
+    <a href="#console">탐색</a>
+    <a href="#capabilities">방법</a>
+    <a href="#validation">검증 근거</a>
     <a href="#guide">가이드</a>
   </div>
   <div class="nav-cta">
@@ -99,14 +104,11 @@
     <!-- Small-screen section menu. Pure details/summary so it works with CSP
          and without JavaScript; main.js only adds close-on-navigate sugar. -->
     <details class="nav-menu" id="nav-menu">
-      <summary aria-label="Section menu"><span class="nav-menu-bars" aria-hidden="true"><i></i><i></i><i></i></span></summary>
+      <summary aria-label="섹션 메뉴"><span class="nav-menu-bars" aria-hidden="true"><i></i><i></i><i></i></span></summary>
       <div class="nav-menu-panel">
-        <a href="#science">과학</a>
-        <a href="#console">콘솔</a>
-        <a href="#capabilities">플랫폼</a>
-        <a href="#modes">모드</a>
-        <a href="#frontier">프런티어</a>
-        <a href="#validation">검증</a>
+        <a href="#console">탐색</a>
+        <a href="#capabilities">방법</a>
+        <a href="#validation">검증 근거</a>
         <a href="#guide">가이드</a>
       </div>
     </details>
@@ -120,54 +122,37 @@
   <div class="wrap">
     <div class="hero-grid">
       <div class="hero-copy">
-        <span class="kicker" data-mouse="6">이중진자 카오스 엔진</span>
-        <h1 class="display" data-mouse="16">
+        <span class="kicker" data-mouse="6">Pendulum Lab · 비선형 동역학</span>
+        <h1 class="display" data-mouse="12">
           <span class="grad">질서,</span><br>
           <span class="dissolve">카오스에</span><br>
           <span class="grad">무너지다.</span>
         </h1>
-        <p class="lede" data-mouse="9">
-          비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진 — 이론 차수를 실측으로 확인한 13종의 주력 적분기, 전체 스펙트럼 랴푸노프 진단, CPU 오러클 검증을 통과해야만 승격되는 WebGPU 경로, 결정론적 재생 메타데이터를 담은 해시 검증 연구 번들. 예측 가능성의 가장자리를 위해 설계된 엄밀함.
+        <p class="lede" data-mouse="7">
+          거의 같은 두 진자를 놓아 보세요. 확실성이 두 개의 세계로 갈라지는 순간을 보고, 예측이 얼마나 빠르게 사라지는지 정확히 측정할 수 있습니다.
         </p>
         <div class="hero-actions" data-mouse="6">
           <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;preset=butterfly&amp;tab=lab&amp;lang=ko" data-app-link="">랩 열기 <span class="arrow">→</span></a>
-          <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&amp;quality=performance&amp;lang=ko" data-app-link="">퍼포먼스 모드 체험</a>
-          <a class="btn ghost" href="#validation">연구 증거 보기</a>
+          <a class="btn ghost" href="#console">실험 실행</a>
         </div>
-        <div class="hero-type-line" data-mouse="7" aria-hidden="true">
-          <span class="ty-dot"></span>
-          <span data-typetext="" data-type-speed="46" data-pause="1700" data-phrases="[&quot;이론 차수로 실측 검증된 13종의 주력 적분기.&quot;,&quot;전체 스펙트럼 랴푸노프 진단.&quot;,&quot;CPU 오러클이 게이트하는 WebGPU 커널.&quot;,&quot;해시로 검증되는 연구 번들.&quot;]"></span>
-        </div>
+        <p class="hero-trust-line" data-mouse="5">
+          <strong data-evidence="tests.formatted">1,233</strong> 테스트
+          <span aria-hidden="true">·</span>
+          <strong>SciPy</strong>-검증
+          <span aria-hidden="true">·</span>
+          설계부터 재현 가능
+        </p>
       </div>
 
-      <aside class="hero-spec" data-mouse="22">
-        <div class="spec-card" data-tilt="">
-          <div class="spec-head">
-            <span class="label">엔진 사양</span>
-            <span class="live-dot"><i></i> 검증됨</span>
-          </div>
-          <div class="spec-row"><span class="k">시스템</span><span class="v">double · triple · N-link</span></div>
-          <div class="spec-row"><span class="k">적분기</span><span class="v cy">GBS · order 6</span></div>
-          <div class="spec-row"><span class="k">에너지 드리프트</span><span class="v">8.97e-13</span></div>
-          <div class="spec-row"><span class="k">λ-max</span><span class="v vi">positive (chaotic)</span></div>
-          <div class="spec-row"><span class="k">백엔드</span><span class="v">worker · WebGPU</span></div>
-        </div>
-        <div class="spec-card" data-tilt="">
-          <div class="spec-head">
-            <span class="label">신뢰성</span>
-            <span class="live-dot"><i></i> <span data-evidence="tests.passLabel">1090 / 1090 pass</span></span>
-          </div>
-          <div class="spec-row"><span class="k">vs SciPy DOP853</span><span class="v cy" data-evidence="validation.scipyAgreement">~6e-14</span></div>
-          <div class="spec-row"><span class="k">단위 테스트</span><span class="v" data-evidence="tests.greenLabel">1090 green</span></div>
-          <div class="spec-row"><span class="k">주기배가 A</span><span class="v" data-evidence="validation.periodDoubling">1.0664</span></div>
-          <div class="spec-row"><span class="k">뮤테이션 테스트</span><span class="v vi" data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span></div>
-        </div>
-      </aside>
+      <div class="hero-stage" aria-hidden="true">
+        <div class="hero-stage-status"><span><i></i> Live RK4</span><b>240 Hz physics</b></div>
+        <div class="hero-stage-axis"><span>θ₁</span><span>θ₂</span><span>Δθ₀ = 8×10⁻⁴ rad</span></div>
+      </div>
     </div>
 
     <div class="hero-foot" data-mouse="4">
-      <span class="scroll-cue"><i></i> 스크롤해 내려가기</span>
-      <span>드래그로 궤도 회전 · 마우스로 시차 효과</span>
+      <span class="scroll-cue"><i></i> 발산 탐색</span>
+      <span>움직여 시차 효과 · 드래그해 궤도 회전</span>
     </div>
   </div>
 </header>
@@ -204,7 +189,10 @@
           <output for="orbit-damping" data-orbit-output="damping">0.06</output>
         </label>
         <input id="orbit-damping" data-orbit-control="damping" type="range" min="0" max="0.80" step="0.01" value="0.06">
-        <button class="orbit-reset" type="button" data-orbit-reset="">궤적 초기화</button>
+        <div class="orbit-button-row">
+          <button class="orbit-reset" type="button" data-orbit-reset="">궤적 초기화</button>
+          <button class="orbit-reset" type="button" data-orbit-toggle="" aria-pressed="false">움직임 일시정지</button>
+        </div>
       </div>
       <div class="console-actions">
         <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;tab=lab&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06&amp;lang=ko" data-app-link="" data-orbit-launch="">이 상태로 열기 <span class="arrow">→</span></a>
@@ -213,7 +201,9 @@
     </div>
 
     <figure class="orbit-console reveal" data-wipe="">
-      <canvas id="orbit-console" width="920" height="620" aria-label="이중진자 궤적 콘솔 애니메이션"></canvas>
+      <canvas id="orbit-console" width="920" height="620" role="img" aria-label="이중진자 궤적 콘솔 애니메이션">
+        Two simulated double pendulums begin 0.001 radians apart. Their cyan and rose trajectories separate over time.
+      </canvas>
       <figcaption>
         <span>dual release</span>
         <span>1.0e-3 rad apart</span>
@@ -511,27 +501,53 @@
     <div class="valid-grid">
       <div class="val-board reveal" data-wipe="">
         <div class="vb-head">
-          <span>장기 에너지 드리프트 · 보존계 이중진자 · T = 200 s</span>
-          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">13 methods profiled</span></span>
+          <span>릴리스 검증 근거 · 동기화 및 재현 가능</span>
+          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">14 methods profiled</span></span>
         </div>
         <table class="val-table">
+          <caption>측정된 한계까지 포함한 시뮬레이션 저장소의 검증 근거 스냅숏.</caption>
           <thead>
-            <tr><th>적분기</th><th class="r">차수</th><th class="r">최대 상대 드리프트 |ΔE/E₀|</th><th></th></tr>
+            <tr><th scope="col">검증 근거</th><th scope="col">측정 결과</th><th scope="col">범위</th><th scope="col">상태</th></tr>
           </thead>
           <tbody>
-            <tr><td class="name">Gragg-Bulirsch-Stoer</td><td class="r">적응형</td><td class="r drift">8.97e-13</td><td><i class="val-bar bar-96"></i></td></tr>
-            <tr><td class="name">Dormand-Prince 5(4)</td><td class="r">5</td><td class="r drift">3.79e-10</td><td><i class="val-bar bar-78"></i></td></tr>
-            <tr><td class="name">Gauss-Legendre 4</td><td class="r">음함수</td><td class="r drift">9.34e-10</td><td><i class="val-bar bar-72"></i></td></tr>
-            <tr><td class="name">RKF45 Adaptive</td><td class="r">적응형</td><td class="r drift">8.29e-9</td><td><i class="val-bar bar-60"></i></td></tr>
-            <tr><td class="name">Runge-Kutta 4</td><td class="r">4</td><td class="r drift">5.45e-8</td><td><i class="val-bar bar-48"></i></td></tr>
-            <tr><td class="name">Implicit Midpoint</td><td class="r">음함수</td><td class="r drift">4.34e-5</td><td><i class="val-bar bar-30"></i></td></tr>
+            <tr>
+              <th scope="row" class="name">최상 에너지 프로파일</th>
+              <td><strong data-evidence="energy.bestMethod">DOP853 8(5,3)</strong><small data-evidence="energy.bestDrift">1.612e-14 max relative drift</small></td>
+              <td data-evidence="energy.profileLabel">14 methods profiled</td>
+              <td><span class="evidence-status measured">측정됨</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="name">SciPy DOP853 agreement</th>
+              <td class="drift" data-evidence="validation.scipyAgreement">~6e-14</td>
+              <td>규칙 레퍼런스 사례</td>
+              <td><span class="evidence-status passed">통과</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="name">Period-doubling anchor</th>
+              <td class="drift" data-evidence="validation.periodDoublingDisplay">1.066372 vs 1.066300</td>
+              <td>계산값과 문헌값 비교</td>
+              <td><span class="evidence-status passed">통과</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="name">실물 GPU 매트릭스</th>
+              <td class="drift" data-evidence="gpu.vendorLabel">1 / 3 vendors</td>
+              <td data-evidence="gpu.missingLabel">NVIDIA + AMD pending</td>
+              <td><span class="evidence-status partial">부분 완료</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="name">공개 릴리스 체인</th>
+              <td data-evidence="publication.availableLabel">GitHub release + Pages live</td>
+              <td data-evidence="publication.missingLabel">npm + Zenodo pending</td>
+              <td><span class="evidence-status partial" data-evidence="publication.statusLabel">partial</span></td>
+            </tr>
           </tbody>
         </table>
+        <p class="evidence-freshness" data-evidence-freshness="" role="status">검증 근거 스냅숏 · 2026년 7월 27일까지 유효</p>
       </div>
 
       <div class="val-side">
         <div class="val-stat reveal">
-          <div class="big" data-count="1090" data-decimals="0" data-evidence-count="tests.passed"></div>
+          <div class="big" data-count="1233" data-decimals="0" data-evidence-count="tests.passed"></div>
           <div class="cap">단위 테스트 · 전부 그린</div>
           <p>여기에 Chromium·Firefox·WebKit·모바일 E2E 스위트, 그리고 기계가 읽을 수 있는 Stryker 집계 <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span>.</p>
         </div>
@@ -555,7 +571,7 @@
         <span class="pass"><i></i> CI에서 강제</span>
       </div>
       <div class="ledger-rows">
-        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 1090 unit tests → result-count guard → docs sync → format gate</span></div>
+        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 1233 unit tests → result-count guard → docs sync → format gate</span></div>
         <div class="ledger-row"><span class="k">browsers</span><span class="v">Chromium·모바일 Chrome·Firefox·WebKit에서 Playwright E2E, 호스트별 시각 회귀 기준선 포함</span></div>
         <div class="ledger-row"><span class="k">memory</span><span class="v">커밋된 브라우저 벤치마크 기준선 대비 하드 메모리 회귀 게이트</span></div>
         <div class="ledger-row"><span class="k">evidence</span><span class="v">리포트가 소스 커밋을 증명하고, 리뷰어 콘솔이 기계가 읽는 인증 체인을 읽습니다</span></div>
@@ -585,10 +601,10 @@
       <h2 data-rise="">마케팅 문구가 아닌 원본에서 가져온 변경 사항.</h2>
       <p>이 요약은 이 페이지의 검증 수치와 같은 커밋에 있는 시뮬레이션 저장소에서 동기화됩니다.</p>
     </div>
-    <div class="changelog-grid" data-changelog-list="" aria-live="polite">
-      <article class="changelog-card"><span>01</span><h3>릴리스 증거를 불러오는 중…</h3><p>동기화된 변경 요약이 여기에 표시됩니다.</p></article>
-      <article class="changelog-card"><span>02</span><h3>릴리스 증거를 불러오는 중…</h3><p>동기화된 변경 요약이 여기에 표시됩니다.</p></article>
-      <article class="changelog-card"><span>03</span><h3>릴리스 증거를 불러오는 중…</h3><p>동기화된 변경 요약이 여기에 표시됩니다.</p></article>
+    <div class="changelog-grid" data-changelog-list="">
+      <article class="changelog-card"><span>01</span><h3>Numerical work budgets with explicit contracts</h3><p>Every chaos diagnostic now validates steps, horizons, and state up front and refuses out-of-budget work with typed errors.</p></article>
+      <article class="changelog-card"><span>02</span><h3>FTLE horizons integrate the exact residual time</h3><p>Finite-time exponents keep the precise horizon, with a Jacobi-based singular value immune to seed and overflow bias.</p></article>
+      <article class="changelog-card"><span>03</span><h3>Event detection is time-ordered and exact at the cap</h3><p>Simultaneous crossings are refined and sorted by time, and the event cap returns the last refined crossing.</p></article>
     </div>
     <div class="guide-foot reveal">
       <a class="btn ghost" data-changelog-source="" href="https://github.com/elliotjung/pendulum-lab/blob/master/CHANGELOG.md">전체 변경 기록 읽기</a>
