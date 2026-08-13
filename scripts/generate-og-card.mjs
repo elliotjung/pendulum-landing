@@ -10,7 +10,8 @@
 //                                                  # from the current card by
 //                                                  # wiping the text region
 import { chromium } from '@playwright/test';
-import { readFile, writeFile, access } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,12 +36,23 @@ if (!Number.isInteger(testsTotal) || testsTotal <= 0) {
   process.exit(1);
 }
 const formatted = new Intl.NumberFormat('en-US').format(testsTotal);
+const baseSha256 = createHash('sha256').update(await readFile(BASE)).digest('hex');
+const existingCardSha256 = await readFile(CARD)
+  .then((bytes) => createHash('sha256').update(bytes).digest('hex'))
+  .catch(() => null);
+const labelSeparator = '·';
 
 if (!args.has('--force')) {
   const fresh = await readFile(META, 'utf8')
-    .then((raw) => JSON.parse(raw).testsTotal === testsTotal)
+    .then((raw) => {
+      const meta = JSON.parse(raw);
+      return meta.testsTotal === testsTotal
+        && meta.sourceEvidenceCommit === evidence.provenance?.sourceCommit
+        && meta.baseSha256 === baseSha256
+        && meta.cardSha256 === existingCardSha256;
+    })
     .catch(() => false);
-  if (fresh && (await exists(CARD))) {
+  if (fresh && existingCardSha256) {
     console.log(`og-card fresh (${formatted} tests); nothing to do`);
     process.exit(0);
   }
@@ -63,12 +75,12 @@ const html = `<!doctype html><meta charset="utf-8"><style>
   font-family:'Pretendard Local',sans-serif;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 #card img{position:absolute;inset:0;width:100%;height:100%}
 .kicker{position:absolute;left:61px;top:177px;font-size:25px;font-weight:700;letter-spacing:.185em;
-  color:#31dcf7;line-height:1;text-shadow:0 0 22px rgba(49,220,247,.4)}
+  color:#72d6e5;line-height:1;text-shadow:0 0 18px rgba(114,214,229,.24)}
 .headline{position:absolute;left:58px;top:224px;font-size:73px;font-weight:700;letter-spacing:-.012em;
   color:#fff;line-height:78px;white-space:pre}
 .stat{position:absolute;left:61px;top:401px;font-size:31px;font-weight:400;letter-spacing:.002em;
   color:#c8d2e2;line-height:1.2}
-.stat .cy{color:#31dcf7;font-weight:700}
+.stat .cy{color:#72d6e5;font-weight:700}
 </style><div id="card"><img src="data:image/png;base64,${baseB64}">
 <div class="kicker">PENDULUM LAB</div>
 <div class="headline">Order, undone
@@ -85,6 +97,7 @@ try {
 } finally {
   await browser.close();
 }
+const cardSha256 = createHash('sha256').update(await readFile(CARD)).digest('hex');
 await writeFile(
   META,
   `${JSON.stringify(
@@ -93,13 +106,16 @@ await writeFile(
       testsTotal,
       formatted,
       tagline: 'Order, undone by chaos.',
-      sourceEvidenceCommit: evidence.provenance ? evidence.provenance.sourceCommit : null
+      sourceEvidenceCommit: evidence.provenance ? evidence.provenance.sourceCommit : null,
+      baseSha256,
+      cardSha256
     },
     null,
     2
   )}\n`
 );
-console.log(`og-card.png regenerated (${formatted} tests · SciPy-validated)`);
+
+console.log(`og-card evidence label: ${formatted} tests ${labelSeparator} SciPy-validated`);
 
 async function makeBase() {
   const cardB64 = (await readFile(CARD)).toString('base64');
@@ -135,13 +151,4 @@ async function makeBase() {
     await browser.close();
   }
   console.log('og-card-base.png written (text region wiped)');
-}
-
-async function exists(path) {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
 }

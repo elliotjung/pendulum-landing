@@ -1,6 +1,6 @@
 # Pendulum Lab Landing Page
 
-Static cinematic landing page for
+Static product entryway for
 [Pendulum Lab](https://github.com/elliotjung/pendulum-lab), a validated
 browser laboratory for nonlinear pendulum dynamics.
 
@@ -18,15 +18,13 @@ browser laboratory for nonlinear pendulum dynamics.
   Korean visitors get a plain static page with identical performance.
 - `assets/i18n-core.js` - the English→Korean dictionary + translation pass;
   consumed only by `scripts/build-ko-page.mjs`, never loaded at runtime.
-- `assets/landing.css` - visual system, responsive layout, scroll states, and
-  the trajectory-console styling.
+- `assets/landing.css` - shared graphite/indigo/cyan visual system, responsive
+  layout, quiet reveal states, and trajectory-console styling.
 - `assets/scene.js` - Three.js hero sculpture that morphs from order to chaos.
 - `assets/orbit-console.js` - lightweight RK4 double-pendulum canvas console
   used in the new trajectory section; it starts only near the viewport.
-- `assets/main.js` - page interactions: cursor light, scroll progress, GSAP
-  choreography, counters, and evidence JSON hydration.
-- `assets/reactbits.js` - vanilla ports of the typewriter, text-decrypt, and
-  card interaction effects.
+- `assets/main.js` - deferred hero lifecycle, scroll progress, one-shot section
+  reveals, counters, attribution, and evidence JSON hydration.
 - `assets/evidence-summary.json` - shared validation numbers copied from the
   main lab reports.
 - `assets/changelog-highlights.json` - three release highlights pinned to the
@@ -41,10 +39,12 @@ browser laboratory for nonlinear pendulum dynamics.
 - `assets/fonts/` - page-specific Pretendard Regular/Bold WOFF2 subsets plus
   the OFL. After Korean copy changes, install `fonttools brotli` once and run
   `npm run build:ko && npm run assets:fonts`; each font is capped at 60 KB.
-- `assets/scene.bundle.js` and `assets/animation-vendor.bundle.js` - minified,
-  tree-shaken self-hosted bundles generated from the lockfile-pinned Three.js
-  and GSAP packages. `npm run build:hero` refreshes both and the static gate
-  enforces separate transfer ceilings.
+- `assets/scene.bundle.js` - minified, tree-shaken self-hosted Three.js hero
+  bundle generated from the lockfile. `npm run build:hero` refreshes it and the
+  static gate enforces its transfer ceiling.
+- `assets/app-preview.png`, responsive WebP variants, and
+  `assets/app-walkthrough.gif` are captured from the simulator with
+  `npm run assets:simulator-preview` while its local server is running.
 - `tests/landing-smoke.spec.ts` - Playwright smoke test for hero/console paint,
   mini-lab controls, deterministic capture mode, serious/critical axe findings,
   mobile bounds, UTM attribution, release hydration, and asset availability.
@@ -100,8 +100,8 @@ written under `reports/` and are intentionally gitignored; do not mix them with
 deployable assets. `npm run lighthouse` runs the stable local audit wrapper, and
 `npm run lighthouse:lhci` is kept for raw LHCI troubleshooting.
 
-The page uses self-hosted, tree-shaken runtime bundles and a self-hosted
-Pretendard subset for Korean copy. Three.js, GSAP, Playwright, axe, and LHCI are
+The page uses a self-hosted, tree-shaken Three.js runtime and a self-hosted
+Pretendard subset for Korean copy. Three.js, Playwright, axe, and LHCI are
 lockfile-tracked so Dependabot can see them. The CSP should remain free of
 external runtime hosts unless a release note explicitly explains the exception.
 
@@ -124,8 +124,8 @@ build -> evidence sync -> landing check/smoke -> tag/release.
   all three automatically).
 - When adding new sections, keep the first viewport anchored on the product and
   leave a visible hint of the next section below the hero.
-- CTA links should remain direct actions such as Open Lab, Try Performance Mode,
-  or View Research Evidence, with deep links into the app when possible.
+- CTA links should remain direct, valid actions such as Open Lab, Start Guided
+  Mode, or View Research Evidence, with tested deep links into the app.
 
 MIT-licensed, same as the main lab. The self-hosted Korean webfont subset under
 `assets/fonts/` is Pretendard 1.3.9 and is redistributed under the SIL Open

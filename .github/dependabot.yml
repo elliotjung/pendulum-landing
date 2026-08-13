@@ -15,7 +15,6 @@ updates:
       visual-runtime:
         patterns:
           - three
-          - gsap
   - package-ecosystem: github-actions
     directory: /
     schedule:

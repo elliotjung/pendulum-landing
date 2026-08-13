@@ -1,20 +1,20 @@
 {
   "schemaVersion": "pendulum-changelog-highlights/v1",
-  "generatedAt": "2026-07-14T06:24:08.228Z",
-  "sourceCommit": "3110964fd0b2cd909a8cfc140ce12d7446df45d6",
-  "sourceUrl": "https://github.com/elliotjung/pendulum-lab/blob/3110964fd0b2cd909a8cfc140ce12d7446df45d6/CHANGELOG.md",
+  "generatedAt": "2026-08-13T05:44:51.924Z",
+  "sourceCommit": "548f6aed5d632647945b22ba442bdb9c8b7ed067",
+  "sourceUrl": "https://github.com/elliotjung/pendulum-lab/blob/548f6aed5d632647945b22ba442bdb9c8b7ed067/CHANGELOG.md",
   "highlights": [
     {
-      "title": "Numerical work budgets with explicit contracts",
-      "summary": "every chaos-diagnostic entry point (Lyapunov, FTLE, basin and Wada convergence, CLV, RQA, 0-1 test, codimension-two scans, Poincaré sections, event detection, parameter estimation) now validates dt, step counts, horizons, and state f…"
+      "title": "Folder rename",
+      "summary": "the entire docs/ tree moved to documents/ via git mv (history preserved)."
     },
     {
-      "title": "FTLE horizons integrate the exact residual time",
-      "summary": "(no more full-dt rounding for T < dt), and the maximal singular value of the state-transition matrix comes from a scaled symmetric Jacobi eigensolver, so near-orthogonal power-iteration seeds and overflow/underflow in MᵀM can no long…"
+      "title": "Cross-repo link",
+      "summary": "the companion pendulum-landing page (EN + KO) and its docs were repointed to .../blob/master/documents/..."
     },
     {
-      "title": "Event detection is time-ordered and exact at the cap",
-      "summary": "multiple crossings inside one step are refined then sorted by time (not registration order), and hitting maxEvents returns the last refined crossing state instead of the enclosing step end."
+      "title": "Historical entries preserved",
+      "summary": "older CHANGELOG entries keep their original docs/..."
     }
   ]
 }

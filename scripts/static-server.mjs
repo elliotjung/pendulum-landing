@@ -26,10 +26,18 @@ const mimeTypes = new Map([
 ]);
 
 const server = createServer(async (request, response) => {
-  const url = new URL(request.url ?? '/', `http://${host}:${port}`);
-  const requested = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname);
-  const candidate = resolve(join(root, normalize(requested)));
-  const rel = relative(root, candidate);
+  let candidate;
+  let rel;
+  try {
+    const url = new URL(request.url ?? '/', `http://${host}:${port}`);
+    const requested = url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname);
+    candidate = resolve(join(root, normalize(requested)));
+    rel = relative(root, candidate);
+  } catch {
+    response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    response.end('Bad request');
+    return;
+  }
 
   if (rel.startsWith('..') || rel === '' || rel.includes('..\\')) {
     response.writeHead(403);
@@ -71,3 +79,30 @@ const server = createServer(async (request, response) => {
 server.listen(port, host, () => {
   console.log(`Serving HTTP on ${host}:${port}`);
 });
+
+let closing = false;
+function shutdown(signal) {
+  if (closing) return;
+  closing = true;
+  const forceClose = setTimeout(() => server.closeAllConnections?.(), 1_000);
+  const hardExit = setTimeout(() => {
+    console.error(`Static server shutdown timed out after ${signal}.`);
+    process.exit(1);
+  }, 5_000);
+  forceClose.unref();
+  hardExit.unref();
+  server.closeIdleConnections?.();
+  server.close((error) => {
+    clearTimeout(forceClose);
+    clearTimeout(hardExit);
+    if (error) {
+      console.error(`Static server shutdown failed after ${signal}:`, error);
+      process.exitCode = 1;
+      return;
+    }
+    process.exitCode = 0;
+  });
+}
+
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));

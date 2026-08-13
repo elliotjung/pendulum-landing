@@ -1,15 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" class="no-js">
+<html lang="en" class="no-js js-ready">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Pendulum Lab — Order, Undone by Chaos</title>
-<meta name="description" content="Explore nonlinear pendulum dynamics in a browser lab with 1,233 verified tests, SciPy cross-validation, Lyapunov analysis, WebGPU, and reproducible exports." />
-<meta name="theme-color" content="#02040b" />
+<meta name="description" content="Explore nonlinear pendulum dynamics in a browser lab with 1,387 verified tests, SciPy cross-validation, Lyapunov analysis, WebGPU, and reproducible exports." />
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta name="theme-color" content="#070910" />
 <meta name="color-scheme" content="dark" />
 <meta property="og:title" content="Pendulum Lab — Order, Undone by Chaos" />
 <meta property="og:description" content="Order, undone by chaos. A validated chaotic-pendulum research laboratory that runs entirely in your browser." />
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content="Pendulum Lab" />
 <meta property="og:url" content="https://elliotjung.github.io/pendulum-landing/" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:locale:alternate" content="ko_KR" />
@@ -17,12 +20,12 @@
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,233 tests and SciPy-validated." />
+<meta property="og:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,387 tests and SciPy-validated." />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Pendulum Lab — Order, Undone by Chaos" />
 <meta name="twitter:description" content="A browser-native nonlinear dynamics lab with synchronized test, reviewer, publication, and GPU evidence." />
 <meta name="twitter:image" content="https://elliotjung.github.io/pendulum-landing/assets/og-card.png" />
-<meta name="twitter:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,233 tests and SciPy-validated." />
+<meta name="twitter:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,387 tests and SciPy-validated." />
 <link rel="canonical" href="https://elliotjung.github.io/pendulum-landing/" />
 <link rel="alternate" hreflang="en" href="https://elliotjung.github.io/pendulum-landing/" />
 <link rel="alternate" hreflang="ko" href="https://elliotjung.github.io/pendulum-landing/ko.html" />
@@ -32,8 +35,8 @@
      anything paints. ko.html is built by scripts/build-ko-page.mjs, so Korean
      visitors get a plain static page (no runtime translation cost). The CSP
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
-<script id="lang-boot">(function(){document.documentElement.classList.remove("no-js");try{var q=new URLSearchParams(location.search);if(q.get("lang")==="en"){localStorage.setItem("pendulum-landing/lang","en");return}var s=null;try{s=localStorage.getItem("pendulum-landing/lang")}catch(e){}var ko=(navigator.languages||[navigator.language||""]).some(function(t){return String(t).toLowerCase().indexOf("ko")===0});if(q.get("lang")==="ko"||s==="ko"||(!s&&ko)){var p=q.toString();location.replace("ko.html"+(p?"?"+p:"")+location.hash)}}catch(e){}})();</script>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-brHKPU7ueAOegRjIqA9K2muTfGdUoLE1ObflMJsBTZo=' 'sha256-cUou478Inzcj1pDrH1bpDtUAx8snDbL5zTO/0x47xJA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gUWP08ylOuPqo0wpzfYlBSEPdn8G8GWZB6A9+QD2zCE=' 'sha256-YJ20yxvjGolaMfS/AsWUnwoZxxAFv28eUacHvp7QwNA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<script id="lang-boot">(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="en"){localStorage.setItem("pendulum-landing/lang","en");return}var s=null;try{s=localStorage.getItem("pendulum-landing/lang")}catch(e){}var ko=(navigator.languages||[navigator.language||""]).some(function(t){return String(t).toLowerCase().indexOf("ko")===0});if(q.get("lang")==="ko"||s==="ko"||(!s&&ko)){var p=q.toString();location.replace("ko.html"+(p?"?"+p:"")+location.hash)}}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E" />
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
@@ -53,8 +56,11 @@
       "runtimePlatform": "Web browser",
       "license": "https://opensource.org/license/mit",
       "author": { "@type": "Person", "name": "Elliot Jung" },
-      "dateModified": "2026-07-14",
+      "dateModified": "2026-07-20",
       "applicationCategory": "EducationalApplication",
+      "inLanguage": ["en", "ko"],
+      "isAccessibleForFree": true,
+      "keywords": ["double pendulum", "nonlinear dynamics", "chaos", "Lyapunov exponent", "numerical integration"],
       "description": "A browser-native nonlinear pendulum dynamics workbench with reproducible validation evidence."
     },
     {
@@ -63,6 +69,7 @@
       "isPartOf": "Pendulum Lab",
       "author": { "@type": "Person", "name": "Elliot Jung" },
       "url": "https://elliotjung.github.io/pendulum-lab/paper/",
+      "inLanguage": "en",
       "about": ["nonlinear dynamics", "Melnikov theory", "period-doubling", "chaos"]
     }
   ]
@@ -71,15 +78,21 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">Skip to content</a>
+
 <div class="page-bg"></div>
 <div class="page-grain"></div>
 <div class="hero-static-art" aria-hidden="true"></div>
 <canvas id="hero-canvas" aria-hidden="true"></canvas>
 <div class="hero-scrim"></div>
-<div class="cursor-glow"></div>
-<div class="scroll-progress"></div>
-<a class="skip-link" href="#main">Skip to content</a>
-
+<div class="scroll-progress" aria-hidden="true"></div>
+<div class="hero-motion-control">
+  <button type="button" data-hero-toggle aria-pressed="false" aria-controls="hero-canvas">
+    <span class="hero-motion-icon" aria-hidden="true"><i></i><i></i></span>
+    <span data-hero-toggle-label>Start 3D</span>
+  </button>
+  <span class="sr-only" data-hero-status role="status" aria-live="polite">Interactive 3D is ready to start.</span>
+</div>
 <!-- ============================== NAV ============================== -->
 <nav class="nav">
   <a class="brand" href="#top" aria-label="Pendulum Lab home">
@@ -116,29 +129,29 @@
   </div>
 </nav>
 
-<main id="main">
+<main id="main" tabindex="-1">
 
 <!-- ============================== HERO ============================== -->
 <header class="hero" id="top">
   <div class="wrap">
     <div class="hero-grid">
       <div class="hero-copy">
-        <span class="kicker" data-mouse="6">Pendulum Lab · Nonlinear Dynamics</span>
-        <h1 class="display" data-mouse="12">
+        <span class="kicker">Pendulum Lab · Nonlinear Dynamics</span>
+        <h1 class="display">
           <span class="grad">Order,</span><br />
           <span class="dissolve">undone by</span><br />
           <span class="grad">chaos.</span>
         </h1>
-        <p class="lede" data-mouse="7">
+        <p class="lede">
           Release two nearly identical pendulums. Watch certainty split into two
           universes — then measure exactly how fast prediction disappears.
         </p>
-        <div class="hero-actions" data-mouse="6">
+        <div class="hero-actions">
           <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&preset=butterfly&tab=lab" data-app-link>Open Lab <span class="arrow">→</span></a>
           <a class="btn ghost" href="#console">Run the Experiment</a>
         </div>
-        <p class="hero-trust-line" data-mouse="5">
-          <strong data-evidence="tests.formatted">1,233</strong> tests
+        <p class="hero-trust-line">
+          <strong data-evidence="tests.formatted">1,387</strong> tests
           <span aria-hidden="true">·</span>
           <strong>SciPy</strong>-validated
           <span aria-hidden="true">·</span>
@@ -147,22 +160,21 @@
       </div>
 
       <div class="hero-stage" aria-hidden="true">
-        <div class="hero-stage-status"><span><i></i> Live RK4</span><b>240 Hz physics</b></div>
+        <div class="hero-stage-status"><span><i></i> <b data-hero-stage-state>3D ready</b></span><b data-hero-stage-rate>starts on interaction</b></div>
         <div class="hero-stage-axis"><span>θ₁</span><span>θ₂</span><span>Δθ₀ = 8×10⁻⁴ rad</span></div>
       </div>
     </div>
 
-    <div class="hero-foot" data-mouse="4">
-      <span class="scroll-cue"><i></i> Explore the divergence</span>
-      <span>Move for parallax · drag the field to orbit</span>
+    <div class="hero-foot">
+      <a class="scroll-cue" href="#orbit-descent" aria-label="Explore the scroll-driven divergence story"><i aria-hidden="true"></i> Explore the divergence</a>
+      <span>Scroll to follow · drag the live field to orbit</span>
     </div>
   </div>
 </header>
 
 <!-- ============================== MARQUEE ============================== -->
-<div class="marquee" aria-hidden="true">
-  <div class="marquee-track">
-    <span class="dot">◆</span> Runge–Kutta 4 <span class="dot">◆</span> Dormand–Prince 5(4) <span class="dot">◆</span> Gragg–Bulirsch–Stoer <span class="dot">◆</span> Lyapunov Spectrum <span class="dot">◆</span> Covariant Lyapunov Vectors <span class="dot">◆</span> Poincaré Sections <span class="dot">◆</span> Kaplan–Yorke Dimension <span class="dot">◆</span> Melnikov Threshold <span class="dot">◆</span> Floquet Continuation <span class="dot">◆</span> Koopman–DMD <span class="dot">◆</span> HAVOK <span class="dot">◆</span> SINDy <span class="dot">◆</span> FTLE Ridges <span class="dot">◆</span> Basin Entropy <span class="dot">◆</span>
+<div class="signal-strip" aria-hidden="true">
+  <div class="signal-strip-track">
     <span class="dot">◆</span> Runge–Kutta 4 <span class="dot">◆</span> Dormand–Prince 5(4) <span class="dot">◆</span> Gragg–Bulirsch–Stoer <span class="dot">◆</span> Lyapunov Spectrum <span class="dot">◆</span> Covariant Lyapunov Vectors <span class="dot">◆</span> Poincaré Sections <span class="dot">◆</span> Kaplan–Yorke Dimension <span class="dot">◆</span> Melnikov Threshold <span class="dot">◆</span> Floquet Continuation <span class="dot">◆</span> Koopman–DMD <span class="dot">◆</span> HAVOK <span class="dot">◆</span> SINDy <span class="dot">◆</span> FTLE Ridges <span class="dot">◆</span> Basin Entropy <span class="dot">◆</span>
   </div>
 </div>
@@ -231,7 +243,7 @@
   <div class="wrap console-grid">
     <div class="console-copy reveal">
       <span class="kicker">Trajectory Console</span>
-      <h2 data-rise data-decrypt>Chaos you can feel before the app even opens.</h2>
+      <h2 data-rise>Chaos you can feel before the app even opens.</h2>
       <p>A lightweight canvas instrument draws two nearly identical double-pendulum releases in real time. The cyan and rose traces begin together, then peel apart as sensitivity takes over.</p>
       <div class="console-readouts" role="group" aria-label="Live console readouts">
         <div class="console-readout"><span>separation</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
@@ -242,17 +254,17 @@
       <div class="orbit-controls" role="group" aria-label="Mini lab controls">
         <div class="orbit-control-meta">
           <label for="orbit-theta">initial angle θ₁</label>
-          <output for="orbit-theta" data-orbit-output="theta">2.18 rad</output>
+          <output id="orbit-theta-output" for="orbit-theta" data-orbit-output="theta">2.18 rad</output>
         </div>
-        <input id="orbit-theta" data-orbit-control="theta" type="range" min="0.40" max="3.00" step="0.01" value="2.18" />
+        <input id="orbit-theta" data-orbit-control="theta" type="range" min="0.40" max="3.00" step="0.01" value="2.18" aria-describedby="orbit-theta-output" aria-valuetext="2.18 radians" />
         <div class="orbit-control-meta">
           <label for="orbit-damping">damping γ</label>
-          <output for="orbit-damping" data-orbit-output="damping">0.06</output>
+          <output id="orbit-damping-output" for="orbit-damping" data-orbit-output="damping">0.06</output>
         </div>
-        <input id="orbit-damping" data-orbit-control="damping" type="range" min="0" max="0.80" step="0.01" value="0.06" />
+        <input id="orbit-damping" data-orbit-control="damping" type="range" min="0" max="0.80" step="0.01" value="0.06" aria-describedby="orbit-damping-output" aria-valuetext="0.06 damping" />
         <div class="orbit-button-row">
-          <button class="orbit-reset" type="button" data-orbit-reset>Reset trace</button>
-          <button class="orbit-reset" type="button" data-orbit-toggle aria-pressed="false">Pause motion</button>
+          <button class="orbit-reset" type="button" data-orbit-reset aria-controls="orbit-console">Reset trace</button>
+          <button class="orbit-reset" type="button" data-orbit-toggle aria-pressed="false" aria-controls="orbit-console">Pause motion</button>
         </div>
       </div>
       <div class="console-actions">
@@ -262,10 +274,10 @@
     </div>
 
     <figure class="orbit-console reveal" data-wipe>
-      <canvas id="orbit-console" width="920" height="620" role="img" aria-label="Animated double-pendulum trajectory console">
+      <canvas id="orbit-console" width="920" height="620" role="img" aria-label="Animated double-pendulum trajectory console" aria-describedby="orbit-console-caption">
         Two simulated double pendulums begin 0.001 radians apart. Their cyan and rose trajectories separate over time.
       </canvas>
-      <figcaption>
+      <figcaption id="orbit-console-caption">
         <span>dual release</span>
         <span>1.0e-3 rad apart</span>
       </figcaption>
@@ -278,33 +290,30 @@
   <div class="wrap preview-grid">
     <div class="preview-copy reveal">
       <span class="kicker">Live Workbench</span>
-      <h2 data-rise>Real lab screens, not a teaser mockup.</h2>
+      <h2 data-rise="">Real lab screens, not a teaser mockup.</h2>
       <p>The first click can open a ready-made experiment state: a beginner-safe butterfly preset, a student Lyapunov reading, or the research workbench with reviewer evidence close at hand.</p>
-      <div class="recipe-grid" role="group" aria-label="Thirty second experiment recipes">
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&preset=butterfly&tab=lab" data-app-link>
+      <div class="recipe-grid" role="group" aria-label="30-second experiment recipes">
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;preset=butterfly&amp;tab=lab" data-app-link="">
           <span>Beginner</span>
           <strong>Butterfly Motion</strong>
           <em>Open Lab with the clean starter preset.</em>
         </a>
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=student&preset=chaotic&tab=lyap" data-app-link>
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=student&amp;preset=chaotic&amp;tab=lyap" data-app-link="">
           <span>Student</span>
           <strong>Lyapunov Reading</strong>
           <em>Jump straight to chaos-rate diagnostics.</em>
         </a>
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=research&preset=periodic&tab=research" data-app-link>
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=research&amp;preset=periodic&amp;tab=research" data-app-link="">
           <span>Research</span>
           <strong>Reviewer Evidence</strong>
           <em>Open the persisted research workbench.</em>
         </a>
       </div>
     </div>
-    <figure class="app-preview reveal" data-wipe>
+    <figure class="app-preview reveal" data-wipe="">
       <picture>
-        <source
-          type="image/webp"
-          srcset="assets/app-preview-640.webp 640w, assets/app-preview-960.webp 960w, assets/app-preview.webp 1280w"
-          sizes="(max-width: 760px) 92vw, (max-width: 1180px) 54vw, 650px" />
-        <img src="assets/app-preview.png" width="1280" height="820" sizes="(max-width: 760px) 92vw, (max-width: 1180px) 54vw, 650px" alt="Pendulum Lab app showing the simulation canvas, control rail, and research interface" loading="lazy" decoding="async" fetchpriority="low" />
+        <source type="image/webp" srcset="assets/app-preview-640.webp 640w, assets/app-preview-960.webp 960w, assets/app-preview.webp 1280w" sizes="(max-width: 760px) 92vw, (max-width: 1180px) 54vw, 650px">
+        <img src="assets/app-preview.png" width="1280" height="820" sizes="(max-width: 760px) 92vw, (max-width: 1180px) 54vw, 650px" alt="Pendulum Lab app showing the simulation canvas, control rail, and research interface" loading="lazy" decoding="async" fetchpriority="low">
       </picture>
       <figcaption>
         <span>App snapshot</span>
@@ -320,13 +329,9 @@
     <div class="science-grid">
       <div class="reveal">
         <span class="kicker">Sensitive Dependence</span>
-        <h2 data-rise class="divergence-title">A thousandth of a radian becomes a different universe.</h2>
+        <h2 data-rise="" class="divergence-title">A thousandth of a radian becomes a different universe.</h2>
         <p class="lede divergence-lede">
-          Release two double pendulums a hair apart and they trace the same arc —
-          until they don't. Trajectories peel away exponentially, prediction
-          collapses into noise. That rate of divergence <em>is</em> the largest
-          Lyapunov exponent, and measuring it honestly — every parameter disclosed,
-          every uncertainty owned — is the entire discipline.
+          Release two double pendulums a hair apart and they trace the same arc — until they don't. Trajectories peel away exponentially, prediction collapses into noise. That rate of divergence <em>is</em> the largest Lyapunov exponent, and measuring it honestly — every parameter disclosed, every uncertainty owned — is the entire discipline.
         </p>
         <div class="lyap-readout">
           <div class="stat">
@@ -345,18 +350,16 @@
       </div>
 
       <div class="reveal">
-        <div class="diverge-stage" data-parallax="0.08">
-          <svg viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sensitive dependence: two trajectories diverging">
-            <line class="grid-line" x1="0" y1="80" x2="400" y2="80"/>
-            <line class="grid-line" x1="0" y1="160" x2="400" y2="160"/>
-            <line class="grid-line" x1="0" y1="240" x2="400" y2="240"/>
-            <line class="grid-line" x1="120" y1="0" x2="120" y2="320"/>
-            <line class="grid-line" x1="240" y1="0" x2="240" y2="320"/>
-            <path class="draw-path glow-cyan" d="M58 168 C 104 118, 150 132, 186 164 S 250 248, 300 150 S 360 92, 384 134"
-                  stroke="#18d4f8" stroke-width="2.4"/>
-            <path class="draw-path glow-violet" d="M58 168 C 104 118, 150 132, 186 164 S 250 96, 300 206 S 360 252, 384 212"
-                  stroke="#9d78ff" stroke-width="2.4"/>
-            <circle class="seed glow-seed" cx="58" cy="168" r="4.4"/>
+        <div class="diverge-stage">
+          <svg viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sensitive dependence: two diverging trajectories">
+            <line class="grid-line" x1="0" y1="80" x2="400" y2="80"></line>
+            <line class="grid-line" x1="0" y1="160" x2="400" y2="160"></line>
+            <line class="grid-line" x1="0" y1="240" x2="400" y2="240"></line>
+            <line class="grid-line" x1="120" y1="0" x2="120" y2="320"></line>
+            <line class="grid-line" x1="240" y1="0" x2="240" y2="320"></line>
+            <path class="draw-path glow-cyan" d="M58 168 C 104 118, 150 132, 186 164 S 250 248, 300 150 S 360 92, 384 134" stroke="#18d4f8" stroke-width="2.4"></path>
+            <path class="draw-path glow-violet" d="M58 168 C 104 118, 150 132, 186 164 S 250 96, 300 206 S 360 252, 384 212" stroke="#9d78ff" stroke-width="2.4"></path>
+            <circle class="seed glow-seed" cx="58" cy="168" r="4.4"></circle>
           </svg>
           <div class="diverge-tag">
             <span><b class="a">●</b> θ₂ = 2.300</span>
@@ -375,23 +378,23 @@
 <section class="band" id="capabilities">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="kicker">The Platform</span>
-      <h2 data-rise data-decrypt>Everything a chaos study demands — measured, tested, proven.</h2>
+      <span class="kicker">Platform</span>
+      <h2 data-rise="">Everything a chaos study demands — measured, tested, proven.</h2>
       <p>Five disciplines — numerics, physics, chaos diagnostics, visualization, reproducibility — each unit-tested against closed-form, energy, and independent reference criteria.</p>
     </div>
 
-    <div class="cap-grid" data-stagger>
+    <div class="cap-grid" data-stagger="">
       <article class="cap-card">
         <span class="idx">01</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M3 17c3-8 6-8 9 0s6 8 9 0"/><circle cx="3" cy="17" r="1.4"/><circle cx="21" cy="17" r="1.4"/></svg></span>
-        <h3>Thirteen primary integrators</h3>
+        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M3 17c3-8 6-8 9 0s6 8 9 0"></path><circle cx="3" cy="17" r="1.4"></circle><circle cx="21" cy="17" r="1.4"></circle></svg></span>
+        <h3>Fifteen primary integrators</h3>
         <p>Euler through RK4, embedded RKF45, Dormand-Prince 5(4), DOP853 8(5,3), Gauss-Legendre 4/6, Yoshida-4, Gragg-Bulirsch-Stoer, and L-stable TR-BDF2 — each measured at its theoretical order, plus a full-Newton implicit midpoint with condition-number diagnostics.</p>
         <div class="tags"><span class="tag">RK4</span><span class="tag">DOP853</span><span class="tag">GBS</span><span class="tag">TR-BDF2</span></div>
       </article>
 
       <article class="cap-card">
         <span class="idx">02</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 20 L9 6 L13 16 L17 9 L20 14"/></svg></span>
+        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 20 L9 6 L13 16 L17 9 L20 14"></path></svg></span>
         <h3>Chaos diagnostics</h3>
         <p>Maximal &amp; full-spectrum Lyapunov exponents, covariant Lyapunov vectors, Kaplan-Yorke dimension, SALI / FLI, Poincaré sections, the 0–1 test, RQA, basin entropy, and automated bifurcation sweeps — with method-specific diagnostics and uncertainty where defined.</p>
         <div class="tags"><span class="tag">λ-spectrum</span><span class="tag">CLV</span><span class="tag">0–1 test</span><span class="tag">RQA</span></div>
@@ -399,7 +402,7 @@
 
       <article class="cap-card">
         <span class="idx">03</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="2"/><circle cx="12" cy="18" r="2.6"/><path d="M12 8 L12 15.4"/></svg></span>
+        <span class="glyph"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="2"></circle><circle cx="12" cy="18" r="2.6"></circle><path d="M12 8 L12 15.4"></path></svg></span>
         <h3>Physical systems</h3>
         <p>Double, triple, and generalized N-pendulum, driven and damped-driven oscillators, Kapitza and magnetic pendulums, elastic springs, coupled-pendulum lattices, plus a true 3D spherical &amp; rope pendulum with conserved E and Lz readouts.</p>
         <div class="tags"><span class="tag">N-pendulum</span><span class="tag">driven</span><span class="tag">lattice</span><span class="tag">3D Lab</span></div>
@@ -407,7 +410,7 @@
 
       <article class="cap-card">
         <span class="idx">04</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 14 L9 9 L13 13 L20.5 6"/></svg></span>
+        <span class="glyph"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2"></rect><path d="M3.5 14 L9 9 L13 13 L20.5 6"></path></svg></span>
         <h3>Honest visualization</h3>
         <p>Pure-canvas, colorblind-safe Okabe-Ito renderers; phase portraits, Poincaré maps, FTLE ridges, and a publication figure pipeline with deterministic SVG and visual-regression fingerprints across desktop and mobile baselines.</p>
         <div class="tags"><span class="tag">phase 3D</span><span class="tag">FTLE</span><span class="tag">figures</span></div>
@@ -415,7 +418,7 @@
 
       <article class="cap-card">
         <span class="idx">05</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 L20 7 V13 C20 17 16 20 12 21 C8 20 4 17 4 13 V7 Z"/><path d="M9 12 l2 2 l4 -4"/></svg></span>
+        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 L20 7 V13 C20 17 16 20 12 21 C8 20 4 17 4 13 V7 Z"></path><path d="M9 12 l2 2 l4 -4"></path></svg></span>
         <h3>Total reproducibility</h3>
         <p>Hash-stamped run manifests with deterministic replay metadata, real ZIP research bundles with per-file SHA-256 integrity checks (plus CRC32 for ZIP compatibility), an IndexedDB long-term store, and evidence provenance tied to a source commit.</p>
         <div class="tags"><span class="tag">manifests</span><span class="tag">SHA-256</span><span class="tag">provenance</span></div>
@@ -423,7 +426,7 @@
 
       <article class="cap-card">
         <span class="idx">06</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z"/></svg></span>
+        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z"></path></svg></span>
         <h3>CPU-oracle-gated WebGPU scale</h3>
         <p>Heavy chaos jobs run in a typed Web Worker with a priority queue, checkpoint / resume, and graceful fallback — and the WebGPU ensemble, full-spectrum, CLV, and FTLE kernels are promoted only after passing a same-run CPU f64 oracle comparison.</p>
         <div class="tags"><span class="tag">worker V2</span><span class="tag">WebGPU</span><span class="tag">CPU oracle</span></div>
@@ -481,7 +484,7 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="kicker">Research Frontier</span>
-      <h2 data-rise data-decrypt>Beyond simulation: a self-validating dynamics library.</h2>
+      <h2 data-rise>Beyond simulation: a self-validating dynamics library.</h2>
       <p>The headless core ships as a typed library with a CLI for batch studies. Every frontier module carries its own falsifiable test contract — closed-form anchors, convergence orders, or cross-method agreement.</p>
     </div>
 
@@ -532,7 +535,7 @@
   <div class="wrap tcad-grid">
     <div class="sec-head reveal">
       <span class="kicker">Why this maps to TCAD</span>
-      <h2 data-rise data-decrypt>A chaos lab built with device-simulation discipline.</h2>
+      <h2 data-rise>A chaos lab built with device-simulation discipline.</h2>
       <p>Pendulum dynamics and semiconductor devices solve different equations, but trustworthy simulation demands the same engineering habits: expose solver assumptions, quantify discretization error, and validate against an independent reference.</p>
     </div>
     <div class="tcad-cards" data-stagger>
@@ -564,7 +567,7 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="kicker">Validation &amp; Credibility</span>
-      <h2 data-rise data-decrypt>Numbers you can check — not claims you must trust.</h2>
+      <h2 data-rise>Numbers you can check — not claims you must trust.</h2>
       <p>Every integrator is cross-checked against closed-form, energy, and reference-method criteria, then externally cross-validated against an independent SciPy DOP853 reference for both the double and triple pendulum.</p>
     </div>
 
@@ -617,7 +620,7 @@
 
       <div class="val-side">
         <div class="val-stat reveal">
-          <div class="big" data-count="1233" data-decimals="0" data-evidence-count="tests.passed"></div>
+          <div class="big" data-count="1387" data-decimals="0" data-evidence-count="tests.passed"></div>
           <div class="cap">Unit tests · all green</div>
           <p>Plus Chromium, Firefox, WebKit and mobile end-to-end suites, with a machine-readable Stryker aggregate of <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span>.</p>
         </div>
@@ -641,7 +644,7 @@
         <span class="pass"><i></i> enforced in CI</span>
       </div>
       <div class="ledger-rows">
-        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 1233 unit tests → result-count guard → docs sync → format gate</span></div>
+        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 1387 unit tests → result-count guard → docs sync → format gate</span></div>
         <div class="ledger-row"><span class="k">browsers</span><span class="v">Playwright e2e on Chromium, mobile-Chrome, Firefox and WebKit, with visual-regression baselines per host</span></div>
         <div class="ledger-row"><span class="k">memory</span><span class="v">Hard memory-regression gate against a committed browser-benchmark baseline</span></div>
         <div class="ledger-row"><span class="k">evidence</span><span class="v">Reports attest their source commit; a reviewer console reads the machine-readable certification chain</span></div>
@@ -697,7 +700,7 @@
         <span class="line"></span>
         <span class="no">01</span>
         <h3>Choose workspace &amp; system</h3>
-        <p>Pick Beginner, Student, or Research, then a system from double pendulum to N-link, driven, and elastic — and one of thirteen primary integrators, each labeled with its order and character.</p>
+        <p>Pick Beginner, Student, or Research, then a system from double pendulum to N-link, driven, and elastic — and one of fifteen primary integrators, each labeled with its order and character.</p>
       </article>
       <article class="step">
         <span class="line"></span>
@@ -725,10 +728,10 @@
   <div class="wrap">
     <span class="kicker center">Open the Engine</span>
     <h2 class="display" data-rise><span class="grad">Release it. Watch it </span><span class="dissolve">diverge.</span></h2>
-    <p class="lede">The full simulator runs in your browser — thirteen primary integrators, every analysis tab, and hash-verifiable research exports. No install, no account. Just the unvarnished mathematics of chaos.</p>
+    <p class="lede">The full simulator runs in your browser — fifteen primary integrators, every analysis tab, and hash-verifiable research exports. No install, no account. Just the unvarnished mathematics of chaos.</p>
     <div class="launch-actions">
       <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?tab=lab" data-app-link>Open Lab <span class="arrow">→</span></a>
-      <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&quality=performance" data-app-link>Try Performance Mode</a>
+      <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&audience=beginner" data-app-link>Start Guided Mode</a>
       <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">View Research Evidence</a>
       <a class="btn ghost" href="https://github.com/elliotjung/pendulum-lab">Source on GitHub</a>
     </div>
@@ -763,9 +766,7 @@
   </div>
 </footer>
 
-<script type="module" src="assets/orbit-console.js"></script>
-<script defer src="assets/animation-vendor.bundle.js"></script>
 <script defer src="assets/main.js"></script>
-<script defer src="assets/reactbits.js"></script>
+<script defer src="assets/enhancements-loader.js"></script>
 </body>
 </html>

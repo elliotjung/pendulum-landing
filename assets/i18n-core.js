@@ -36,17 +36,22 @@
     'Methods': '방법',
     'Evidence': '검증 근거',
     'Open Lab': '랩 열기',
+    'Start Guided Mode': '가이드 모드 시작',
     'Open': '열기',
     'Skip to content': '본문 바로가기',
+    'Start 3D': '3D 시작',
+    'Interactive 3D is ready to start.': '인터랙티브 3D를 시작할 준비가 되었습니다.',
+    '3D ready': '3D 준비',
+    'starts on interaction': '조작하면 시작',
     // ---- hero --------------------------------------------------------------
     'Double-Pendulum Chaos Engine': '이중진자 카오스 엔진',
     'Pendulum Lab · Nonlinear Dynamics': 'Pendulum Lab · 비선형 동역학',
     'Order,': '질서,',
     'undone by': '카오스에',
     'chaos.': '무너지다.',
-    'A framework-free TypeScript engine for nonlinear pendulum dynamics — thirteen primary integrators measured at their theoretical order, full-spectrum Lyapunov diagnostics, WebGPU paths promoted only after CPU-oracle checks, and hash-verifiable research bundles with deterministic replay metadata. Rigor, engineered for the very edge of predictability.':
-      '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진 — 이론 차수를 실측으로 확인한 13종의 주력 적분기, 전체 스펙트럼 랴푸노프 진단, CPU 오러클 검증을 통과해야만 승격되는 WebGPU 경로, 결정론적 재생 메타데이터를 담은 해시 검증 연구 번들. 예측 가능성의 가장자리를 위해 설계된 엄밀함.',
-    'Try Performance Mode': '퍼포먼스 모드 체험',
+    'A framework-free TypeScript engine for nonlinear pendulum dynamics — fifteen primary integrators measured at their theoretical order, full-spectrum Lyapunov diagnostics, WebGPU paths promoted only after CPU-oracle checks, and hash-verifiable research bundles with deterministic replay metadata. Rigor, engineered for the very edge of predictability.':
+      '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진 — 이론 차수를 실측으로 확인한 15종의 주력 적분기, 전체 스펙트럼 랴푸노프 진단, CPU 오러클 검증을 통과해야만 승격되는 WebGPU 경로, 결정론적 재생 메타데이터를 담은 해시 검증 연구 번들. 예측 가능성의 가장자리를 위해 설계된 엄밀함.',
+    'Open Chaotic Preset': '카오스 프리셋 열기',
     'View Research Evidence': '연구 증거 보기',
     'Release two nearly identical pendulums. Watch certainty split into two universes — then measure exactly how fast prediction disappears.':
       '거의 같은 두 진자를 놓아 보세요. 확실성이 두 개의 세계로 갈라지는 순간을 보고, 예측이 얼마나 빠르게 사라지는지 정확히 측정할 수 있습니다.',
@@ -55,7 +60,7 @@
     '-validated': '-검증',
     'reproducible by design': '설계부터 재현 가능',
     'Explore the divergence': '발산 탐색',
-    'Move for parallax · drag the field to orbit': '움직여 시차 효과 · 드래그해 궤도 회전',
+    'Scroll to follow · drag the live field to orbit': '스크롤로 따라가기 · 라이브 필드를 드래그해 궤도 회전',
     'Engine Spec': '엔진 사양',
     'Verified': '검증됨',
     'system': '시스템',
@@ -139,7 +144,7 @@
     'Everything a chaos study demands — measured, tested, proven.': '카오스 연구가 요구하는 모든 것 — 측정하고, 테스트하고, 증명했다.',
     'Five disciplines — numerics, physics, chaos diagnostics, visualization, reproducibility — each unit-tested against closed-form, energy, and independent reference criteria.':
       '수치해석·물리·카오스 진단·시각화·재현성의 다섯 분야를 닫힌형 해, 에너지, 독립 레퍼런스 기준으로 각각 단위 테스트했습니다.',
-    'Thirteen primary integrators': '13종의 주력 적분기',
+    'Fifteen primary integrators': '15종의 주력 적분기',
     'Euler through RK4, embedded RKF45, Dormand-Prince 5(4), DOP853 8(5,3), Gauss-Legendre 4/6, Yoshida-4, Gragg-Bulirsch-Stoer, and L-stable TR-BDF2 — each measured at its theoretical order, plus a full-Newton implicit midpoint with condition-number diagnostics.':
       'Euler부터 RK4, 임베디드 RKF45, Dormand-Prince 5(4), DOP853 8(5,3), Gauss-Legendre 4/6, Yoshida-4, Gragg-Bulirsch-Stoer, L-stable TR-BDF2까지 — 각각 이론 차수를 실측으로 확인했고, 조건수 진단이 붙은 완전 뉴턴 음함수 중점법을 더했습니다.',
     'Chaos diagnostics': '카오스 진단',
@@ -266,8 +271,8 @@
     'No install. No account. Open it in your browser, choose a workspace, run it, and export diagnostics anyone on earth can reproduce.':
       '설치도 계정도 없습니다. 브라우저에서 열고, 워크스페이스를 고르고, 실행한 뒤, 지구상 누구든 재현할 수 있는 진단을 내보내세요.',
     'Choose workspace & system': '워크스페이스와 시스템 선택',
-    'Pick Beginner, Student, or Research, then a system from double pendulum to N-link, driven, and elastic — and one of thirteen primary integrators, each labeled with its order and character.':
-      '입문자·학생·연구 중 하나를 고르고, 이중진자부터 N-링크·구동·탄성까지 시스템을 — 그리고 차수와 성격이 표기된 13종의 주력 적분기 중 하나를 고릅니다.',
+    'Pick Beginner, Student, or Research, then a system from double pendulum to N-link, driven, and elastic — and one of fifteen primary integrators, each labeled with its order and character.':
+      '입문자·학생·연구 중 하나를 고르고, 이중진자부터 N-링크·구동·탄성까지 시스템을 — 그리고 차수와 성격이 표기된 15종의 주력 적분기 중 하나를 고릅니다.',
     'Set parameters & run': '매개변수 설정과 실행',
     'Dial in initial conditions and dt, then watch the trajectory, energy drift, and residuals update live. Summon chaotic, periodic, or resonant regimes from presets in a single click.':
       '초기 조건과 dt를 맞춘 뒤 궤적·에너지 드리프트·잔차가 실시간으로 갱신되는 것을 지켜보세요. 카오스·주기·공명 영역은 프리셋 클릭 한 번으로 소환됩니다.',
@@ -280,8 +285,8 @@
     'Open the Engine': '엔진을 열다',
     'Release it. Watch it': '놓아라. 지켜보라,',
     'diverge.': '갈라짐을.',
-    'The full simulator runs in your browser — thirteen primary integrators, every analysis tab, and hash-verifiable research exports. No install, no account. Just the unvarnished mathematics of chaos.':
-      '풀 시뮬레이터가 브라우저에서 그대로 돌아갑니다 — 13종의 주력 적분기, 모든 분석 탭, 해시 검증 연구 내보내기. 설치도 계정도 없이. 오직 가공되지 않은 카오스의 수학만.',
+    'The full simulator runs in your browser — fifteen primary integrators, every analysis tab, and hash-verifiable research exports. No install, no account. Just the unvarnished mathematics of chaos.':
+      '풀 시뮬레이터가 브라우저에서 그대로 돌아갑니다 — 15종의 주력 적분기, 모든 분석 탭, 해시 검증 연구 내보내기. 설치도 계정도 없이. 오직 가공되지 않은 카오스의 수학만.',
     'Source on GitHub': 'GitHub 소스',
     // ---- footer -------------------------------------------------------------------------
     'Launch app': '앱 실행',
@@ -339,8 +344,11 @@
     ['a.brand', 'aria-label', 'Pendulum Lab 홈'],
     ['a.nav-launch', 'aria-label', 'Pendulum Lab 시뮬레이션 열기'],
     ['#nav-menu summary', 'aria-label', '섹션 메뉴'],
+    ['.hero-foot .scroll-cue', 'aria-label', '스크롤로 움직이는 발산 이야기 탐색'],
     ['.console-readouts', 'aria-label', '실시간 콘솔 판독'],
     ['.orbit-controls', 'aria-label', '미니 실험실 조절기'],
+    ['#orbit-theta', 'aria-valuetext', '2.18 라디안'],
+    ['#orbit-damping', 'aria-valuetext', '감쇠 계수 0.06'],
     ['.recipe-grid', 'aria-label', '30초 실험 레시피'],
     ['#orbit-console', 'aria-label', '이중진자 궤적 콘솔 애니메이션'],
     ['.diverge-stage svg', 'aria-label', '민감한 의존성: 갈라지는 두 궤적'],
@@ -348,7 +356,7 @@
   ];
 
   const TYPE_PHRASES_KO = [
-    '이론 차수로 실측 검증된 13종의 주력 적분기.',
+    '이론 차수로 실측 검증된 15종의 주력 적분기.',
     '전체 스펙트럼 랴푸노프 진단.',
     'CPU 오러클이 게이트하는 WebGPU 커널.',
     '해시로 검증되는 연구 번들.'
@@ -356,7 +364,7 @@
 
   const TITLE_KO = 'Pendulum Lab — 질서, 카오스에 무너지다';
   const META_DESCRIPTION_KO =
-    '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 13종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,233개 단위 테스트, SciPy와 출판 문헌으로 검증.';
+    '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,387개 단위 테스트, SciPy와 출판 문헌으로 검증.';
 
   function normalize(text) {
     return text.replace(/\s+/g, ' ').trim();

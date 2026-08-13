@@ -15,6 +15,15 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   let reduced = reducedMotionQuery.matches || captureMode;
   const korean = document.documentElement.lang === 'ko';
+  const labels = korean ? {
+    warming: '준비 중', paused: '일시정지', static: '정적', live: '실시간', standby: '대기',
+    pause: '움직임 일시정지', resume: '움직임 재개', reduced: '동작 줄임', points: '점',
+    thetaValue: (value) => `${value} 라디안`, dampingValue: (value) => `감쇠 계수 ${value}`
+  } : {
+    warming: 'warming', paused: 'paused', static: 'static', live: 'live', standby: 'standby',
+    pause: 'Pause motion', resume: 'Resume motion', reduced: 'Motion reduced', points: 'pts',
+    thetaValue: (value) => `${value} radians`, dampingValue: (value) => `${value} damping`
+  };
   const lowPower = window.matchMedia('(max-width: 720px), (pointer: coarse)').matches
     || navigator.connection?.saveData === true
     || (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 4)
@@ -59,8 +68,13 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   const runtimeParams = { ...params };
   const primary = [2.18, 2.64, 0, 0];
   const twin = [2.181, 2.64, 0, 0];
-  let initialTheta = 2.18;
-  let damping = 0.06;
+  // A user can move a control while this below-the-fold module is still
+  // downloading. Seed from the live form values so that first intent is never
+  // overwritten by the deferred initializer.
+  const initialThetaValue = Number.parseFloat(controls.theta?.value || '');
+  const dampingValue = Number.parseFloat(controls.damping?.value || '');
+  let initialTheta = Number.isFinite(initialThetaValue) ? initialThetaValue : 2.18;
+  let damping = Number.isFinite(dampingValue) ? Math.max(0, dampingValue) : 0.06;
   const maxTrail = lowPower ? 300 : 420;
   const trailA = makeTrail(maxTrail);
   const trailB = makeTrail(maxTrail);
@@ -199,13 +213,23 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     const sep = Math.abs(Math.atan2(Math.sin(delta), Math.cos(delta)));
     if (readouts.separation) readouts.separation.textContent = sep.toExponential(2) + ' rad';
     if (readouts.drift) readouts.drift.textContent = drift.toFixed(2) + ' px';
-    if (readouts.trace) readouts.trace.textContent = trailA.len + ' pts';
-    if (readouts.mode) readouts.mode.textContent = warming ? 'warming' : paused ? 'paused' : reduced ? 'static' : visible && !document.hidden ? 'live' : 'standby';
+    if (readouts.trace) readouts.trace.textContent = `${trailA.len} ${labels.points}`;
+    if (readouts.mode) readouts.mode.textContent = warming
+      ? labels.warming
+      : paused
+        ? labels.paused
+        : reduced
+          ? labels.static
+          : visible && !document.hidden ? labels.live : labels.standby;
   }
 
   function updateControlSurface() {
-    if (controls.thetaOutput) controls.thetaOutput.textContent = `${initialTheta.toFixed(2)} rad`;
-    if (controls.dampingOutput) controls.dampingOutput.textContent = damping.toFixed(2);
+    const thetaText = initialTheta.toFixed(2);
+    const dampingText = damping.toFixed(2);
+    if (controls.thetaOutput) controls.thetaOutput.textContent = `${thetaText} rad`;
+    if (controls.dampingOutput) controls.dampingOutput.textContent = dampingText;
+    controls.theta?.setAttribute('aria-valuetext', labels.thetaValue(thetaText));
+    controls.damping?.setAttribute('aria-valuetext', labels.dampingValue(dampingText));
     if (controls.launch instanceof HTMLAnchorElement) {
       try {
         const url = new URL(controls.launch.href);
@@ -358,9 +382,8 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     paused = nextPaused;
     if (controls.toggle instanceof HTMLButtonElement) {
       controls.toggle.setAttribute('aria-pressed', String(paused));
-      controls.toggle.textContent = paused
-        ? korean ? '움직임 재개' : 'Resume motion'
-        : korean ? '움직임 일시정지' : 'Pause motion';
+      controls.toggle.textContent = reduced ? labels.reduced : paused ? labels.resume : labels.pause;
+      controls.toggle.disabled = reduced;
     }
     if (paused) stop();
     else if (visible && !reduced && !warming && !document.hidden) start();
@@ -409,10 +432,37 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     if (reduced) stop();
     else if (visible && !warming && !paused && !document.hidden) start();
     updateReadouts();
+    setPaused(paused);
+  });
+
+  const consoleResizeObserver = 'ResizeObserver' in window
+    ? new ResizeObserver(() => {
+      canvasRect = null;
+      if (resizeRaf) return;
+      resizeRaf = window.requestAnimationFrame(() => {
+        resizeRaf = 0;
+        resize();
+        draw();
+      });
+    })
+    : null;
+  consoleResizeObserver?.observe(canvas);
+  window.visualViewport?.addEventListener('resize', () => {
+    canvasRect = null;
+    if (!resizeRaf) resizeRaf = window.requestAnimationFrame(() => {
+      resizeRaf = 0;
+      resize();
+      draw();
+    });
+  }, { passive: true });
+  window.addEventListener('pagehide', stop);
+  window.addEventListener('pageshow', () => {
+    if (visible && !reduced && !paused && !warming) start();
   });
 
   resize();
   resetSimulation();
+  setPaused(false);
 
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver((entries) => {

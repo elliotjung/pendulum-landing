@@ -8,7 +8,7 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/snapshots/{arg}{ext}',
   reporter: [['list'], ['html', { outputFolder: 'reports/playwright', open: 'never' }]],
   webServer: {
-    command: 'python -m http.server 4177 --bind 127.0.0.1',
+    command: 'node scripts/static-server.mjs 4177',
     url: 'http://127.0.0.1:4177',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000
@@ -17,7 +17,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4177',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure'
+    video: 'off'
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

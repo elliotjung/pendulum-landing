@@ -43,7 +43,16 @@ for (const pageName of PAGES) {
   if (pageName === 'index.html' && /style-src-attr[^;]*'unsafe-inline'/i.test(csp)) {
     warnings.push('CSP style-src-attr remains narrowly enabled for runtime animation state');
   }
-  if (CONTENT_PAGES.has(pageName)) verifySocialMetadata(pageName, html);
+  if (CONTENT_PAGES.has(pageName)) {
+    const cspIndex = html.indexOf('http-equiv="Content-Security-Policy"');
+    const firstScriptIndex = html.indexOf('<script');
+    if (cspIndex < 0 || firstScriptIndex < 0 || cspIndex > firstScriptIndex) {
+      failures.push(`${pageName}: the meta CSP must precede every script so the hashed pre-paint boot is enforced`);
+    }
+    verifySocialMetadata(pageName, html);
+    verifyLanguagePreloads(pageName, html);
+    verifySkipLinkOrder(pageName, html);
+  }
 
   const attrPattern = /\b(?:href|src|srcset)=["']([^"']+)["']/g;
   for (const match of html.matchAll(attrPattern)) {
@@ -76,8 +85,20 @@ if (kernelManifest.sourceCommit !== evidence.provenance?.sourceCommit) {
 if (evidence.schemaVersion !== 'pendulum-evidence-summary/v1') {
   failures.push(`unexpected evidence schema: ${evidence.schemaVersion ?? 'missing'}`);
 }
-if (!Number.isFinite(evidence.tests?.total) || evidence.tests.total <= 0) {
+if (!Number.isInteger(evidence.tests?.total) || evidence.tests.total <= 0) {
   failures.push('evidence summary is missing a positive tests.total');
+}
+if (evidence.provenance?.dirtyWorktree !== false) {
+  failures.push('evidence summary must come from a clean worktree (provenance.dirtyWorktree must be false)');
+}
+if (evidence.tests?.success !== true) {
+  failures.push('evidence summary tests.success must be true');
+}
+if (evidence.tests?.failed !== 0) {
+  failures.push(`evidence summary tests.failed must be 0, got ${evidence.tests?.failed ?? 'missing'}`);
+}
+if (!Number.isInteger(evidence.tests?.passed) || evidence.tests.passed !== evidence.tests?.total) {
+  failures.push(`evidence summary tests.passed must equal tests.total (${evidence.tests?.passed ?? 'missing'} != ${evidence.tests?.total ?? 'missing'})`);
 }
 checkEvidenceFreshness(evidence);
 checkChangelog(changelog, evidence);
@@ -87,6 +108,12 @@ await checkPngDimensions('assets/apple-touch-icon.png', 180, 180);
 await checkPngDimensions('assets/og-card.png', 1200, 630);
 await checkPngDimensions('assets/og-card-base.png', 1200, 630);
 await checkSitemap();
+await checkLighthouseLanguageMatrix();
+await checkHeroRuntimeContracts();
+await checkWorkflowNetworkContracts();
+await checkWorkflowTimeoutContracts();
+await checkPagesDeploymentContract();
+await checkPlaywrightServerContract();
 await compareMainEvidenceIfProvided(evidence);
 await checkTextEncoding();
 
@@ -99,6 +126,165 @@ if (warnings.length > 0) {
   console.warn(warnings.map((warning) => `- warning: ${warning}`).join('\n'));
 }
 console.log('static asset check passed');
+
+async function checkWorkflowNetworkContracts() {
+  const contracts = [
+    {
+      file: '.github/workflows/evidence-sync.yml',
+      step: 'Fetch evidence summary from the simulation repo',
+      required: ['curl ', '--retry-all-errors', '--connect-timeout 10', '--max-time 60']
+    },
+    {
+      file: '.github/workflows/cross-repo-release.yml',
+      step: 'Materialize the exact release evidence payload',
+      required: ['curl ', '--retry 5', '--retry-all-errors', '--connect-timeout 10', '--max-time 60']
+    },
+    {
+      file: '.github/workflows/cloudflare-pages.yml',
+      step: 'Verify deployed isolation and security headers',
+      required: ['curl ', '--retry 5', '--retry-all-errors', '--connect-timeout 10', '--max-time 60']
+    }
+  ];
+
+  for (const contract of contracts) {
+    const source = await readFile(join(root, ...contract.file.split('/')), 'utf8').catch(() => null);
+    if (source === null) {
+      failures.push(`${contract.file}: workflow is missing`);
+      continue;
+    }
+    const marker = `- name: ${contract.step}`;
+    const start = source.indexOf(marker);
+    if (start < 0) {
+      failures.push(`${contract.file}: workflow step is missing: ${contract.step}`);
+      continue;
+    }
+    const next = source.indexOf('\n      - ', start + marker.length);
+    const block = source.slice(start, next < 0 ? source.length : next);
+    for (const token of contract.required) {
+      if (!block.includes(token)) failures.push(`${contract.file}: ${contract.step} must include ${token}`);
+    }
+  }
+}
+
+async function checkWorkflowTimeoutContracts() {
+  const contracts = [
+    { file: '.github/workflows/landing-ci.yml', job: 'smoke', timeout: 90, required: ['npm run smoke:ci'] },
+    {
+      file: '.github/workflows/pages.yml',
+      job: 'quality-gate',
+      timeout: 120,
+      required: ['npm run smoke:ci', 'npm run lighthouse:lhci']
+    },
+    {
+      file: '.github/workflows/cloudflare-pages.yml',
+      job: 'deploy',
+      timeout: 90,
+      required: ['--project=chromium --project=mobile-chrome', 'npm run lighthouse:lhci']
+    },
+    {
+      file: '.github/workflows/cross-repo-release.yml',
+      job: 'gate-and-tag',
+      timeout: 90,
+      required: ['npm run smoke', 'npm run lighthouse:lhci']
+    }
+  ];
+
+  for (const contract of contracts) {
+    const source = await readFile(join(root, ...contract.file.split('/')), 'utf8').catch(() => null);
+    if (source === null) {
+      failures.push(`${contract.file}: workflow is missing`);
+      continue;
+    }
+    const marker = `  ${contract.job}:`;
+    const start = source.indexOf(marker);
+    if (start < 0) {
+      failures.push(`${contract.file}: workflow job is missing: ${contract.job}`);
+      continue;
+    }
+    const tail = source.slice(start + marker.length);
+    const nextOffset = tail.search(/\n  \S/);
+    const next = nextOffset < 0 ? source.length : start + marker.length + nextOffset;
+    const block = source.slice(start, next);
+    const required = [`timeout-minutes: ${contract.timeout}`, ...contract.required];
+    for (const token of required) {
+      if (!block.includes(token)) failures.push(`${contract.file}: ${contract.job} must include ${token}`);
+    }
+  }
+}
+
+async function checkPagesDeploymentContract() {
+  const workflowPath = '.github/workflows/pages.yml';
+  const source = await readFile(join(root, ...workflowPath.split('/')), 'utf8').catch(() => null);
+  if (source === null) {
+    failures.push(`${workflowPath}: workflow is missing`);
+    return;
+  }
+
+  const qualityStart = source.indexOf('  quality-gate:');
+  const deployStart = source.indexOf('\n  deploy:', qualityStart);
+  if (qualityStart < 0 || deployStart < 0) {
+    failures.push(`${workflowPath}: quality-gate and deploy jobs must both exist`);
+    return;
+  }
+
+  const qualityBlock = source.slice(qualityStart, deployStart);
+  for (const token of ['timeout-minutes: 120', 'npm run smoke:ci', 'npm run lighthouse:lhci', 'actions/upload-pages-artifact@']) {
+    if (!qualityBlock.includes(token)) failures.push(`${workflowPath}: quality-gate must include ${token}`);
+  }
+  const orderedTokens = ['npm run smoke:ci', 'npm run lighthouse:lhci', 'actions/upload-pages-artifact@'];
+  const positions = orderedTokens.map((token) => qualityBlock.indexOf(token));
+  if (positions.some((position) => position < 0) || positions.some((position, index) => index > 0 && position <= positions[index - 1])) {
+    failures.push(`${workflowPath}: smoke and Lighthouse gates must finish before the Pages artifact is uploaded`);
+  }
+
+  for (const token of [
+    'workflow_run:',
+    'workflows: ["Evidence Sync", "Cross-repository release"]',
+    'types: [completed]',
+    "github.event.workflow_run.conclusion == 'success'",
+    "github.event.workflow_run.head_branch == 'main'",
+    "ref: ${{ github.event_name == 'workflow_run' && 'main' || github.sha }}"
+  ]) {
+    if (!source.includes(token)) failures.push(`${workflowPath}: missing safe generated-commit redeploy contract ${token}`);
+  }
+
+  const deployBlock = source.slice(deployStart);
+  if (!/needs:\s*quality-gate/.test(deployBlock)) {
+    failures.push(`${workflowPath}: deploy must remain gated by quality-gate`);
+  }
+}
+
+async function checkPlaywrightServerContract() {
+  const [config, server] = await Promise.all([
+    readFile(join(root, 'playwright.config.js'), 'utf8').catch(() => ''),
+    readFile(join(root, 'scripts', 'static-server.mjs'), 'utf8').catch(() => '')
+  ]);
+  if (!config.includes("command: 'node scripts/static-server.mjs 4177'")) {
+    failures.push('playwright.config.js: webServer must use the repository Node static server');
+  }
+  if (/python\s+-m\s+http\.server/.test(config)) {
+    failures.push('playwright.config.js: Python http.server can orphan on Windows teardown');
+  }
+  for (const token of [
+    "process.once('SIGINT'",
+    "process.once('SIGTERM'",
+    'server.close(',
+    'server.closeIdleConnections',
+    'server.closeAllConnections',
+    'Static server shutdown timed out',
+    'process.exit(1)',
+    '5_000'
+  ]) {
+    if (!server.includes(token)) failures.push(`scripts/static-server.mjs: graceful shutdown must include ${token}`);
+  }
+  for (const token of [
+    'decodeURIComponent(url.pathname)',
+    "response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' })",
+    "response.end('Bad request')"
+  ]) {
+    if (!server.includes(token)) failures.push(`scripts/static-server.mjs: malformed request handling must include ${token}`);
+  }
+}
 
 /**
  * The CSP pins inline <script> blocks by SHA-256, and those hashes are
@@ -163,6 +349,27 @@ function verifySocialMetadata(pageName, html) {
   for (const [token, label] of required) if (!html.includes(token)) failures.push(`${pageName}: missing ${label}`);
 }
 
+function verifyLanguagePreloads(pageName, html) {
+  const regularFontPreload = /<link[^>]+rel="preload"[^>]+href="assets\/fonts\/Pretendard-Regular\.subset\.woff2"[^>]+as="font"[^>]+type="font\/woff2"[^>]+crossorigin="anonymous"/i;
+  if (pageName === 'ko.html' && !regularFontPreload.test(html)) {
+    failures.push('ko.html: missing early Pretendard regular font preload');
+  }
+  if (pageName === 'index.html' && regularFontPreload.test(html)) {
+    failures.push('index.html: Korean-only font preload must not compete with the English hero image');
+  }
+}
+
+function verifySkipLinkOrder(pageName, html) {
+  const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? '';
+  const firstFocusable = body.match(/<(?:a\b[^>]*\bhref=|button\b|input\b|select\b|textarea\b|summary\b)/i)?.[0] ?? '';
+  if (!/^<a\b/i.test(firstFocusable) || !/class=["'][^"']*\bskip-link\b/i.test(firstFocusable)) {
+    failures.push(`${pageName}: skip link must be the first focusable element in body`);
+  }
+  if (!/<main\b[^>]*\bid=["']main["'][^>]*\btabindex=["']-1["']/i.test(body)) {
+    failures.push(`${pageName}: skip-link target #main must accept programmatic focus with tabindex="-1"`);
+  }
+}
+
 function checkChangelog(summary, evidenceSummary) {
   if (summary.schemaVersion !== 'pendulum-changelog-highlights/v1') failures.push('unexpected changelog highlights schema');
   if (!Array.isArray(summary.highlights) || summary.highlights.length !== 3) failures.push('changelog highlights must contain exactly three entries');
@@ -175,6 +382,7 @@ function checkChangelog(summary, evidenceSummary) {
     failures.push('changelog highlights contain likely mojibake');
   }
   if (summary.sourceCommit !== evidenceSummary.provenance?.sourceCommit) failures.push('changelog sourceCommit does not match evidence sourceCommit');
+  if (summary.generatedAt !== evidenceSummary.generatedAt) failures.push('changelog generatedAt must equal evidence generatedAt for deterministic sync');
   if (!/^https:\/\/github\.com\/elliotjung\/pendulum-lab\/blob\/[a-f0-9]{40}\/CHANGELOG\.md$/i.test(summary.sourceUrl ?? '')) {
     failures.push('changelog sourceUrl is missing or not commit-pinned');
   }
@@ -231,6 +439,19 @@ async function checkCopyCounts(summary) {
     failures.push(`og-card pixels quote ${ogMeta.testsTotal} tests but evidence says ${total} — run node scripts/generate-og-card.mjs`);
   } else if (ogMeta.sourceEvidenceCommit !== summary.provenance?.sourceCommit) {
     failures.push(`og-card provenance ${ogMeta.sourceEvidenceCommit || 'missing'} does not match evidence ${summary.provenance?.sourceCommit || 'missing'} — regenerate the social card from current evidence`);
+  } else {
+    const [baseBytes, cardBytes] = await Promise.all([
+      readFile(join(root, 'assets', 'og-card-base.png')),
+      readFile(join(root, 'assets', 'og-card.png'))
+    ]);
+    const baseSha256 = createHash('sha256').update(baseBytes).digest('hex');
+    const cardSha256 = createHash('sha256').update(cardBytes).digest('hex');
+    if (ogMeta.baseSha256 !== baseSha256) {
+      failures.push('og-card base art changed after the social card was rendered — regenerate the social card');
+    }
+    if (ogMeta.cardSha256 !== cardSha256) {
+      failures.push('og-card PNG does not match cardSha256 in its metadata — regenerate the social card');
+    }
   }
 }
 
@@ -253,6 +474,227 @@ async function checkSitemap() {
   if (urls.length !== 2) failures.push('sitemap must contain two URLs with lastmod values');
   for (const [, loc, lastmod] of urls) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(lastmod) || !Number.isFinite(Date.parse(lastmod))) failures.push(`sitemap ${loc}: invalid lastmod ${lastmod}`);
+  }
+}
+
+async function checkLighthouseLanguageMatrix() {
+  const config = JSON.parse(await readFile(join(root, 'lighthouserc.json'), 'utf8'));
+  const urls = config?.ci?.collect?.url;
+  const required = [
+    'http://127.0.0.1:4177/?lang=en',
+    'http://127.0.0.1:4177/ko.html?lang=ko'
+  ];
+  if (!Array.isArray(urls) || urls.length !== required.length || required.some((url) => !urls.includes(url))) {
+    failures.push('lighthouserc.json: EN and KO must be measured as two explicit documents');
+  }
+  const runner = await readFile(join(root, 'scripts', 'run-lighthouse.mjs'), 'utf8');
+  if (!runner.includes("/?lang=en`")) failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must pin lang=en');
+  if (!runner.includes("/ko.html?lang=ko`")) failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must pin lang=ko');
+  if (!runner.includes("require.resolve('lighthouse/cli')") || runner.includes('lighthouse@')) {
+    failures.push('scripts/run-lighthouse.mjs: Lighthouse must resolve from the audited local lockfile');
+  }
+  if (!runner.includes("{ id: 'en'") || !runner.includes("{ id: 'ko'")) {
+    failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must retain distinct EN/KO summaries');
+  }
+}
+
+async function checkHeroRuntimeContracts() {
+  const [html, main, scene, i18n, enhancements, landingCss, packageJson, smoke] = await Promise.all([
+    readFile(join(root, 'index.html'), 'utf8'),
+    readFile(join(root, 'assets', 'main.js'), 'utf8'),
+    readFile(join(root, 'assets', 'scene.js'), 'utf8'),
+    readFile(join(root, 'assets', 'i18n-core.js'), 'utf8'),
+    readFile(join(root, 'assets', 'enhancements-loader.js'), 'utf8'),
+    readFile(join(root, 'assets', 'landing.css'), 'utf8'),
+    readFile(join(root, 'package.json'), 'utf8'),
+    readFile(join(root, 'tests', 'landing-smoke.spec.ts'), 'utf8')
+  ]);
+  const requiredHtml = [
+    'data-hero-toggle',
+    'data-hero-status',
+    'aria-controls="hero-canvas"',
+    'aria-describedby="orbit-theta-output"',
+    'aria-describedby="orbit-damping-output"',
+    'aria-controls="orbit-console"',
+    'src="assets/enhancements-loader.js"',
+    '<html lang="en" class="no-js js-ready">'
+  ];
+  for (const token of requiredHtml) if (!html.includes(token)) failures.push(`index.html: missing hero/accessibility contract ${token}`);
+  for (const eagerAsset of ['orbit-console.js']) {
+    if (new RegExp(`<script[^>]+src=["']assets/${eagerAsset.replaceAll('.', '\\.')}["']`, 'i').test(html)) {
+      failures.push(`index.html: ${eagerAsset} must load through the intent/viewport enhancement loader`);
+    }
+  }
+  if (/requestIdleCallback\s*\(\s*requestHeroScene|setTimeout\s*\(\s*requestHeroScene/.test(main)) {
+    failures.push('assets/main.js: the heavyweight hero must not auto-load from idle/timer callbacks');
+  }
+  for (const token of ['canCreateWebGL2', 'heroUnavailable', 'heroEnsurePromise', 'window.__heroLifecycle', "import(sceneUrl)", "setHeroState('static')"]) {
+    if (!main.includes(token)) failures.push(`assets/main.js: missing deferred/fallback hero contract ${token}`);
+  }
+  for (const token of [
+    'requestHeroFromScroll',
+    'Math.abs(window.scrollY) < 8',
+    'orbitMetricsReady',
+    'ensureOrbitMetrics',
+    'const liveGeometry',
+    'const hasOrbitMetrics',
+    'window.__hero?.setScrollActive?.(descentActive)',
+    "document.documentElement.classList.remove('no-js')",
+    'let previousScrollY = 0',
+    'let previousScrollTime = 0',
+    'event.persisted || window.location.hash'
+  ]) {
+    if (!main.includes(token)) failures.push(`assets/main.js: missing deferred hero/descent lifecycle contract ${token}`);
+  }
+  if (/\n\s*cacheOrbitMetrics\(\);\s*\n\s*onScroll\(\);/.test(main)) {
+    failures.push('assets/main.js: offscreen orbit geometry must not force layout during initial boot');
+  }
+  if (main.includes('previousScrollY = window.scrollY')) {
+    failures.push('assets/main.js: initial boot must not force layout by reading scrollY');
+  }
+  for (const token of [
+    'document.documentElement,w=window',
+    'd.classList.remove("no-js")',
+    'w.__PENDULUM_MAIN_WATCHDOG=setTimeout',
+    'w.__PENDULUM_MAIN_READY!==true',
+    'd.classList.add("no-js")',
+    '},4000)'
+  ]) {
+    if (!html.includes(token)) failures.push(`index.html: missing pre-paint/no-JS watchdog contract ${token}`);
+  }
+  for (const token of [
+    'window.__PENDULUM_MAIN_READY = true',
+    'clearTimeout(window.__PENDULUM_MAIN_WATCHDOG)',
+    'window.__PENDULUM_MAIN_WATCHDOG = 0',
+    "document.documentElement.classList.contains('no-js')",
+    'const recoveredFromNoJs',
+    "document.documentElement.classList.remove('no-js')"
+  ]) {
+    if (!main.includes(token)) failures.push(`assets/main.js: missing main-readiness watchdog contract ${token}`);
+  }
+  if (landingCss.includes('html:not(.js-ready)')) {
+    failures.push('assets/landing.css: no-JS fallbacks must key off the explicit no-js class');
+  }
+  if (!landingCss.includes('--orbit-scroll:0;')) {
+    failures.push('assets/landing.css: orbit descent must define a zero visual progress before the first scroll frame');
+  }
+  for (const removedToken of ['window.gsap', 'cinematic-static', 'cursor-glow', 'data-mouse', '--mx', '--my']) {
+    if (main.includes(removedToken) || landingCss.includes(removedToken) || html.includes(removedToken)) {
+      failures.push(`landing runtime: removed decorative implementation token remains: ${removedToken}`);
+    }
+  }
+  for (const token of [
+    "import('./orbit-console.js')",
+    'IntersectionObserver',
+    "rootMargin: '640px 0px'",
+    'pendingOrbitInputs',
+    'MAX_PENDING_ORBIT_BUTTONS',
+    'pendingOrbitButtons',
+    'orbitReplayScheduled',
+    'syncOrbitMotionControl',
+    '동작 줄임',
+    "'동작 줄임' : 'Motion reduced'",
+    'markOrbitUnavailable',
+    "controls.hidden = true",
+    "consoleCanvas.hidden = true",
+    '실시간 궤적을 사용할 수 없어 정적인 이중 진자 궤적을 표시합니다.',
+    '실시간 궤적을 사용할 수 없어 정적 이중 진자 궤적을 표시합니다.',
+    'Live trajectory unavailable; showing a static double-pendulum trace.'
+  ]) {
+    if (/[^\x00-\x7f]/u.test(token)) continue;
+    if (!enhancements.includes(token)) failures.push(`assets/enhancements-loader.js: missing deferred enhancement contract ${token}`);
+  }
+  for (const removedAsset of ['animation-vendor.bundle.js', 'reactbits.js']) {
+    if (enhancements.includes(removedAsset) || html.includes(removedAsset)) {
+      failures.push(`landing runtime: removed dependency remains referenced: ${removedAsset}`);
+    }
+  }
+  if (packageJson.includes('"gsap"')) {
+    failures.push('package.json: removed GSAP dependency must not be restored');
+  }
+  const contextProbe = scene.indexOf("canvas.getContext('webgl2'");
+  const rendererConstruction = scene.indexOf('new THREE.WebGLRenderer');
+  if (contextProbe < 0 || rendererConstruction < 0 || contextProbe > rendererConstruction) {
+    failures.push('assets/scene.js: WebGL2 must be acquired before constructing THREE.WebGLRenderer');
+  }
+  const scrollSyncStart = scene.indexOf('setScrollActive(nextActive)');
+  const scrollPoseStart = scene.indexOf('get scrollPose()', scrollSyncStart);
+  if (
+    scrollSyncStart < 0
+    || scrollPoseStart < scrollSyncStart
+    || !scene.slice(scrollSyncStart, scrollPoseStart).includes('scrollActive = Boolean(nextActive)')
+    || !scene.slice(scrollSyncStart, scrollPoseStart).includes('syncPlayback()')
+    || !scene.includes('(visible || scrollActive)')
+    || !scene.includes('now - lastTelemetryAt >= 180')
+    || !scene.includes('coordinateActiveLastFrame = coordinateActive')
+  ) {
+    failures.push('assets/scene.js: descent visibility must remain an explicit playback source during observer hand-off');
+  }
+  if (/console\.(?:warn|error)\s*\(/.test(scene)) {
+    failures.push('assets/scene.js: expected WebGL fallback must remain console-clean');
+  }
+  for (const token of [
+    "window.addEventListener('pointerdown'",
+    "{ capture: true, signal }",
+    "target.closest('.hero, #orbit-descent')",
+    'target.isContentEditable',
+    '[contenteditable]:not([contenteditable="false"])',
+    'get dragging() { return dragging; }',
+    'interactionController?.abort()'
+  ]) {
+    if (!scene.includes(token)) failures.push(`assets/scene.js: missing hit-testable safe drag contract ${token}`);
+  }
+  for (const token of ['ensureHero', 'lifecycleGeneration', 'cancelActivePrewarm', "invalidateHeroInitialization('context-lost')", 'generation !== lifecycleGeneration', 'disposeHero', 'renderer?.forceContextLoss?.()']) {
+    if (!scene.includes(token)) failures.push(`assets/scene.js: missing restartable async lifecycle contract ${token}`);
+  }
+  for (const token of ['captureMode ? 3112 : 1440', 'completed + 64']) {
+    if (!scene.includes(token)) failures.push(`assets/scene.js: missing bounded live prewarm contract ${token}`);
+  }
+  const prewarmAwait = scene.indexOf('const warmed = await prewarm(generation)');
+  const postPrewarmRead = scene.indexOf('readMediaPreferences();', prewarmAwait + 1);
+  if (prewarmAwait < 0 || postPrewarmRead < prewarmAwait) {
+    failures.push('assets/scene.js: preferences must be sampled again after asynchronous prewarm');
+  }
+  if (!scene.includes('bindLifecycleListeners();\nvoid ensureHero();')) {
+    failures.push('assets/scene.js: media/data listeners must bind before initial hero prewarm');
+  }
+  if (!packageJson.includes('--project=webkit --workers=1')) {
+    failures.push('package.json: multi-engine smoke must use one worker to avoid artificial GPU contention');
+  }
+  if ((smoke.match(/captureHero=1/g) ?? []).length !== 3) {
+    failures.push('tests/landing-smoke.spec.ts: only the hero paint, WebGL fallback, and repeatability tests may force capture mode');
+  }
+  for (const token of [
+    "for (const route of ['/', '/ko.html?lang=ko'])",
+    "page.locator('[data-hero-toggle]').dispatchEvent('click')",
+    "{ timeout: 45_000 }",
+    'deferredEnhancementRequests',
+    '__landingEnhancements?.orbitReady',
+    "endsWith('/orbit-console.js'))).toHaveLength(1)",
+    "route.abort('failed')",
+    'orbit-console-static',
+    "endsWith('/orbit-console.js'))).toHaveLength(2)",
+    '__orbitReplayOrder',
+    "toEqual(['toggle', 'toggle', 'reset', 'toggle'])",
+    'data-hero-drag-exclusion-probe',
+    "toHaveClass(/no-js/)",
+    '__pendulumInlineCspProbe',
+    'securitypolicyviolation',
+    '__PENDULUM_MAIN_WATCHDOG',
+    "rawHttpStatus('/malformed-%ZZ-path')",
+    'toBe(400)',
+    'late-watchdog-recovery=1'
+  ]) {
+    if (!smoke.includes(token)) failures.push(`tests/landing-smoke.spec.ts: missing low-contention browser contract ${token}`);
+  }
+  if (!smoke.includes("window.dispatchEvent(new Event('scroll'))")) {
+    failures.push('tests/landing-smoke.spec.ts: synthetic scroll restoration must preserve the zero-request startup contract');
+  }
+  for (const token of ['cssProgress', 'getComputedStyle(orbitDescentElement)', "progress: 0", 'Number.isFinite(scrollState.velocity)', 'pose.rotationY - start.rotationY', 'pose.y < start.y - 0.5']) {
+    if (!smoke.includes(token)) failures.push(`tests/landing-smoke.spec.ts: missing finite static-scroll regression ${token}`);
+  }
+  for (const token of ["'Start 3D': '3D 시작'", "['#orbit-theta', 'aria-valuetext'", "['#orbit-damping', 'aria-valuetext'"]) {
+    if (!i18n.includes(token)) failures.push(`assets/i18n-core.js: missing generated-page localization contract ${token}`);
   }
 }
 

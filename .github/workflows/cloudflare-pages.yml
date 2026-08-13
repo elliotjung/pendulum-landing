@@ -15,7 +15,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     environment: cloudflare-pages
     steps:
       - name: Require an explicitly configured mirror
@@ -69,7 +69,9 @@ jobs:
           CLOUDFLARE_MIRROR_URL: ${{ vars.CLOUDFLARE_MIRROR_URL }}
         shell: bash
         run: |
-          headers="$(curl --fail --silent --show-error --retry 5 --retry-all-errors --dump-header - --output /dev/null "$CLOUDFLARE_MIRROR_URL")"
+          headers="$(curl --fail --silent --show-error --retry 5 --retry-all-errors \
+            --connect-timeout 10 --max-time 60 \
+            --dump-header - --output /dev/null "$CLOUDFLARE_MIRROR_URL")"
           printf '%s\n' "$headers" | grep -Eiq '^cross-origin-opener-policy:[[:space:]]*same-origin'
           printf '%s\n' "$headers" | grep -Eiq '^cross-origin-embedder-policy:[[:space:]]*require-corp'
           printf '%s\n' "$headers" | grep -Eiq '^x-content-type-options:[[:space:]]*nosniff'

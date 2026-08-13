@@ -24,10 +24,9 @@ const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 const reducedDataQuery = window.matchMedia('(prefers-reduced-data: reduce)');
 const compactQuery = window.matchMedia('(max-width: 720px), (pointer: coarse)');
 let reducedMotion = reducedMotionQuery.matches;
-let reducedData = reducedDataQuery.matches;
+let reducedData = reducedDataQuery.matches || navigator.connection?.saveData === true;
 let compact = compactQuery.matches;
 const lowMemory = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 2;
-const staticHero = reducedMotion || reducedData || lowMemory;
 
 if (!canvas) throw new Error('hero canvas is missing');
 canvas.setAttribute('aria-hidden', 'true');
@@ -53,6 +52,7 @@ let width = window.innerWidth;
 let height = window.innerHeight;
 let running = false;
 let visible = true;
+let scrollActive = false;
 let frameId = 0;
 let lastFrame = performance.now();
 let simulationAccumulator = 0;
@@ -63,7 +63,14 @@ let trailSyncElapsed = 0;
 let stageBaseX = 0;
 let stageBaseY = 0;
 let stageBaseScale = 1;
-let telemetryTick = 0;
+let lastTelemetryAt = 0;
+let coordinateActiveLastFrame = false;
+let userPaused = window.__heroUserPaused === true;
+let resizeFrame = 0;
+let qualityTier = compact ? 'compact' : 'cinematic';
+let renderCostEma = 0;
+let renderSamples = 0;
+let slowWindows = 0;
 const coordinateReadout = document.querySelector('[data-descent-coordinate]');
 
 const params = Object.freeze({ m1: 1, m2: 1, l1: 1.14, l2: 1.02, g: 9.81 });
@@ -84,6 +91,22 @@ let manualRotation = 0;
 let dragVelocity = 0;
 let lastPaint = 0;
 let regionObserver = null;
+let lifecycleGeneration = 0;
+let initializationPromise = null;
+let cancelActivePrewarm = null;
+let lifecyclePhase = 'idle';
+let lifecycleUnavailable = false;
+let contextLost = false;
+let initialized = false;
+let lifecycleListenersBound = false;
+let interactionBound = false;
+let interactionController = null;
+let visibilityBound = false;
+let disposed = false;
+
+function publishHeroState(nextState) {
+  window.dispatchEvent(new CustomEvent('pendulum:hero-state', { detail: { state: nextState } }));
+}
 
 function deterministicRandom(seed = 0x51f15e) {
   return () => {
@@ -358,20 +381,18 @@ function setRod(mesh, from, to) {
   mesh.quaternion.setFromUnitVectors(yAxis, direction.normalize());
 }
 
-function pointsFromState(source, phase, points) {
+function pointsFromState(source, points) {
   const theta1 = source[0];
   const theta2 = source[1];
-  const depth1 = Math.sin(simulationTime * 0.38 + phase) * 0.045;
-  const depth2 = Math.sin(simulationTime * 0.51 + phase + 0.8) * 0.09;
   points.first.set(
     anchor.x + params.l1 * Math.sin(theta1),
     anchor.y - params.l1 * Math.cos(theta1),
-    depth1,
+    0,
   );
   points.second.set(
     points.first.x + params.l2 * Math.sin(theta2),
     points.first.y - params.l2 * Math.cos(theta2),
-    depth2,
+    0,
   );
   return points;
 }
@@ -501,8 +522,8 @@ function buildParticles() {
 }
 
 function pushCurrentTrail() {
-  const current = pointsFromState(state, 0, currentPoints);
-  const nearby = pointsFromState(shadowState, 0.18, nearbyPoints);
+  const current = pointsFromState(state, currentPoints);
+  const nearby = pointsFromState(shadowState, nearbyPoints);
   firstTrail.push(current.first);
   secondTrail.push(current.second);
   shadowTrail.push(nearby.second);
@@ -532,30 +553,49 @@ function syncTrails() {
   trailSyncElapsed = 0;
 }
 
-function prewarm() {
+function prewarm(generation) {
   const fixedStep = 1 / 240;
   // Land the deterministic capture on a legible, downward-opening pose while
   // retaining enough history to show the preceding chaotic loops.
-  const steps = captureMode ? 3112 : compact ? 1560 : 2800;
+  // 1,440 steps still fill the longest live trail while halving the number
+  // of idle slices on busy devices. Capture mode keeps its exact art-directed
+  // pose and history for deterministic screenshots.
+  const steps = captureMode ? 3112 : 1440;
   if (captureMode) {
+    if (generation !== lifecycleGeneration || contextLost || prefersStaticHero()) return Promise.resolve(false);
     for (let i = 0; i < steps; i += 1) stepSimulation(fixedStep);
     pushCurrentTrail();
     syncTrails();
-    return Promise.resolve();
+    return Promise.resolve(generation === lifecycleGeneration && !contextLost && !prefersStaticHero());
   }
 
   // Warm the deterministic history in short idle slices to avoid a startup
   // long task on slower phones while preserving the exact same trajectory.
   return new Promise((resolve) => {
     let completed = 0;
+    let settled = false;
+    const finish = (ready) => {
+      if (settled) return;
+      settled = true;
+      if (cancelActivePrewarm === cancel) cancelActivePrewarm = null;
+      resolve(ready);
+    };
+    const cancel = () => finish(false);
+    cancelActivePrewarm?.();
+    cancelActivePrewarm = cancel;
     const schedule = (callback) => {
       if ('requestIdleCallback' in window) window.requestIdleCallback(callback, { timeout: 48 });
       else window.setTimeout(() => callback(null), 0);
     };
     const chunk = (deadline) => {
+      if (settled) return;
+      if (generation !== lifecycleGeneration || contextLost || prefersStaticHero()) {
+        finish(false);
+        return;
+      }
       const started = performance.now();
       do {
-        const batchEnd = Math.min(completed + 32, steps);
+        const batchEnd = Math.min(completed + 64, steps);
         while (completed < batchEnd) {
           stepSimulation(fixedStep);
           completed += 1;
@@ -571,7 +611,7 @@ function prewarm() {
       }
       pushCurrentTrail();
       syncTrails();
-      resolve();
+      finish(generation === lifecycleGeneration && !contextLost && !prefersStaticHero());
     };
     schedule(chunk);
   });
@@ -583,8 +623,31 @@ function buildScene() {
   camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 80);
   camera.position.set(0, 0.12, 8.4);
 
+  const contextAttributes = {
+    alpha: true,
+    antialias: !compact,
+    depth: true,
+    stencil: false,
+    premultipliedAlpha: true,
+    powerPreference: 'high-performance',
+    preserveDrawingBuffer: captureMode,
+    failIfMajorPerformanceCaveat: false,
+  };
+  const preventContextNoise = (event) => event.preventDefault();
+  canvas.addEventListener('webglcontextcreationerror', preventContextNoise);
+  let context = null;
+  try {
+    context = canvas.getContext('webgl2', contextAttributes);
+  } catch {
+    context = null;
+  } finally {
+    canvas.removeEventListener('webglcontextcreationerror', preventContextNoise);
+  }
+  if (!context) return false;
+
   renderer = new THREE.WebGLRenderer({
     canvas,
+    context,
     alpha: true,
     antialias: !compact,
     powerPreference: 'high-performance',
@@ -630,6 +693,7 @@ function buildScene() {
 
   primary = createPendulum();
   shadow = createPendulum({ ghost: true });
+  shadow.group.position.z = -0.055;
   stage.add(shadow.group, primary.group, buildAnchor());
   positionStage();
 
@@ -643,15 +707,28 @@ function buildScene() {
 
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
+    contextLost = true;
+    initialized = false;
+    invalidateHeroInitialization('context-lost');
+    delete window.__hero;
     stop();
     document.body.classList.remove('hero-live');
     document.body.classList.add('no-webgl');
+    document.body.dataset.heroFallback = 'context-lost';
+    canvas.style.display = 'none';
+    window.__heroPainted = true;
+    publishHeroState('static');
   });
   canvas.addEventListener('webglcontextrestored', () => {
+    contextLost = false;
+    lifecyclePhase = 'idle';
     document.body.classList.remove('no-webgl');
-    renderFrame({ frozen: true });
-    syncPlayback();
+    delete document.body.dataset.heroFallback;
+    canvas.style.display = '';
+    publishHeroState('loading');
+    void ensureHero();
   });
+  return true;
 }
 
 function positionStage() {
@@ -668,7 +745,8 @@ function resize() {
   width = window.innerWidth;
   height = window.innerHeight;
   compact = compactQuery.matches;
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, compact ? 1.2 : 1.55);
+  const qualityCap = qualityTier === 'balanced' ? 1.15 : compact ? 1.2 : 1.55;
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, qualityCap);
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
@@ -681,7 +759,19 @@ function resize() {
   positionStage();
 }
 
+function scheduleResize() {
+  if (resizeFrame) return;
+  resizeFrame = requestAnimationFrame(() => {
+    resizeFrame = 0;
+    if (renderer) resize();
+  });
+}
+
 function bindInteraction() {
+  if (interactionBound) return;
+  interactionBound = true;
+  interactionController = new AbortController();
+  const { signal } = interactionController;
   window.addEventListener('pointermove', (event) => {
     pointer.targetX = event.clientX / width - 0.5;
     pointer.targetY = event.clientY / height - 0.5;
@@ -691,25 +781,32 @@ function bindInteraction() {
       manualRotation += dragVelocity;
       dragStart = event.clientX;
     }
-  }, { passive: true });
-  canvas.addEventListener('pointerdown', (event) => {
+  }, { passive: true, signal });
+  window.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0 || !document.body.classList.contains('hero-live')) return;
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest('.hero, #orbit-descent')) return;
+    if (
+      target.isContentEditable
+      || target.closest('a, button, input, select, textarea, label, summary, [role="button"], [contenteditable]:not([contenteditable="false"])')
+    ) return;
+    event.preventDefault();
     dragging = true;
     dragStart = event.clientX;
     canvas.classList.add('is-dragging');
-    canvas.setPointerCapture?.(event.pointerId);
-  });
-  const finishDrag = (event) => {
-    if (event?.pointerId != null && canvas.hasPointerCapture?.(event.pointerId)) {
-      canvas.releasePointerCapture(event.pointerId);
-    }
+  }, { capture: true, signal });
+  const finishDrag = () => {
     dragging = false;
     canvas.classList.remove('is-dragging');
+    if (Math.abs(manualRotation) > Math.PI * 20) {
+      manualRotation %= Math.PI * 2;
+    }
   };
-  window.addEventListener('pointerup', finishDrag, { passive: true });
-  window.addEventListener('pointercancel', finishDrag, { passive: true });
-  canvas.addEventListener('lostpointercapture', finishDrag, { passive: true });
-  window.addEventListener('blur', finishDrag);
-  window.addEventListener('resize', resize, { passive: true });
+  window.addEventListener('pointerup', finishDrag, { passive: true, signal });
+  window.addEventListener('pointercancel', finishDrag, { passive: true, signal });
+  window.addEventListener('blur', finishDrag, { signal });
+  window.addEventListener('resize', scheduleResize, { passive: true, signal });
+  window.visualViewport?.addEventListener('resize', scheduleResize, { passive: true, signal });
 }
 
 function advance(elapsed) {
@@ -721,8 +818,8 @@ function advance(elapsed) {
     simulationAccumulator -= fixedStep;
     safety += 1;
   }
-  const current = pointsFromState(state, 0, currentPoints);
-  const nearby = pointsFromState(shadowState, 0.18, nearbyPoints);
+  const current = pointsFromState(state, currentPoints);
+  const nearby = pointsFromState(shadowState, nearbyPoints);
   updatePendulum(primary, current);
   updatePendulum(shadow, nearby);
   trailSyncElapsed += elapsed;
@@ -746,18 +843,23 @@ function renderFrame({ frozen = false } = {}) {
   const scrollVelocity = Math.max(-1, Math.min(1, Number(window.__orbitScrollVelocity) || 0));
   window.__orbitScrollVelocity = scrollVelocity * Math.exp(-elapsed * 9.1);
   stage.rotation.y = manualRotation + pointer.x * 0.16 + Math.sin(simulationTime * 0.13) * 0.035
-    + orbitEase * Math.PI * 3.75 + scrollVelocity * 0.22;
+    + orbitEase * Math.PI * 4.5 + scrollVelocity * 0.24;
   stage.rotation.x = -0.035 + pointer.y * 0.055 + heroProgress * 0.035
-    + Math.sin(orbitEase * Math.PI * 1.5) * 0.32;
-  stage.rotation.z = Math.sin(orbitEase * Math.PI * 2) * 0.11 - orbitEase * 0.045;
-  stage.position.x = stageBaseX + Math.sin(orbitEase * Math.PI * 2.2) * (compact ? 0.18 : 0.72);
-  stage.position.y = stageBaseY - orbitEase * (compact ? 0.82 : 1.48);
-  stage.position.z = Math.sin(orbitEase * Math.PI) * 0.42;
-  stage.scale.setScalar(stageBaseScale * (1 + Math.sin(orbitEase * Math.PI) * 0.09 - orbitEase * 0.16));
+    + Math.sin(orbitEase * Math.PI * 1.65) * 0.38;
+  stage.rotation.z = Math.sin(orbitEase * Math.PI * 2) * 0.14 - orbitEase * 0.06 + scrollVelocity * 0.04;
+  stage.position.x = stageBaseX + Math.sin(orbitEase * Math.PI * 2.2) * (compact ? 0.22 : 0.86);
+  stage.position.y = stageBaseY - orbitEase * (compact ? 1.08 : 1.86);
+  stage.position.z = Math.sin(orbitEase * Math.PI) * 0.7 - orbitEase * 0.28;
+  stage.scale.setScalar(stageBaseScale * (1 + Math.sin(orbitEase * Math.PI) * 0.12 - orbitEase * 0.2));
   particles.rotation.z += elapsed * 0.006;
   particles.rotation.y = orbitEase * Math.PI * 0.38;
+  particles.rotation.x = Math.sin(orbitEase * Math.PI * 2) * 0.08;
   cyanLight.intensity = 17 + Math.sin(simulationTime * 0.7) * 2.4;
   violetLight.intensity = 16 + Math.cos(simulationTime * 0.61) * 2.2;
+  cyanLight.position.x = 1.4 + Math.sin(orbitEase * Math.PI * 2) * 1.2;
+  cyanLight.position.z = 2.2 + Math.cos(orbitEase * Math.PI * 2) * 0.8;
+  violetLight.position.x = 3.2 - Math.cos(orbitEase * Math.PI * 2) * 1.1;
+  violetLight.position.z = 1.6 + Math.sin(orbitEase * Math.PI * 2) * 0.9;
   if (glint) {
     glint.material.opacity = 0.74 + Math.sin(simulationTime * 1.7) * 0.14;
     const glintScale = 0.86 + Math.sin(simulationTime * 1.21) * 0.07;
@@ -765,7 +867,7 @@ function renderFrame({ frozen = false } = {}) {
   }
   const targetCameraX = pointer.x * 0.5 + Math.sin(orbitEase * Math.PI * 2) * (compact ? 0.18 : 0.7);
   const targetCameraY = 0.12 - pointer.y * 0.28 - orbitEase * 0.24;
-  const targetCameraZ = 8.4 - Math.sin(orbitEase * Math.PI) * 1.08 + orbitEase * 0.52;
+  const targetCameraZ = 8.4 - Math.sin(orbitEase * Math.PI) * 1.38 + orbitEase * 0.74;
   camera.position.x += (targetCameraX - camera.position.x) * 0.035;
   camera.position.y += (targetCameraY - camera.position.y) * 0.035;
   camera.position.z += (targetCameraZ - camera.position.z) * 0.035;
@@ -776,14 +878,31 @@ function renderFrame({ frozen = false } = {}) {
   );
   camera.rotation.z += (Math.sin(orbitEase * Math.PI * 2) * 0.035 - camera.rotation.z) * 0.04;
 
-  telemetryTick += 1;
-  if (coordinateReadout && document.body.classList.contains('orbit-descent-active') && telemetryTick % 12 === 0) {
+  const coordinateActive = document.body.classList.contains('orbit-descent-active');
+  if (coordinateReadout && coordinateActive && (!coordinateActiveLastFrame || now - lastTelemetryAt >= 180)) {
     const wrapAngle = (value) => ((value + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
     coordinateReadout.textContent = `${wrapAngle(state[0]).toFixed(2)} / ${wrapAngle(state[1]).toFixed(2)}`;
+    lastTelemetryAt = now;
   }
+  coordinateActiveLastFrame = coordinateActive;
 
-  if (composer && !compact) composer.render();
+  const renderStarted = performance.now();
+  if (composer && !compact && qualityTier === 'cinematic') composer.render();
   else renderer.render(scene, camera);
+  if (!captureMode && !compact && qualityTier === 'cinematic') {
+    const renderCost = performance.now() - renderStarted;
+    renderCostEma = renderSamples ? renderCostEma * 0.94 + renderCost * 0.06 : renderCost;
+    renderSamples += 1;
+    if (renderSamples >= 90) {
+      slowWindows = renderCostEma > 18 ? slowWindows + 1 : Math.max(0, slowWindows - 1);
+      renderSamples = 0;
+      if (slowWindows >= 2) {
+        qualityTier = 'balanced';
+        document.body.dataset.heroQuality = qualityTier;
+        resize();
+      }
+    }
+  }
   window.__heroPainted = true;
   document.body.classList.add('hero-live');
 }
@@ -810,82 +929,292 @@ function stop() {
   frameId = 0;
 }
 
+function disposeHero() {
+  if (disposed) return;
+  disposed = true;
+  lifecycleUnavailable = true;
+  invalidateHeroInitialization('static');
+  stop();
+  if (resizeFrame) cancelAnimationFrame(resizeFrame);
+  resizeFrame = 0;
+  interactionController?.abort();
+  interactionController = null;
+  interactionBound = false;
+  dragging = false;
+  canvas.classList.remove('is-dragging');
+  regionObserver?.disconnect();
+  regionObserver = null;
+
+  scene?.traverse((object) => {
+    object.geometry?.dispose?.();
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.filter(Boolean).forEach((material) => {
+      Object.values(material).forEach((value) => {
+        if (value?.isTexture) value.dispose();
+      });
+      material.dispose?.();
+    });
+  });
+  composer?.dispose?.();
+  renderer?.renderLists?.dispose?.();
+  renderer?.dispose?.();
+  renderer?.forceContextLoss?.();
+  initialized = false;
+  delete window.__hero;
+}
+
 function syncPlayback() {
-  if (visible && !document.hidden && !reducedMotion && !reducedData) start();
+  if (!contextLost && (visible || scrollActive) && !document.hidden && !prefersStaticHero() && !userPaused) start();
   else stop();
 }
 
-function syncMediaPreferences() {
+function readMediaPreferences() {
   reducedMotion = reducedMotionQuery.matches;
-  reducedData = reducedDataQuery.matches;
+  reducedData = reducedDataQuery.matches || navigator.connection?.saveData === true;
   compact = compactQuery.matches;
-  const fallback = reducedMotion || reducedData || lowMemory;
-  document.body.classList.toggle('reduced-motion-hero', reducedMotion);
-  document.body.classList.toggle('low-power-hero', !reducedMotion && (reducedData || lowMemory));
-  if (!renderer) return;
+}
+
+function prefersStaticHero() {
+  return !captureMode && (reducedMotion || reducedData || lowMemory);
+}
+
+function applyPreferenceClasses() {
+  const fallback = prefersStaticHero();
+  document.body.classList.toggle('reduced-motion-hero', fallback && reducedMotion);
+  document.body.classList.toggle('low-power-hero', fallback && !reducedMotion);
+}
+
+function invalidateHeroInitialization(nextPhase = 'idle') {
+  lifecycleGeneration += 1;
+  lifecyclePhase = nextPhase;
+  const cancel = cancelActivePrewarm;
+  cancelActivePrewarm = null;
+  cancel?.();
+}
+
+function showStaticHero() {
+  canvas.style.display = 'none';
+  document.body.classList.remove('hero-live');
+  stop();
+  window.__heroPainted = true;
+  lifecyclePhase = contextLost ? 'context-lost' : lifecycleUnavailable ? 'unavailable' : 'static';
+  publishHeroState('static');
+}
+
+function syncMediaPreferences() {
+  readMediaPreferences();
+  applyPreferenceClasses();
+  const fallback = prefersStaticHero();
   canvas.style.display = fallback ? 'none' : '';
   if (fallback) {
-    document.body.classList.remove('hero-live');
-    stop();
-  } else {
+    if (!initialized && lifecyclePhase !== 'static') invalidateHeroInitialization('static');
+    showStaticHero();
+    return;
+  }
+  if (contextLost || lifecycleUnavailable) {
+    showStaticHero();
+    return;
+  }
+  if (!initialized || !renderer) {
+    void ensureHero();
+    return;
+  }
+  resize();
+  renderFrame({ frozen: true });
+  syncPlayback();
+  lifecyclePhase = userPaused ? 'paused' : 'live';
+  publishHeroState(userPaused ? 'paused' : 'live');
+}
+
+function bindLifecycleListeners() {
+  if (lifecycleListenersBound) return;
+  lifecycleListenersBound = true;
+  [reducedMotionQuery, reducedDataQuery, compactQuery].forEach((media) => {
+    media.addEventListener?.('change', syncMediaPreferences);
+  });
+  navigator.connection?.addEventListener?.('change', syncMediaPreferences);
+}
+
+function bindVisibilityLifecycle() {
+  if (visibilityBound) return;
+  visibilityBound = true;
+  const hero = document.querySelector('.hero');
+  const descent = document.querySelector('#orbit-descent');
+  if (!captureMode && hero && 'IntersectionObserver' in window) {
+    visible = false;
+    const visibleRegions = new Set();
+    regionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) visibleRegions.add(entry.target);
+        else visibleRegions.delete(entry.target);
+      });
+      visible = visibleRegions.size > 0;
+      syncPlayback();
+    }, { rootMargin: compact ? '28% 0px 22% 0px' : '60% 0px 32% 0px' });
+    regionObserver.observe(hero);
+    if (descent) regionObserver.observe(descent);
+  }
+  document.addEventListener('visibilitychange', syncPlayback);
+  window.addEventListener('pagehide', (event) => {
+    if (event.persisted) stop();
+    else disposeHero();
+  });
+  window.addEventListener('pageshow', () => {
+    if (initialized) syncPlayback();
+    else void ensureHero();
+  });
+}
+
+function installHeroApi() {
+  window.__hero = {
+    pause: stop,
+    resume() { syncPlayback(); },
+    dispose: disposeHero,
+    setUserPaused(nextPaused) {
+      userPaused = Boolean(nextPaused);
+      window.__heroUserPaused = userPaused;
+      syncPlayback();
+      lifecyclePhase = userPaused ? 'paused' : 'live';
+      publishHeroState(userPaused ? 'paused' : 'live');
+    },
+    get running() { return running; },
+    get dragging() { return dragging; },
+    get quality() { return qualityTier; },
+    setScrollActive(nextActive) {
+      scrollActive = Boolean(nextActive);
+      if (!scrollActive) coordinateActiveLastFrame = false;
+      if (!initialized || contextLost || lifecycleUnavailable || prefersStaticHero()) return false;
+      syncPlayback();
+      if (!running) renderFrame({ frozen: true });
+      return true;
+    },
+    get scrollPose() {
+      return {
+        progress: Math.max(0, Math.min(1, Number(window.__orbitScrollProgress) || 0)),
+        rotationY: stage.rotation.y,
+        y: stage.position.y,
+        z: stage.position.z,
+        scale: stage.scale.x,
+      };
+    },
+    get divergence() {
+      const d1 = Math.atan2(Math.sin(state[0] - shadowState[0]), Math.cos(state[0] - shadowState[0]));
+      const d2 = Math.atan2(Math.sin(state[1] - shadowState[1]), Math.cos(state[1] - shadowState[1]));
+      return Math.hypot(d1, d2);
+    },
+  };
+}
+
+function failInitialization(reason = 'renderer-initialization') {
+  lifecycleUnavailable = true;
+  initialized = false;
+  invalidateHeroInitialization('unavailable');
+  delete window.__hero;
+  stop();
+  regionObserver?.disconnect();
+  canvas.style.display = 'none';
+  document.body.classList.remove('hero-live');
+  document.body.classList.add('no-webgl');
+  document.body.dataset.heroFallback = reason;
+  window.__heroPainted = true;
+  publishHeroState('static');
+  return false;
+}
+
+async function initializeHero(generation) {
+  try {
+    readMediaPreferences();
+    applyPreferenceClasses();
+    if (generation !== lifecycleGeneration) return false;
+    if (prefersStaticHero()) {
+      showStaticHero();
+      return false;
+    }
+    if (contextLost || lifecycleUnavailable) {
+      showStaticHero();
+      return false;
+    }
+    lifecyclePhase = 'initializing';
+    publishHeroState('loading');
+    if (!renderer && !buildScene()) {
+      return failInitialization('webgl2-unavailable');
+    }
+    bindInteraction();
+    lifecyclePhase = 'prewarming';
+    const warmed = await prewarm(generation);
+    // Preferences can change while the idle-sliced history is warming. Always
+    // sample them again before the first frame or public live API is exposed.
+    readMediaPreferences();
+    applyPreferenceClasses();
+    if (!warmed || generation !== lifecycleGeneration || contextLost || prefersStaticHero()) {
+      if (prefersStaticHero()) showStaticHero();
+      return false;
+    }
+    renderFrame({ frozen: true });
+    if (generation !== lifecycleGeneration || contextLost || prefersStaticHero()) return false;
+    bindVisibilityLifecycle();
+    initialized = true;
+    installHeroApi();
+    if (!captureMode) syncPlayback();
+    lifecyclePhase = userPaused ? 'paused' : 'live';
+    publishHeroState(userPaused ? 'paused' : 'live');
+    return true;
+  } catch {
+    return failInitialization();
+  }
+}
+
+function ensureHero() {
+  bindLifecycleListeners();
+  readMediaPreferences();
+  applyPreferenceClasses();
+  if (prefersStaticHero()) {
+    if (!initialized && lifecyclePhase !== 'static') invalidateHeroInitialization('static');
+    showStaticHero();
+    return Promise.resolve(false);
+  }
+  if (contextLost || lifecycleUnavailable) {
+    showStaticHero();
+    return Promise.resolve(false);
+  }
+  if (initialized && renderer) {
+    canvas.style.display = '';
     resize();
     renderFrame({ frozen: true });
     syncPlayback();
+    lifecyclePhase = userPaused ? 'paused' : 'live';
+    publishHeroState(userPaused ? 'paused' : 'live');
+    return Promise.resolve(true);
   }
-}
-
-async function initializeHero() {
-  try {
-    if (staticHero) {
-      canvas.style.display = 'none';
-      document.body.classList.add(reducedMotion ? 'reduced-motion-hero' : 'low-power-hero');
-      window.__heroPainted = true;
-      return;
-    }
-    buildScene();
-    bindInteraction();
-    await prewarm();
-    renderFrame({ frozen: true });
-    if (!captureMode) {
-      const hero = document.querySelector('.hero');
-      const descent = document.querySelector('#orbit-descent');
-      if (hero && 'IntersectionObserver' in window) {
-        visible = false;
-        const visibleRegions = new Set();
-        regionObserver = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) visibleRegions.add(entry.target);
-            else visibleRegions.delete(entry.target);
-          });
-          visible = visibleRegions.size > 0;
-          syncPlayback();
-        }, { rootMargin: compact ? '28% 0px 22% 0px' : '60% 0px 32% 0px' });
-        regionObserver.observe(hero);
-        if (descent) regionObserver.observe(descent);
+  if (initializationPromise) {
+    return initializationPromise.then((ready) => {
+      readMediaPreferences();
+      if (!ready && !initialized && !contextLost && !lifecycleUnavailable && !prefersStaticHero()) {
+        return ensureHero();
       }
-      document.addEventListener('visibilitychange', syncPlayback);
-      syncPlayback();
-    }
-    window.__hero = {
-      pause: stop,
-      resume() { visible = true; syncPlayback(); },
-      get running() { return running; },
-      get divergence() {
-        return Math.hypot(state[0] - shadowState[0], state[1] - shadowState[1]);
-      },
-    };
-    [reducedMotionQuery, reducedDataQuery, compactQuery].forEach((media) => {
-      media.addEventListener?.('change', syncMediaPreferences);
+      return Boolean(ready || initialized);
     });
-  } catch (error) {
-    console.warn('[hero] WebGL unavailable; using the static pendulum artwork', error);
-    stop();
-    regionObserver?.disconnect();
-    canvas.style.display = 'none';
-    document.body.classList.remove('hero-live');
-    document.body.classList.add('no-webgl');
-    window.__heroPainted = true;
   }
+
+  const generation = ++lifecycleGeneration;
+  let trackedInitialization;
+  trackedInitialization = initializeHero(generation).finally(() => {
+    if (initializationPromise === trackedInitialization) initializationPromise = null;
+  });
+  initializationPromise = trackedInitialization;
+  return trackedInitialization;
 }
 
-void initializeHero();
+window.__heroLifecycle = {
+  ensure: ensureHero,
+  dispose: disposeHero,
+  get phase() { return lifecyclePhase; },
+  get generation() { return lifecycleGeneration; },
+  get contextLost() { return contextLost; },
+  get unavailable() { return lifecycleUnavailable; },
+};
+
+// Bind preference/data listeners before the first prewarm begins. The module is
+// evaluated once, but `ensure()` remains reusable after any static early return.
+bindLifecycleListeners();
+void ensureHero();

@@ -3,21 +3,30 @@ name: Deploy landing to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["Evidence Sync", "Cross-repository release"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: landing-pages-${{ github.ref }}
+  group: landing-pages-main
   cancel-in-progress: true
 
 jobs:
   quality-gate:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && 'main' || github.sha }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22

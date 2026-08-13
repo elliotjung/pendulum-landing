@@ -5,8 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const bundles = [
-  { entry: 'assets/scene.js', output: 'assets/scene.bundle.js', format: 'esm', ceiling: 700_000 },
-  { entry: 'scripts/animation-vendor.entry.js', output: 'assets/animation-vendor.bundle.js', format: 'iife', ceiling: 160_000 }
+  { entry: 'assets/scene.js', output: 'assets/scene.bundle.js', format: 'esm', ceiling: 700_000 }
 ];
 
 for (const bundle of bundles) {

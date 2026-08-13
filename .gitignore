@@ -3,6 +3,7 @@ reports/
 test-results/
 playwright-report/
 .lighthouseci/
+.lhci-runtime/
 *.log
 .DS_Store
 Thumbs.db

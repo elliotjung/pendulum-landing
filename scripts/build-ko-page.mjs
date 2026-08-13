@@ -30,7 +30,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 // visiting it explicitly via ?lang=ko is a choice; a bare deep link only
 // sets the preference when none exists yet.
 const KO_BOOT =
-  '(function(){document.documentElement.classList.remove("no-js");try{var q=new URLSearchParams(location.search);if(q.get("lang")==="ko"||!localStorage.getItem("pendulum-landing/lang"))localStorage.setItem("pendulum-landing/lang","ko")}catch(e){}})();';
+  '(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="ko"||!localStorage.getItem("pendulum-landing/lang"))localStorage.setItem("pendulum-landing/lang","ko")}catch(e){}})();';
 
 const sha256 = (text) => createHash('sha256').update(text, 'utf8').digest('base64');
 
@@ -72,6 +72,18 @@ try {
       if (canonical) canonical.setAttribute('href', koUrl);
       const ogUrl = doc.querySelector('meta[property="og:url"]');
       if (ogUrl) ogUrl.setAttribute('content', koUrl);
+
+      // Korean's first viewport uses the local Pretendard regular face for the
+      // hero lede. Discover it from HTML rather than waiting for CSS so the
+      // swap cannot become a late LCP candidate on throttled mobile profiles.
+      const stylesheet = doc.querySelector('link[rel="stylesheet"]');
+      const regularPreload = doc.createElement('link');
+      regularPreload.setAttribute('rel', 'preload');
+      regularPreload.setAttribute('href', 'assets/fonts/Pretendard-Regular.subset.woff2');
+      regularPreload.setAttribute('as', 'font');
+      regularPreload.setAttribute('type', 'font/woff2');
+      regularPreload.setAttribute('crossorigin', 'anonymous');
+      doc.head.insertBefore(regularPreload, stylesheet);
 
       return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML + '\n';
     },

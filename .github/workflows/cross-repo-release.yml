@@ -29,7 +29,7 @@ concurrency:
 jobs:
   gate-and-tag:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: write
     env:
@@ -82,7 +82,8 @@ jobs:
           if [ -n "$EVIDENCE_BASE64" ]; then
             printf '%s' "$EVIDENCE_BASE64" | base64 --decode > assets/evidence-summary.json
           else
-            curl --fail --silent --show-error --retry 5 \
+            curl --fail --silent --show-error --retry 5 --retry-all-errors \
+              --connect-timeout 10 --max-time 60 \
               -o assets/evidence-summary.json \
               "https://raw.githubusercontent.com/elliotjung/pendulum-lab/${RELEASE_COMMIT}/reports/evidence-summary.json"
           fi

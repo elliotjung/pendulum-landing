@@ -1,22 +1,29 @@
 // ============================================================================
-// PENDULUM LAB — premium landing interactions
-// No live simulation. This drives the "expensive" feel: a cursor-following
-// spotlight, layered mouse parallax + 3D tilt, magnetic buttons, a scroll
-// progress bar, a backdrop scrim, and cinematic GSAP scroll choreography.
+// PENDULUM LAB — public landing interactions
+// The science, hero lifecycle, evidence, attribution, and navigation stay
+// explicit. Decorative motion is limited to small, one-shot CSS reveals.
 // ============================================================================
 (function () {
   'use strict';
-  document.documentElement.classList.add('js-ready');
+  window.__PENDULUM_MAIN_READY = true;
+  if (window.__PENDULUM_MAIN_WATCHDOG) {
+    clearTimeout(window.__PENDULUM_MAIN_WATCHDOG);
+    window.__PENDULUM_MAIN_WATCHDOG = 0;
+  }
+  // The normal pre-paint path already removed this class. The condition is
+  // only true when a very slow main.js arrives after the four-second fallback.
+  const recoveredFromNoJs = document.documentElement.classList.contains('no-js');
+  if (recoveredFromNoJs) {
+    document.documentElement.classList.remove('no-js');
+  }
   const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   const reducedDataQuery = window.matchMedia('(prefers-reduced-data: reduce)');
   const compactQuery = window.matchMedia('(max-width: 720px)');
-  const finePointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
   const queryFlag = (name) => /^(?:1|true|yes)$/i.test(new URLSearchParams(window.location.search).get(name) || '');
   let reduced = reducedMotionQuery.matches;
   let reducedData = reducedDataQuery.matches || navigator.connection?.saveData === true;
   let compactViewport = compactQuery.matches;
   let reducedEffects = reduced || compactViewport;
-  let fine = finePointerQuery.matches;
   const captureMode = queryFlag('captureHero') || window.__PENDULUM_CAPTURE_HERO === true;
   const koreanPage = document.documentElement.lang === 'ko';
   const $ = (s, r = document) => r.querySelector(s);
@@ -254,55 +261,199 @@
   const sceneUrl = new URL('scene.bundle.js', mainScriptUrl).href;
   const captureHero = captureMode;
   const lowMemory = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 2;
+  const heroCanvas = $('#hero-canvas');
+  const heroToggle = $('[data-hero-toggle]');
+  const heroToggleLabel = $('[data-hero-toggle-label]');
+  const heroStatus = $('[data-hero-status]');
+  const heroStageState = $('[data-hero-stage-state]');
+  const heroStageRate = $('[data-hero-stage-rate]');
   let heroSceneRequested = false;
+  let heroScenePromise = null;
+  let heroEnsurePromise = null;
+  let heroUnavailable = false;
   let heroIntentController = null;
-  let heroIdleHandle = 0;
-  let heroTimerHandle = 0;
+  let heroState = 'idle';
+  window.__heroUserPaused = false;
+
+  const heroCopy = koreanPage ? {
+    idle: ['3D 시작', '인터랙티브 3D를 시작할 준비가 되었습니다.', '3D 준비', '조작하면 시작'],
+    loading: ['3D 불러오는 중', '3D 물리 장면을 준비하고 있습니다.', '렌더러 준비 중', '240 Hz 물리 준비'],
+    live: ['3D 일시정지', '실시간 3D 이중진자가 움직이고 있습니다.', '실시간 RK4', '240 Hz 물리'],
+    paused: ['3D 재개', '3D 이중진자 움직임이 일시정지되었습니다.', '일시정지', '상태 보존됨'],
+    static: ['정적 이미지', '기기 환경설정을 존중해 정적 진자 이미지를 표시합니다.', '정적 모드', '환경설정 존중']
+  } : {
+    idle: ['Start 3D', 'Interactive 3D is ready to start.', '3D ready', 'starts on interaction'],
+    loading: ['Loading 3D', 'Preparing the 3D physics scene.', 'preparing renderer', 'warming 240 Hz physics'],
+    live: ['Pause 3D', 'The live 3D double pendulum is moving.', 'Live RK4', '240 Hz physics'],
+    paused: ['Resume 3D', 'The 3D double pendulum is paused.', 'paused', 'state preserved'],
+    static: ['Static artwork', 'Showing the static pendulum artwork to respect this device preference.', 'static mode', 'preference respected']
+  };
+
+  function setHeroState(nextState) {
+    heroState = nextState;
+    const normalized = nextState === 'failed' ? 'static' : nextState;
+    const copy = heroCopy[normalized] || heroCopy.idle;
+    document.body.classList.toggle('hero-loading', normalized === 'loading');
+    document.body.classList.toggle('hero-user-paused', normalized === 'paused');
+    if (heroToggle instanceof HTMLButtonElement) {
+      heroToggle.disabled = normalized === 'loading' || normalized === 'static';
+      heroToggle.setAttribute('aria-pressed', String(normalized === 'paused'));
+    }
+    if (heroToggleLabel) heroToggleLabel.textContent = copy[0];
+    if (heroStatus) heroStatus.textContent = copy[1];
+    if (heroStageState) heroStageState.textContent = copy[2];
+    if (heroStageRate) heroStageRate.textContent = copy[3];
+    if (normalized === 'idle' || normalized === 'static') window.__heroPainted = true;
+  }
+
+  // Three emits a console error when its constructor discovers that WebGL is
+  // unavailable. Probe WebGL2 first and only import the renderer bundle
+  // when a context can actually be created. Preventing the creation-error event
+  // keeps unsupported Firefox/CI environments on a quiet CSS/WebP fallback.
+  function canCreateWebGL2() {
+    if (!window.WebGL2RenderingContext) return false;
+    const probe = document.createElement('canvas');
+    const preventNoise = (event) => event.preventDefault();
+    probe.addEventListener('webglcontextcreationerror', preventNoise);
+    try {
+      const context = probe.getContext('webgl2', {
+        alpha: true,
+        antialias: false,
+        depth: true,
+        powerPreference: 'high-performance',
+        failIfMajorPerformanceCaveat: false
+      });
+      if (!context) return false;
+      // Do not explicitly call WEBGL_lose_context on the probe. WebKit reports
+      // that expected release as a console error; the detached one-pixel canvas
+      // is reclaimed naturally without polluting production diagnostics.
+      probe.width = 1;
+      probe.height = 1;
+      return true;
+    } catch {
+      return false;
+    } finally {
+      probe.removeEventListener('webglcontextcreationerror', preventNoise);
+    }
+  }
 
   function clearHeroIntent() {
     heroIntentController?.abort();
     heroIntentController = null;
-    if (heroIdleHandle && 'cancelIdleCallback' in window) window.cancelIdleCallback(heroIdleHandle);
-    if (heroTimerHandle) window.clearTimeout(heroTimerHandle);
-    heroIdleHandle = 0;
-    heroTimerHandle = 0;
+  }
+
+  function heroPrefersPoster() {
+    reduced = reducedMotionQuery.matches;
+    reducedData = reducedDataQuery.matches || navigator.connection?.saveData === true;
+    return !captureHero && (reduced || reducedData || lowMemory);
+  }
+
+  function failHeroScene(reason) {
+    heroUnavailable = true;
+    document.body.classList.add('no-webgl');
+    document.body.dataset.heroFallback = reason;
+    window.__heroPainted = true;
+    setHeroState('static');
+    return false;
   }
 
   function requestHeroScene() {
-    if (heroSceneRequested) return;
+    if (heroUnavailable) {
+      setHeroState('static');
+      return Promise.resolve(false);
+    }
     // Compact screens use scene.js's reduced geometry/bloom-free renderer.
     // Only an explicit motion/data preference or a genuinely low-memory tier
     // stays on the poster, so capable phones still receive the live 3D descent.
-    if (!captureHero && (reduced || reducedData || lowMemory)) {
+    if (heroPrefersPoster()) {
       clearHeroIntent();
       document.body.classList.add(reduced ? 'reduced-motion-hero' : 'low-power-hero');
       window.__heroPainted = true;
-      return;
+      setHeroState('static');
+      return Promise.resolve(false);
+    }
+    if (!heroScenePromise && !canCreateWebGL2()) {
+      heroSceneRequested = true;
+      heroUnavailable = true;
+      clearHeroIntent();
+      document.body.classList.add('no-webgl');
+      document.body.dataset.heroFallback = 'webgl2-unavailable';
+      window.__heroPainted = true;
+      setHeroState('static');
+      return Promise.resolve(false);
     }
     heroSceneRequested = true;
     clearHeroIntent();
     document.body.classList.remove('reduced-motion-hero', 'low-power-hero');
-    import(sceneUrl).catch(() => {
-      document.body.classList.add('no-webgl');
-      window.__heroPainted = true;
-    });
+    setHeroState('loading');
+    heroScenePromise ||= import(sceneUrl);
+    if (heroEnsurePromise) return heroEnsurePromise;
+
+    let trackedEnsure;
+    trackedEnsure = heroScenePromise
+      .then(() => {
+        const lifecycle = window.__heroLifecycle;
+        if (typeof lifecycle?.ensure === 'function') return lifecycle.ensure();
+        return Boolean(window.__hero);
+      })
+      .then((ready) => {
+        if (!ready && (heroPrefersPoster() || window.__heroLifecycle?.phase === 'context-lost')) {
+          setHeroState('static');
+        }
+        return Boolean(ready);
+      })
+      .catch(() => failHeroScene('module-load'))
+      .finally(() => {
+        if (heroEnsurePromise === trackedEnsure) heroEnsurePromise = null;
+      });
+    heroEnsurePromise = trackedEnsure;
+    return trackedEnsure;
   }
+
+  window.addEventListener('pendulum:hero-state', (event) => {
+    const state = event instanceof CustomEvent ? event.detail?.state : null;
+    const fallback = document.body.dataset.heroFallback;
+    if (state === 'static' && document.body.classList.contains('no-webgl') && fallback !== 'context-lost') {
+      heroUnavailable = true;
+    }
+    if (state === 'loading' || state === 'live' || state === 'paused' || state === 'static') setHeroState(state);
+  });
+
+  heroToggle?.addEventListener('click', () => {
+    if (heroState === 'idle' || heroState === 'failed') {
+      requestHeroScene();
+      return;
+    }
+    if (heroState === 'live') {
+      window.__heroUserPaused = true;
+      window.__hero?.setUserPaused?.(true);
+      setHeroState('paused');
+      return;
+    }
+    if (heroState === 'paused') {
+      window.__heroUserPaused = false;
+      window.__hero?.setUserPaused?.(false);
+      setHeroState('live');
+    }
+  });
+
   if (captureHero) {
     requestHeroScene();
   } else {
     heroIntentController = new AbortController();
     const intentOptions = { once: true, passive: true, signal: heroIntentController.signal };
+    const scrollIntentOptions = { passive: true, signal: heroIntentController.signal };
     const hero = document.querySelector('.hero');
     hero?.addEventListener('pointermove', requestHeroScene, intentOptions);
     hero?.addEventListener('pointerdown', requestHeroScene, intentOptions);
     hero?.addEventListener('touchstart', requestHeroScene, intentOptions);
-    window.addEventListener('scroll', requestHeroScene, intentOptions);
+    const requestHeroFromScroll = () => {
+      if (Math.abs(window.scrollY) < 8) return;
+      window.removeEventListener('scroll', requestHeroFromScroll);
+      requestHeroScene();
+    };
+    window.addEventListener('scroll', requestHeroFromScroll, scrollIntentOptions);
     window.addEventListener('keydown', requestHeroScene, { once: true, signal: heroIntentController.signal });
-    if ('requestIdleCallback' in window) {
-      heroIdleHandle = window.requestIdleCallback(requestHeroScene, { timeout: 1200 });
-    } else {
-      heroTimerHandle = window.setTimeout(requestHeroScene, 450);
-    }
   }
 
   function syncHeroPreferences({ allowLoad = true } = {}) {
@@ -310,31 +461,31 @@
     reducedData = reducedDataQuery.matches || navigator.connection?.saveData === true;
     compactViewport = compactQuery.matches;
     reducedEffects = reduced || compactViewport;
-    fine = finePointerQuery.matches;
     const usePoster = !captureHero && (reduced || reducedData || lowMemory);
     document.body.classList.toggle('reduced-motion-hero', usePoster && reduced);
     document.body.classList.toggle('low-power-hero', usePoster && !reduced);
-    document.body.classList.toggle('effects-reduced', reducedEffects || !fine);
-    document.body.classList.toggle('cursor-active', fine && !reducedEffects && !captureMode);
     if (usePoster) {
       window.__hero?.pause();
       window.__heroPainted = true;
       clearHeroIntent();
-      if (window.ScrollTrigger) window.ScrollTrigger.getAll().forEach((trigger) => trigger.kill(false));
-      $$('.reveal, [data-wipe], [data-rise]').forEach((el) => {
-        el.style.opacity = '1';
-        el.style.clipPath = 'none';
-        el.style.transform = 'none';
-        el.style.filter = 'none';
-      });
+      setHeroState('static');
+    } else if (heroUnavailable) {
+      setHeroState('static');
     } else if (heroSceneRequested) {
-      window.__hero?.resume();
+      if (window.__hero) {
+        window.__hero.resume();
+        setHeroState(window.__heroUserPaused ? 'paused' : 'live');
+      } else {
+        requestHeroScene();
+      }
     } else if (allowLoad) {
       requestHeroScene();
+    } else {
+      setHeroState('idle');
     }
   }
 
-  const preferenceQueries = [reducedMotionQuery, reducedDataQuery, compactQuery, finePointerQuery];
+  const preferenceQueries = [reducedMotionQuery, reducedDataQuery, compactQuery];
   preferenceQueries.forEach((query) => query.addEventListener?.('change', () => syncHeroPreferences()));
   navigator.connection?.addEventListener?.('change', () => syncHeroPreferences());
   syncHeroPreferences({ allowLoad: false });
@@ -350,8 +501,10 @@
   let orbitEnd = Number.POSITIVE_INFINITY;
   let orbitBeatCenters = [];
   let activeOrbitBeat = -1;
-  let previousScrollY = window.scrollY;
-  let previousScrollTime = performance.now();
+  let orbitMetricsReady = false;
+  let orbitResizeObserver = null;
+  let previousScrollY = 0;
+  let previousScrollTime = 0;
   window.__orbitScrollProgress = 0;
   window.__orbitScrollVelocity = 0;
 
@@ -364,7 +517,25 @@
       const beatRect = beat.getBoundingClientRect();
       return beatRect.top + window.scrollY + beatRect.height / 2;
     });
+    orbitMetricsReady = true;
   }
+
+  function ensureOrbitMetrics() {
+    const liveGeometry = heroState === 'loading' || heroState === 'live' || heroState === 'paused';
+    if (orbitMetricsReady || !orbitDescent || !liveGeometry) return;
+    cacheOrbitMetrics();
+    if ('ResizeObserver' in window) {
+      orbitResizeObserver = new ResizeObserver(() => {
+        cacheOrbitMetrics();
+        scheduleScroll();
+      });
+      orbitResizeObserver.observe(orbitDescent);
+    }
+  }
+  document.fonts?.ready.then(() => {
+    if (orbitMetricsReady) cacheOrbitMetrics();
+    scheduleScroll();
+  }).catch(() => undefined);
 
   function setOrbitBeat(index) {
     if (index === activeOrbitBeat) return;
@@ -386,21 +557,31 @@
     const viewport = window.innerHeight;
     const max = document.documentElement.scrollHeight - viewport;
     const now = performance.now();
-    const elapsed = Math.max(1 / 240, Math.min(0.12, (now - previousScrollTime) / 1000));
-    const rawVelocity = ((sy - previousScrollY) / Math.max(viewport, 1)) / elapsed;
+    const elapsed = previousScrollTime
+      ? Math.max(1 / 240, Math.min(0.12, (now - previousScrollTime) / 1000))
+      : 1 / 60;
+    const rawVelocity = previousScrollTime
+      ? ((sy - previousScrollY) / Math.max(viewport, 1)) / elapsed
+      : 0;
     const velocityTarget = Math.max(-1, Math.min(1, rawVelocity * 0.12));
     const velocityBlend = 1 - Math.exp(-elapsed * 18);
     previousScrollY = sy;
     previousScrollTime = now;
     window.__orbitScrollVelocity += (velocityTarget - window.__orbitScrollVelocity) * velocityBlend;
-    const orbitRange = Math.max(1, orbitEnd - orbitStart);
-    const orbitProgress = Math.max(0, Math.min(1, (sy - orbitStart) / orbitRange));
+    const hasOrbitMetrics = orbitMetricsReady && Number.isFinite(orbitStart) && Number.isFinite(orbitEnd);
+    const orbitRange = hasOrbitMetrics ? Math.max(1, orbitEnd - orbitStart) : 1;
+    const orbitProgress = hasOrbitMetrics ? Math.max(0, Math.min(1, (sy - orbitStart) / orbitRange)) : 0;
     window.__orbitScrollProgress = orbitProgress;
     if (orbitDescent) orbitDescent.style.setProperty('--orbit-scroll', orbitProgress.toFixed(4));
-    const descentEntry = orbitStart - viewport * 0.35;
-    const descentExit = orbitEnd + viewport * 0.2;
-    const descentActive = sy >= descentEntry && sy <= descentExit;
+    const descentEntry = hasOrbitMetrics ? orbitStart - viewport * 0.35 : Number.POSITIVE_INFINITY;
+    const descentExit = hasOrbitMetrics ? orbitEnd + viewport * 0.2 : Number.NEGATIVE_INFINITY;
+    const descentActive = hasOrbitMetrics && sy >= descentEntry && sy <= descentExit;
     document.body.classList.toggle('orbit-descent-active', descentActive);
+    document.body.classList.toggle('hero-scene-active', sy < viewport * 0.96 || descentActive);
+    // Firefox can deliver the hero-exit and descent-entry IntersectionObserver
+    // records in separate turns. The scroll controller is the authoritative
+    // visibility source while the phase-space descent owns the viewport.
+    window.__hero?.setScrollActive?.(descentActive);
     if (descentActive && orbitBeatCenters.length) {
       const viewportCenter = sy + viewport / 2;
       let nearest = 0;
@@ -413,7 +594,7 @@
     } else {
       setOrbitBeat(-1);
     }
-    nav.classList.toggle('scrolled', sy > 40);
+    nav?.classList.toggle('scrolled', sy > 40);
     if (scrim) {
       const heroOpacity = Math.min(0.92, sy / (viewport * 0.9) * 0.92);
       let scrimOpacity = heroOpacity;
@@ -428,21 +609,41 @@
       }
       scrim.style.opacity = scrimOpacity.toFixed(3);
     }
-    if (progress) progress.style.width = (max > 0 ? (sy / max) * 100 : 0).toFixed(2) + '%';
+    if (progress) progress.style.transform = `scaleX(${Math.max(0, Math.min(1, max > 0 ? sy / max : 0)).toFixed(4)})`;
   }
   let scrollFrame = 0;
   function scheduleScroll() {
     if (scrollFrame) return;
+    if (!orbitMetricsReady && Math.abs(window.scrollY) < 8) return;
     scrollFrame = requestAnimationFrame(() => {
       scrollFrame = 0;
+      ensureOrbitMetrics();
       onScroll();
     });
   }
   window.addEventListener('scroll', scheduleScroll, { passive: true });
-  window.addEventListener('resize', () => { cacheOrbitMetrics(); scheduleScroll(); }, { passive: true });
-  window.addEventListener('load', () => { cacheOrbitMetrics(); scheduleScroll(); }, { once: true });
-  cacheOrbitMetrics();
-  onScroll();
+  window.addEventListener('resize', () => {
+    if (!orbitMetricsReady) return;
+    cacheOrbitMetrics();
+    scheduleScroll();
+  }, { passive: true });
+  window.visualViewport?.addEventListener('resize', () => {
+    if (!orbitMetricsReady) return;
+    cacheOrbitMetrics();
+    scheduleScroll();
+  }, { passive: true });
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted || window.location.hash) scheduleScroll();
+  });
+  window.addEventListener('pendulum:hero-state', (event) => {
+    const state = event instanceof CustomEvent ? event.detail?.state : null;
+    if ((state === 'loading' || state === 'live' || state === 'paused') && Math.abs(window.scrollY) >= 8) {
+      scheduleScroll();
+    }
+  });
+  document.body.classList.add('hero-scene-active');
+  if (progress) progress.style.transform = 'scaleX(0)';
+  if (scrim) scrim.style.opacity = '0';
 
   // ---- Small-screen menu: close after navigating (works without JS too) ----
   const navMenu = $('#nav-menu');
@@ -454,15 +655,18 @@
       if (navMenu.open && event.target instanceof Node && !navMenu.contains(event.target)) navMenu.open = false;
     });
     window.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') navMenu.open = false;
+      if (event.key === 'Escape' && navMenu.open) {
+        navMenu.open = false;
+        navMenu.querySelector('summary')?.focus();
+      }
     });
   }
 
   // ---- Scrollspy: mark the nav link whose section owns the viewport --------
-  const spyLinks = $$('.nav-links a[href^="#"]');
+  const spyLinks = $$('.nav-links a[href^="#"], .nav-menu-panel a[href^="#"]');
   if (spyLinks.length && 'IntersectionObserver' in window) {
     const setCurrent = (id) => spyLinks.forEach((a) => {
-      if (a.getAttribute('href') === '#' + id) a.setAttribute('aria-current', 'true');
+      if (a.getAttribute('href') === '#' + id) a.setAttribute('aria-current', 'location');
       else a.removeAttribute('aria-current');
     });
     const spy = new IntersectionObserver((entries) => {
@@ -471,176 +675,51 @@
         .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (visible) setCurrent(visible.target.id);
     }, { rootMargin: '-38% 0px -52% 0px', threshold: [0, 0.25, 0.5] });
-    spyLinks.forEach((a) => {
-      const section = document.getElementById(a.getAttribute('href').slice(1));
+    new Set(spyLinks.map((a) => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean)).forEach((section) => {
       if (section) spy.observe(section);
     });
   }
 
-  // ---- Mouse engine: spotlight + layered parallax + tilt ------------------
-  const glow = $('.cursor-glow');
-  const parallaxEls = $$('[data-mouse]').map((el) => ({ el, depth: parseFloat(el.dataset.mouse) || 12 }));
-  const pointer = { tx: 0, ty: 0, x: 0, y: 0 };   // normalised -0.5..0.5
-  const spot = { tx: window.innerWidth / 2, ty: window.innerHeight / 2, x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  // ---- Quiet, one-shot section reveals -------------------------------------
+  const revealElements = [...new Set([
+    ...$$('.reveal, [data-wipe], [data-rise]'),
+    ...$$('[data-stagger]').flatMap((group) => Array.from(group.children))
+  ])];
 
-  // Element rects only move on scroll/resize, so cache them behind a generation
-  // counter and re-measure lazily. This keeps per-pointermove effects off the
-  // synchronous-reflow path — at most one measurement per frame, never one per
-  // event — which is what stops the hover jank on dense card grids.
-  let rectGeneration = 0;
-  const rectCache = new WeakMap();
-  const bumpRects = () => { rectGeneration += 1; };
-  window.addEventListener('scroll', bumpRects, { passive: true });
-  window.addEventListener('resize', bumpRects, { passive: true });
-  function rectOf(el) {
-    const cached = rectCache.get(el);
-    if (cached && cached.generation === rectGeneration) return cached.rect;
-    const rect = el.getBoundingClientRect();
-    rectCache.set(el, { generation: rectGeneration, rect });
-    return rect;
+  function revealElement(element) {
+    element.classList.add('is-visible');
+    if (element.classList.contains('sec-head')) element.classList.add('lit');
   }
 
-  // Coalesce pointer-driven style writes into a single animation frame: read in
-  // the event handler, write once in the frame. Keyed by element so rapid moves
-  // collapse to the latest value instead of thrashing layout every event.
-  const pendingWrites = new Map();
-  let writeRaf = 0;
-  function flushWrites() {
-    writeRaf = 0;
-    for (const write of pendingWrites.values()) write();
-    pendingWrites.clear();
-  }
-  function queueWrite(key, write) {
-    pendingWrites.set(key, write);
-    if (!writeRaf && !document.hidden) writeRaf = requestAnimationFrame(flushWrites);
-  }
-  function cancelWrite(key) { pendingWrites.delete(key); }
-
-  {
-    window.addEventListener('pointermove', (e) => {
-      if (!fine || reducedEffects || captureMode) return;
-      pointer.tx = e.clientX / window.innerWidth - 0.5;
-      pointer.ty = e.clientY / window.innerHeight - 0.5;
-      spot.tx = e.clientX; spot.ty = e.clientY;
-      schedulePointerLoop();
-    }, { passive: true });
-
-    // magnetic buttons
-    $$('.btn').forEach((btn) => {
-      btn.addEventListener('pointermove', (e) => {
-        if (!fine || reducedEffects || captureMode) return;
-        const r = rectOf(btn);
-        if (!r.width || !r.height) return;
-        const mx = (e.clientX - r.left - r.width / 2) * 0.3;
-        const my = (e.clientY - r.top - r.height / 2) * 0.4;
-        queueWrite(btn, () => { btn.style.transform = `translate(${mx.toFixed(2)}px, ${(my - 2).toFixed(2)}px)`; });
-      }, { passive: true });
-      btn.addEventListener('pointerleave', () => { cancelWrite(btn); btn.style.transform = ''; });
-    });
-
-    let pointerRaf = 0;
-    function tick() {
-      pointerRaf = 0;
-      if (document.hidden) return;
-      if (!fine || reducedEffects || captureMode) {
-        for (const p of parallaxEls) p.el.style.transform = '';
-        if (glow) glow.style.transform = '';
-        return;
-      }
-      pointer.x += (pointer.tx - pointer.x) * 0.08;
-      pointer.y += (pointer.ty - pointer.y) * 0.08;
-      for (const p of parallaxEls) {
-        p.el.style.transform = `translate3d(${-pointer.x * p.depth}px, ${-pointer.y * p.depth}px, 0)`;
-      }
-      spot.x += (spot.tx - spot.x) * 0.12;
-      spot.y += (spot.ty - spot.y) * 0.12;
-      if (glow) glow.style.transform = `translate3d(${spot.x}px, ${spot.y}px, 0)`;
-      const moving = Math.abs(pointer.tx - pointer.x) + Math.abs(pointer.ty - pointer.y)
-        + Math.abs(spot.tx - spot.x) / 100 + Math.abs(spot.ty - spot.y) / 100;
-      if (moving > 0.005) pointerRaf = requestAnimationFrame(tick);
-    }
-    function schedulePointerLoop() {
-      if (!document.hidden && fine && !reducedEffects && !captureMode && !pointerRaf) {
-        pointerRaf = requestAnimationFrame(tick);
-      }
-    }
-    function syncPointerLoop() {
-      if (document.hidden) {
-        if (pointerRaf) cancelAnimationFrame(pointerRaf);
-        pointerRaf = 0;
-      } else schedulePointerLoop();
-    }
-    document.addEventListener('visibilitychange', syncPointerLoop);
-    syncPointerLoop();
+  function revealAll() {
+    revealElements.forEach(revealElement);
+    document.body.classList.remove('reveal-observer-ready');
   }
 
-  // ---- GSAP cinematic scroll ----------------------------------------------
-  if (window.gsap && window.ScrollTrigger && !reducedEffects && !captureMode) {
-    gsap.registerPlugin(ScrollTrigger);
-
-    // Keep above-the-fold copy paintable immediately for LCP. GSAP owns only
-    // scroll-driven motion; the hero text never starts hidden or blurred.
-
-    // hero dissolves as you descend — cinematic exit
-    gsap.to('.hero .wrap', {
-      yPercent: -12, opacity: 0, ease: 'none',
-      scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
-    });
-
-    // section headers light their sweep-rule as they arrive
-    $$('.sec-head').forEach((el) => {
-      ScrollTrigger.create({ trigger: el, start: 'top 82%', once: true, onEnter: () => el.classList.add('lit') });
-    });
-
-    $$('.reveal').forEach((el) => {
-      gsap.fromTo(el, { opacity: 0, y: 40, filter: 'blur(12px)' }, {
-        opacity: 1, y: 0, filter: 'blur(0px)', duration: 1, ease: 'power3.out',
-        scrollTrigger: { trigger: el, start: 'top 86%', once: true },
-      });
-    });
-
-    // clip-wipe reveals (boards / big blocks)
-    $$('[data-wipe]').forEach((el) => {
-      gsap.fromTo(el, { opacity: 0, clipPath: 'inset(0 0 100% 0)', y: 48 }, {
-        opacity: 1, clipPath: 'inset(0 0 0% 0)', y: 0, duration: 1.15, ease: 'power3.out',
-        scrollTrigger: { trigger: el, start: 'top 85%', once: true },
-      });
-    });
-
-    // headings rise + scale in
-    $$('[data-rise]').forEach((el) => {
-      gsap.fromTo(el, { opacity: 0, y: 60, scale: .96 }, {
-        opacity: 1, y: 0, scale: 1, duration: 1.1, ease: 'power4.out',
-        scrollTrigger: { trigger: el, start: 'top 88%', once: true },
-      });
-    });
-
-    // staggered card grids materialize with a focus-in blur
-    $$('[data-stagger]').forEach((group) => {
-      gsap.fromTo(group.children, { opacity: 0, y: 48, scale: .95, filter: 'blur(10px)' }, {
-        opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: .9, ease: 'power3.out', stagger: .09,
-        scrollTrigger: { trigger: group, start: 'top 82%', once: true },
-      });
-    });
-
-    // scrubbed parallax + heading drift
-    $$('[data-parallax]').forEach((el) => {
-      const depth = parseFloat(el.dataset.parallax) || 0.2;
-      gsap.to(el, { yPercent: -depth * 100, ease: 'none',
-        scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true } });
-    });
-    // scrubbed draw-on for the divergence diagram
-    $$('.draw-path').forEach((path) => {
-      const len = path.getTotalLength();
-      path.style.strokeDasharray = len;
-      path.style.strokeDashoffset = len;
-      gsap.to(path, { strokeDashoffset: 0, ease: 'none',
-        scrollTrigger: { trigger: path.closest('.diverge-stage'), start: 'top 80%', end: 'bottom 55%', scrub: 0.6 } });
-    });
+  if (
+    reducedEffects
+    || captureMode
+    || recoveredFromNoJs
+    || !('IntersectionObserver' in window)
+  ) {
+    revealAll();
   } else {
-    $$('.reveal, [data-wipe], [data-rise]').forEach((el) => { el.style.opacity = 1; el.style.clipPath = 'none'; el.style.transform = 'none'; el.style.filter = 'none'; });
-    $$('.sec-head').forEach((el) => el.classList.add('lit'));
-    $$('.draw-path').forEach((p) => { p.style.strokeDasharray = 'none'; p.style.strokeDashoffset = 0; });
+    document.body.classList.add('reveal-observer-ready');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        revealElement(entry.target);
+        revealObserver.unobserve(entry.target);
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+
+    revealElements.forEach((element) => revealObserver.observe(element));
+    reducedMotionQuery.addEventListener?.('change', (event) => {
+      if (event.matches) {
+        revealObserver.disconnect();
+        revealAll();
+      }
+    }, { once: true });
   }
 
   // ---- count-up telemetry (robust to IO non-delivery) ---------------------
@@ -672,22 +751,4 @@
     setTimeout(() => { counters.forEach((c) => { if (!c.__done) animateValue(c); }); }, 2600);
   }
 
-  // ---- capability card cursor glow ----------------------------------------
-  // Fine-pointer only (touch has no hover) and rect-cached + frame-batched like
-  // the other pointer effects, so scrubbing across the grid never thrashes.
-  {
-    $$('.cap-card').forEach((card) => {
-      card.addEventListener('pointermove', (e) => {
-        if (!fine || reducedEffects || captureMode) return;
-        const r = rectOf(card);
-        if (!r.width || !r.height) return;
-        const mx = (e.clientX - r.left) / r.width * 100;
-        const my = (e.clientY - r.top) / r.height * 100;
-        queueWrite(card, () => {
-          card.style.setProperty('--mx', mx.toFixed(1) + '%');
-          card.style.setProperty('--my', my.toFixed(1) + '%');
-        });
-      }, { passive: true });
-    });
-  }
 })();

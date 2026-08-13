@@ -6,6 +6,10 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const evidence = JSON.parse(await readFile(join(root, 'assets', 'evidence-summary.json'), 'utf8'));
 const sourceCommit = evidence.provenance?.sourceCommit;
 if (!/^[a-f0-9]{40}$/i.test(sourceCommit ?? '')) throw new Error('evidence summary has no valid source commit');
+const generatedAt = evidence.generatedAt;
+if (!generatedAt || new Date(generatedAt).toISOString() !== generatedAt) {
+  throw new Error('evidence summary has no canonical generatedAt timestamp');
+}
 
 let markdown;
 const localPath = process.env.PENDULUM_LAB_CHANGELOG_PATH;
@@ -49,7 +53,7 @@ if (highlights.length !== 3) throw new Error(`expected three highlights for Unre
 
 const output = {
   schemaVersion: 'pendulum-changelog-highlights/v1',
-  generatedAt: new Date().toISOString(),
+  generatedAt,
   sourceCommit,
   sourceUrl: `https://github.com/elliotjung/pendulum-lab/blob/${sourceCommit}/CHANGELOG.md`,
   highlights
