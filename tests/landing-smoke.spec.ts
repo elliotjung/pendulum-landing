@@ -106,6 +106,7 @@ test('default load paints instantly and defers the heavy 3D bundle until intent'
   expect((await page.request.get('/?lang=en')).status()).toBe(200);
   const sceneRequests: string[] = [];
   const deferredEnhancementRequests: string[] = [];
+  let webglUnavailable = false;
   let releaseScene: () => void = () => undefined;
   const sceneGate = new Promise<void>((resolve) => { releaseScene = resolve; });
   page.on('request', (request) => {
@@ -161,13 +162,26 @@ test('default load paints instantly and defers the heavy 3D bundle until intent'
     expect(deferredEnhancementRequests).toHaveLength(0);
     await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Start 3D');
     await page.locator('.hero').hover({ position: { x: 24, y: 180 } });
-    await expect.poll(() => sceneRequests.length).toBe(1);
-    await expect(page.locator('body')).toHaveClass(/hero-loading/);
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await expect(page.locator('body')).toHaveClass(/reduced-motion-hero/);
-    await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Static artwork');
+    await expect(page.locator('body')).toHaveClass(/hero-loading|no-webgl/);
+    webglUnavailable = await page.locator('body').evaluate((body) => body.classList.contains('no-webgl'));
+    if (webglUnavailable) {
+      expect(sceneRequests).toHaveLength(0);
+      await expect(page.locator('body')).toHaveAttribute('data-hero-fallback', 'webgl2-unavailable');
+      await expect(page.locator('.hero-static-art')).toBeVisible();
+      await expect(page.locator('body')).not.toHaveClass(/hero-loading|hero-live/);
+      await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Static artwork');
+    } else {
+      await expect.poll(() => sceneRequests.length).toBe(1);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await expect(page.locator('body')).toHaveClass(/reduced-motion-hero/);
+      await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Static artwork');
+    }
   } finally {
     releaseScene();
+  }
+  if (webglUnavailable) {
+    await page.unroute('**/assets/scene.bundle.js');
+    return;
   }
   await page.waitForFunction(() => Boolean((window as unknown as { __heroLifecycle?: unknown }).__heroLifecycle));
   await page.unroute('**/assets/scene.bundle.js');
@@ -388,9 +402,17 @@ test('prewarm preference changes stay static and restart the same scene module',
   await expect(page.locator('[data-hero-toggle]')).toBeDisabled();
   await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Static artwork');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.waitForFunction(() => (window as unknown as {
+  await page.waitForFunction(() => document.body.classList.contains('no-webgl') || (window as unknown as {
     __heroLifecycle?: { phase: string };
   }).__heroLifecycle?.phase === 'prewarming');
+  const webglUnavailable = await page.locator('body').evaluate((body) => body.classList.contains('no-webgl'));
+  if (webglUnavailable) {
+    await expect(page.locator('body')).toHaveAttribute('data-hero-fallback', 'webgl2-unavailable');
+    await expect(page.locator('.hero-static-art')).toBeVisible();
+    await expect(page.locator('body')).not.toHaveClass(/hero-loading|hero-live/);
+    await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Static artwork');
+    return;
+  }
   await page.evaluate(() => (window as unknown as { __setTestSaveData: (next: boolean) => void }).__setTestSaveData(true));
   await expect(page.locator('body')).toHaveClass(/low-power-hero/);
   await page.evaluate(() => (window as unknown as { __flushHeroIdle: () => number }).__flushHeroIdle());
@@ -465,9 +487,18 @@ test('WebGL context loss during prewarm invalidates the pending live generation'
   });
   await page.goto('/');
   await page.locator('.hero').hover({ position: { x: 24, y: 180 } });
-  await page.waitForFunction(() => (window as unknown as {
+  await page.waitForFunction(() => document.body.classList.contains('no-webgl') || (window as unknown as {
     __heroLifecycle?: { phase: string };
   }).__heroLifecycle?.phase === 'prewarming');
+  const webglUnavailable = await page.locator('body').evaluate((body) => body.classList.contains('no-webgl'));
+  if (webglUnavailable) {
+    await expect(page.locator('body')).toHaveAttribute('data-hero-fallback', 'webgl2-unavailable');
+    await expect(page.locator('.hero-static-art')).toBeVisible();
+    await expect(page.locator('body')).not.toHaveClass(/hero-loading|hero-live/);
+    await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Static artwork');
+    expect(await page.evaluate(() => Boolean((window as unknown as { __hero?: unknown }).__hero))).toBe(false);
+    return;
+  }
   const supported = await page.locator('#hero-canvas').evaluate((canvas: HTMLCanvasElement) => {
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
     const extension = gl?.getExtension('WEBGL_lose_context');
