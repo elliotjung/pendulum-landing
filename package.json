@@ -31,9 +31,9 @@
     "smoke:ci": "playwright test tests/landing-smoke.spec.ts --project=chromium --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=mobile-chrome --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=firefox --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=webkit --workers=1 --reporter=list"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.10.2",
+    "@axe-core/playwright": "4.13.0",
     "@lhci/cli": "0.15.1",
-    "@playwright/test": "1.60.0",
+    "@playwright/test": "1.62.1",
     "esbuild": "^0.28.1",
     "pretendard": "^1.3.9",
     "three": "^0.185.1",
