@@ -1,8 +1,9 @@
 # Pendulum Lab public design system
 
-The landing page is the calm entryway to the simulator's denser workstation.
-It shares the same palette and component logic without copying the simulator's
-control density.
+The landing page is the cinematic/exploratory entryway to the Lab's
+minimal/scientific workstation. Both repositories share semantic colors,
+spacing discipline, focus treatment, and motion timings without copying the
+Lab's control density into the story page.
 
 ## Tokens
 
@@ -21,6 +22,12 @@ position, and concise one-shot section reveals. The page does not ship cursor
 spotlights, card tilt, magnetic buttons, text scrambling, particle overlays, or
 an animation framework. Reduced-motion and reduced-data preferences keep the
 poster and scientific content fully usable.
+
+The hero's joint motion always comes from the shared double-pendulum RK4
+kernel. Scroll may move the camera, stage, reticle, and section depth; it must
+not replace the physical integration with a decorative rotation. Animation
+loops stop when hidden/offscreen, cap catch-up work and pixel ratio, and release
+listeners, observers, RAF, and idle callbacks at lifecycle teardown.
 
 ## Surfaces and hierarchy
 

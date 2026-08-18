@@ -1,7 +1,8 @@
 import { access, readdir, readFile, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { evidenceFreshnessText, koreanEvidenceFallbacks } from './evidence-copy.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const failures = [];
@@ -79,6 +80,9 @@ const kernelBytes = await readFile(join(root, kernelManifest.kernel));
 if (createHash('sha256').update(kernelBytes).digest('hex') !== kernelManifest.sha256) {
   failures.push('demo kernel SHA-256 does not match its manifest');
 }
+if (kernelManifest.kernelVersion !== 'pendulum-demo-kernel/v2') {
+  failures.push(`unexpected demo kernel version: ${kernelManifest.kernelVersion ?? 'missing'}`);
+}
 if (kernelManifest.sourceCommit !== evidence.provenance?.sourceCommit) {
   failures.push('demo kernel sourceCommit does not match the evidence summary');
 }
@@ -102,13 +106,16 @@ if (!Number.isInteger(evidence.tests?.passed) || evidence.tests.passed !== evide
 }
 checkEvidenceFreshness(evidence);
 checkChangelog(changelog, evidence);
+await checkStaticEvidenceFallbacks(evidence, changelog);
 await checkCopyCounts(evidence);
 await checkPngDimensions('assets/favicon-32.png', 32, 32);
 await checkPngDimensions('assets/apple-touch-icon.png', 180, 180);
 await checkPngDimensions('assets/og-card.png', 1200, 630);
 await checkPngDimensions('assets/og-card-base.png', 1200, 630);
-await checkSitemap();
+await checkSitemap(evidence);
+await checkPublishArtifactContract();
 await checkLighthouseLanguageMatrix();
+await checkDemoKernelContracts();
 await checkHeroRuntimeContracts();
 await checkWorkflowNetworkContracts();
 await checkWorkflowTimeoutContracts();
@@ -376,6 +383,14 @@ function checkChangelog(summary, evidenceSummary) {
   else if (summary.highlights.some((item) => typeof item.title !== 'string' || !item.title.trim() || typeof item.summary !== 'string' || !item.summary.trim())) {
     failures.push('changelog highlights contain an empty title or summary');
   }
+  else if (summary.highlights.some((item) => {
+    const titleKo = item.titleKo;
+    const summaryKo = item.summaryKo;
+    const hasEither = titleKo !== undefined || summaryKo !== undefined;
+    return hasEither && (typeof titleKo !== 'string' || !titleKo.trim() || typeof summaryKo !== 'string' || !summaryKo.trim());
+  })) {
+    failures.push('changelog highlights must provide titleKo and summaryKo together when localized copy exists');
+  }
   const suspiciousEncoding = /(?:\uFFFD|\u00C3.|\u00C2.|\u00E2\u20AC|\u00F0\u0178|\?{3,})/u;
   if (Array.isArray(summary.highlights) && summary.highlights.some((item) =>
     suspiciousEncoding.test(String(item?.title ?? '')) || suspiciousEncoding.test(String(item?.summary ?? '')))) {
@@ -385,6 +400,55 @@ function checkChangelog(summary, evidenceSummary) {
   if (summary.generatedAt !== evidenceSummary.generatedAt) failures.push('changelog generatedAt must equal evidence generatedAt for deterministic sync');
   if (!/^https:\/\/github\.com\/elliotjung\/pendulum-lab\/blob\/[a-f0-9]{40}\/CHANGELOG\.md$/i.test(summary.sourceUrl ?? '')) {
     failures.push('changelog sourceUrl is missing or not commit-pinned');
+  }
+}
+
+async function checkStaticEvidenceFallbacks(summary, changelogSummary) {
+  const [indexHtml, koreanHtml] = await Promise.all([
+    readFile(join(root, 'index.html'), 'utf8').catch(() => ''),
+    readFile(join(root, 'ko.html'), 'utf8').catch(() => '')
+  ]);
+  const expectedEnglishFreshness = evidenceFreshnessText(summary.provenance?.expiresAt);
+  const expectedKoreanFreshness = evidenceFreshnessText(summary.provenance?.expiresAt, true);
+  for (const [pageName, html, expected] of [
+    ['index.html', indexHtml, expectedEnglishFreshness],
+    ['ko.html', koreanHtml, expectedKoreanFreshness]
+  ]) {
+    const actual = html.match(/data-evidence-freshness[^>]*>([^<]*)</)?.[1]?.trim();
+    if (!expected || actual !== expected) {
+      failures.push(`${pageName}: evidence freshness fallback (${actual ?? 'missing'}) must match current evidence (${expected ?? 'invalid'})`);
+    }
+  }
+
+  const koreanFallbacks = koreanEvidenceFallbacks(summary);
+  for (const [key, expected] of Object.entries(koreanFallbacks)) {
+    if (typeof expected !== 'string') continue;
+    const matcher = new RegExp(`data-evidence="${escapeRegExp(key)}">([^<]*)<`, 'g');
+    const values = [...koreanHtml.matchAll(matcher)].map((match) => match[1].trim());
+    if (!values.length || values.some((value) => value !== expected)) {
+      failures.push(`ko.html: static ${key} fallback must be localized from evidence`);
+    }
+  }
+
+  const escapeHtml = (value) => String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+  const staticCards = changelogSummary.highlights?.map((highlight, index) =>
+    `<article class="changelog-card"><span>${String(index + 1).padStart(2, '0')}</span><h3>${escapeHtml(highlight.title)}</h3><p>${escapeHtml(highlight.summary)}</p></article>`
+  ) ?? [];
+  for (const card of staticCards) {
+    if (!indexHtml.includes(card)) failures.push('index.html: static changelog fallback must match changelog-highlights.json');
+  }
+  for (const [index, highlight] of (changelogSummary.highlights ?? []).entries()) {
+    const hasKorean = typeof highlight.titleKo === 'string' && typeof highlight.summaryKo === 'string';
+    const language = hasKorean ? 'ko' : 'en';
+    const title = escapeHtml(hasKorean ? highlight.titleKo : highlight.title);
+    const summary = escapeHtml(hasKorean ? highlight.summaryKo : highlight.summary);
+    const card = `<article class="changelog-card" lang="${language}"><span>${String(index + 1).padStart(2, '0')}</span><h3>${title}</h3><p>${summary}</p></article>`;
+    if (!koreanHtml.includes(card)) failures.push('ko.html: static changelog fallback must match current localized-or-source release data');
   }
 }
 
@@ -468,12 +532,71 @@ async function checkPngDimensions(relativePath, expectedWidth, expectedHeight) {
   }
 }
 
-async function checkSitemap() {
+async function checkSitemap(evidenceSummary) {
   const sitemap = await readFile(join(root, 'sitemap.xml'), 'utf8');
   const urls = [...sitemap.matchAll(/<url>[\s\S]*?<loc>([^<]+)<\/loc>[\s\S]*?<lastmod>([^<]+)<\/lastmod>[\s\S]*?<\/url>/g)];
+  const evidenceTimestamp = Date.parse(evidenceSummary.generatedAt || '');
+  const evidenceDay = Number.isFinite(evidenceTimestamp)
+    ? new Date(evidenceTimestamp).toISOString().slice(0, 10)
+    : null;
   if (urls.length !== 2) failures.push('sitemap must contain two URLs with lastmod values');
   for (const [, loc, lastmod] of urls) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(lastmod) || !Number.isFinite(Date.parse(lastmod))) failures.push(`sitemap ${loc}: invalid lastmod ${lastmod}`);
+    else if (evidenceDay && lastmod < evidenceDay) failures.push(`sitemap ${loc}: lastmod ${lastmod} predates current evidence (${evidenceDay})`);
+  }
+  const indexHtml = await readFile(join(root, 'index.html'), 'utf8');
+  const dateModified = indexHtml.match(/"dateModified"\s*:\s*"(\d{4}-\d{2}-\d{2})"/)?.[1];
+  if (!dateModified || !Number.isFinite(Date.parse(dateModified))) {
+    failures.push('index.html: structured-data dateModified is missing or invalid');
+  } else if (evidenceDay && dateModified < evidenceDay) {
+    failures.push(`index.html: dateModified ${dateModified} predates current evidence (${evidenceDay})`);
+  }
+}
+
+async function checkPublishArtifactContract() {
+  const [prepare, packageJson, pages, cloudflare, wrangler, gitignore, cloudflareDocs] = await Promise.all([
+    readFile(join(root, 'scripts', 'prepare-site.mjs'), 'utf8'),
+    readFile(join(root, 'package.json'), 'utf8'),
+    readFile(join(root, '.github', 'workflows', 'pages.yml'), 'utf8'),
+    readFile(join(root, '.github', 'workflows', 'cloudflare-pages.yml'), 'utf8'),
+    readFile(join(root, 'wrangler.toml'), 'utf8'),
+    readFile(join(root, '.gitignore'), 'utf8'),
+    readFile(join(root, 'docs', 'cloudflare-pages.md'), 'utf8')
+  ]);
+  for (const token of [
+    "'index.html'",
+    "'ko.html'",
+    "'404.html'",
+    "'robots.txt'",
+    "'sitemap.xml'",
+    "'assets'",
+    "'_headers'",
+    "await rm(site, { recursive: true, force: true })",
+    "relative(root, site) !== '_site'",
+    "'package.json'",
+    "'scripts'",
+    "'tests'"
+  ]) {
+    if (!prepare.includes(token)) failures.push(`scripts/prepare-site.mjs: missing allowlist safety contract ${token}`);
+  }
+  if (!packageJson.includes('"prepare:site": "node scripts/prepare-site.mjs"')) {
+    failures.push('package.json: missing deterministic publish-staging command');
+  }
+  if (!pages.includes("github.ref == 'refs/heads/main'")) {
+    failures.push('pages workflow: manual dispatch must be restricted to main');
+  }
+  if (!pages.includes('run: npm run prepare:site') || pages.includes('rsync -a --delete assets/ _site/assets/')) {
+    failures.push('pages workflow: must stage its artifact through the shared publish allowlist');
+  }
+  if (!cloudflare.includes('run: npm run prepare:site -- --headers')) {
+    failures.push('cloudflare workflow: must stage its artifact through the shared publish allowlist with headers');
+  }
+  if (!/pages_build_output_dir\s*=\s*"\.\/_site"/.test(wrangler)) {
+    failures.push('wrangler.toml: Cloudflare dashboard output must be the staged _site directory');
+  }
+  if (!gitignore.includes('_site/')) failures.push('.gitignore: generated publish directory must stay untracked');
+  if (!cloudflareDocs.includes('Output directory: `_site`')) {
+    failures.push('docs/cloudflare-pages.md: dashboard output directory must document the staged _site directory');
   }
 }
 
@@ -498,13 +621,114 @@ async function checkLighthouseLanguageMatrix() {
   }
 }
 
+async function checkDemoKernelContracts() {
+  const [kernelSource, orbitSource, sceneSource] = await Promise.all([
+    readFile(join(root, 'assets', 'pendulum-demo-kernel.js'), 'utf8'),
+    readFile(join(root, 'assets', 'orbit-console.js'), 'utf8'),
+    readFile(join(root, 'assets', 'scene.js'), 'utf8')
+  ]);
+
+  for (const token of [
+    "export const DEMO_KERNEL_VERSION = 'pendulum-demo-kernel/v2';",
+    'const dampingValue = params.damping;',
+    'out[2] += damping * (-m22 * v1 + m12 * v2) / det;',
+    'out[3] += damping * (m12 * v1 - m11 * v2) / det;'
+  ]) {
+    if (!kernelSource.includes(token)) failures.push(`assets/pendulum-demo-kernel.js: missing coupled damping contract ${token}`);
+  }
+  for (const token of [
+    'runtimeParams.damping = damping;',
+    'runtimeController = new AbortController();',
+    'runtimeController?.abort();',
+    'cancelWarmChunk?.();',
+    'consoleResizeObserver?.disconnect();',
+    'visibilityObserver?.disconnect();',
+    'if (event.persisted) resumeRuntime();',
+    'window.__orbitConsoleLifecycle'
+  ]) {
+    if (!orbitSource.includes(token)) failures.push(`assets/orbit-console.js: missing damping/lifecycle contract ${token}`);
+  }
+  if (/Math\.exp\(-damping\s*\*\s*dt\)|s\[[23]\]\s*\*=\s*decay/.test(orbitSource)) {
+    failures.push('assets/orbit-console.js: damping must stay inside the shared RK4 RHS, not post-process angular velocities');
+  }
+  if (!sceneSource.includes('const params = Object.freeze({ m1: 1, m2: 1, l1: 1.14, l2: 1.02, g: 9.81 });')) {
+    failures.push('assets/scene.js: the hero must keep using the conservative shared-kernel parameter set');
+  }
+
+  try {
+    const kernelUrl = `${pathToFileURL(join(root, 'assets', 'pendulum-demo-kernel.js')).href}?static-contract`;
+    const { createRk4Work, rhsDoubleInto, rk4StepDouble } = await import(kernelUrl);
+    const parameters = { m1: 1.2, m2: 0.8, l1: 1.1, l2: 0.9, g: 9.81 };
+    const state = [0.9, -0.4, 1.1, -0.7];
+    const conservative = [0, 0, 0, 0];
+    const explicitZero = [0, 0, 0, 0];
+    const damped = [0, 0, 0, 0];
+    rhsDoubleInto(state, conservative, parameters);
+    rhsDoubleInto(state, explicitZero, { ...parameters, damping: 0 });
+    const gamma = 0.25;
+    rhsDoubleInto(state, damped, { ...parameters, damping: gamma });
+    if (conservative.some((value, index) => value !== explicitZero[index])) {
+      failures.push('demo kernel: omitted damping and damping=0 must share the exact conservative RHS path');
+    }
+
+    const delta = state[0] - state[1];
+    const m11 = (parameters.m1 + parameters.m2) * parameters.l1 * parameters.l1;
+    const m12 = parameters.m2 * parameters.l1 * parameters.l2 * Math.cos(delta);
+    const m22 = parameters.m2 * parameters.l2 * parameters.l2;
+    const accelerationDelta1 = damped[2] - conservative[2];
+    const accelerationDelta2 = damped[3] - conservative[3];
+    const torqueResidual1 = m11 * accelerationDelta1 + m12 * accelerationDelta2 + gamma * state[2];
+    const torqueResidual2 = m12 * accelerationDelta1 + m22 * accelerationDelta2 + gamma * state[3];
+    if (Math.max(Math.abs(torqueResidual1), Math.abs(torqueResidual2)) > 1e-12) {
+      failures.push('demo kernel: damped acceleration does not solve M(q) q-double-dot = F - gamma q-dot');
+    }
+
+    let dampingReads = 0;
+    const stagedParameters = { ...parameters };
+    Object.defineProperty(stagedParameters, 'damping', {
+      enumerable: true,
+      get() {
+        dampingReads += 1;
+        return gamma;
+      }
+    });
+    rk4StepDouble([...state], stagedParameters, 1 / 240, createRk4Work());
+    if (dampingReads !== 4) {
+      failures.push(`demo kernel: RK4 must evaluate damping in all four RHS stages (observed ${dampingReads})`);
+    }
+
+    const energy = (sample) => {
+      const [a1, a2, v1, v2] = sample;
+      const y1 = -parameters.l1 * Math.cos(a1);
+      const y2 = y1 - parameters.l2 * Math.cos(a2);
+      const v1Squared = parameters.l1 * parameters.l1 * v1 * v1;
+      const v2Squared = v1Squared + parameters.l2 * parameters.l2 * v2 * v2
+        + 2 * parameters.l1 * parameters.l2 * v1 * v2 * Math.cos(a1 - a2);
+      return 0.5 * parameters.m1 * v1Squared + 0.5 * parameters.m2 * v2Squared
+        + parameters.g * (parameters.m1 * y1 + parameters.m2 * y2);
+    };
+    const dampedState = [...state];
+    const initialEnergy = energy(dampedState);
+    const work = createRk4Work();
+    for (let step = 0; step < 1200; step += 1) {
+      rk4StepDouble(dampedState, { ...parameters, damping: gamma }, 1 / 600, work);
+    }
+    if (!Number.isFinite(energy(dampedState)) || energy(dampedState) >= initialEnergy - 0.01) {
+      failures.push('demo kernel: positive generalized damping must produce a finite, dissipative RK4 trajectory');
+    }
+  } catch (error) {
+    failures.push(`demo kernel numeric contract failed to execute: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 async function checkHeroRuntimeContracts() {
-  const [html, main, scene, i18n, enhancements, landingCss, packageJson, smoke] = await Promise.all([
+  const [html, main, scene, i18n, enhancements, orbitConsole, landingCss, packageJson, smoke] = await Promise.all([
     readFile(join(root, 'index.html'), 'utf8'),
     readFile(join(root, 'assets', 'main.js'), 'utf8'),
     readFile(join(root, 'assets', 'scene.js'), 'utf8'),
     readFile(join(root, 'assets', 'i18n-core.js'), 'utf8'),
     readFile(join(root, 'assets', 'enhancements-loader.js'), 'utf8'),
+    readFile(join(root, 'assets', 'orbit-console.js'), 'utf8'),
     readFile(join(root, 'assets', 'landing.css'), 'utf8'),
     readFile(join(root, 'package.json'), 'utf8'),
     readFile(join(root, 'tests', 'landing-smoke.spec.ts'), 'utf8')
@@ -514,6 +738,7 @@ async function checkHeroRuntimeContracts() {
     'data-hero-status',
     'aria-controls="hero-canvas"',
     'aria-describedby="orbit-theta-output"',
+    'aria-describedby="orbit-separation-output"',
     'aria-describedby="orbit-damping-output"',
     'aria-controls="orbit-console"',
     'src="assets/enhancements-loader.js"',
@@ -527,6 +752,9 @@ async function checkHeroRuntimeContracts() {
   }
   if (/requestIdleCallback\s*\(\s*requestHeroScene|setTimeout\s*\(\s*requestHeroScene/.test(main)) {
     failures.push('assets/main.js: the heavyweight hero must not auto-load from idle/timer callbacks');
+  }
+  if (main.includes("window.addEventListener('keydown', requestHeroScene")) {
+    failures.push('assets/main.js: keyboard navigation must not eagerly load the heavy hero renderer');
   }
   for (const token of ['canCreateWebGL2', 'heroUnavailable', 'heroEnsurePromise', 'window.__heroLifecycle', "import(sceneUrl)", "setHeroState('static')"]) {
     if (!main.includes(token)) failures.push(`assets/main.js: missing deferred/fallback hero contract ${token}`);
@@ -578,6 +806,14 @@ async function checkHeroRuntimeContracts() {
   if (!landingCss.includes('--orbit-scroll:0;')) {
     failures.push('assets/landing.css: orbit descent must define a zero visual progress before the first scroll frame');
   }
+  for (const token of [
+    'orbit-static-fallback-template',
+    'html.no-js .orbit-console canvas',
+    ':not(.is-visible):focus-within',
+    '[data-stagger] > :not(.is-visible):focus'
+  ]) {
+    if (!landingCss.includes(token)) failures.push(`assets/landing.css: missing accessible visual-state contract ${token}`);
+  }
   for (const removedToken of ['window.gsap', 'cinematic-static', 'cursor-glow', 'data-mouse', '--mx', '--my']) {
     if (main.includes(removedToken) || landingCss.includes(removedToken) || html.includes(removedToken)) {
       failures.push(`landing runtime: removed decorative implementation token remains: ${removedToken}`);
@@ -603,6 +839,17 @@ async function checkHeroRuntimeContracts() {
   ]) {
     if (/[^\x00-\x7f]/u.test(token)) continue;
     if (!enhancements.includes(token)) failures.push(`assets/enhancements-loader.js: missing deferred enhancement contract ${token}`);
+  }
+  for (const token of [
+    'initialSeparation',
+    'handleSeparationInput',
+    'twin[0] = initialTheta + initialSeparation',
+    'data-orbit-caption="separation"',
+    "listen(controls.separation, 'input', handleSeparationInput)",
+    'separationCaption',
+    'pushTrail();\n    draw();\n    updateReadouts();'
+  ]) {
+    if (!orbitConsole.includes(token)) failures.push(`assets/orbit-console.js: missing live initial-separation contract ${token}`);
   }
   for (const removedAsset of ['animation-vendor.bundle.js', 'reactbits.js']) {
     if (enhancements.includes(removedAsset) || html.includes(removedAsset)) {
@@ -683,7 +930,14 @@ async function checkHeroRuntimeContracts() {
     '__PENDULUM_MAIN_WATCHDOG',
     "rawHttpStatus('/malformed-%ZZ-path')",
     'toBe(400)',
-    'late-watchdog-recovery=1'
+    'late-watchdog-recovery=1',
+    '__orbitConsoleLifecycle',
+    '[data-orbit-control="separation"]',
+    '4.5e-3 rad',
+    'initialSeparation: 0.0045',
+    '__orbitConsolePainted',
+    "Object.defineProperty(event, 'persisted'",
+    'pendingWork: false'
   ]) {
     if (!smoke.includes(token)) failures.push(`tests/landing-smoke.spec.ts: missing low-contention browser contract ${token}`);
   }
@@ -693,7 +947,13 @@ async function checkHeroRuntimeContracts() {
   for (const token of ['cssProgress', 'getComputedStyle(orbitDescentElement)', "progress: 0", 'Number.isFinite(scrollState.velocity)', 'pose.rotationY - start.rotationY', 'pose.y < start.y - 0.5']) {
     if (!smoke.includes(token)) failures.push(`tests/landing-smoke.spec.ts: missing finite static-scroll regression ${token}`);
   }
-  for (const token of ["'Start 3D': '3D 시작'", "['#orbit-theta', 'aria-valuetext'", "['#orbit-damping', 'aria-valuetext'"]) {
+  for (const token of [
+    "'Start 3D': '3D 시작'",
+    "'initial separation δθ₁': '초기 간격 δθ₁'",
+    "['#orbit-theta', 'aria-valuetext'",
+    "['#orbit-separation', 'aria-valuetext'",
+    "['#orbit-damping', 'aria-valuetext'"
+  ]) {
     if (!i18n.includes(token)) failures.push(`assets/i18n-core.js: missing generated-page localization contract ${token}`);
   }
 }

@@ -9,6 +9,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { evidenceFreshnessText } from './evidence-copy.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const evidence = JSON.parse(await readFile(join(root, 'assets', 'evidence-summary.json'), 'utf8'));
@@ -19,6 +20,11 @@ if (!Number.isInteger(total) || total <= 0 || !Number.isInteger(passed)) {
   process.exit(1);
 }
 const comma = new Intl.NumberFormat('en-US').format(total);
+const freshness = evidenceFreshnessText(evidence.provenance?.expiresAt);
+if (!freshness) {
+  console.error('evidence summary has no usable provenance.expiresAt');
+  process.exit(1);
+}
 
 const edits = [
   {
@@ -31,6 +37,10 @@ const edits = [
       [
         /(data-evidence="ledger\.verify">)[^<]*(<)/,
         `$1CSP-safe lint → strict typecheck → module-size ratchet → ${total} unit tests → result-count guard → docs sync → format gate$2`
+      ],
+      [
+        /(data-evidence-freshness[^>]*>)[^<]*(<)/,
+        `$1${freshness}$2`
       ]
     ]
   },
@@ -53,4 +63,4 @@ for (const { file, replacements } of edits) {
   }
   if (updated !== original) await writeFile(path, updated);
 }
-console.log(`copy counts synced: ${comma} tests (${passed} passed) — remember npm run build:ko`);
+console.log(`copy and evidence fallbacks synced: ${comma} tests (${passed} passed) — remember npm run build:ko`);

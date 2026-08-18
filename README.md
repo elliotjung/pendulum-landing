@@ -21,15 +21,21 @@ browser laboratory for nonlinear pendulum dynamics.
 - `assets/landing.css` - shared graphite/indigo/cyan visual system, responsive
   layout, quiet reveal states, and trajectory-console styling.
 - `assets/scene.js` - Three.js hero sculpture that morphs from order to chaos.
+- `assets/pendulum-demo-kernel.js` - shared allocation-free double-pendulum
+  equation and RK4 step used by the hero and mini console. The state is
+  `[theta1, theta2, omega1, omega2]`; force-level damping is evaluated inside
+  every RK4 stage, while the hero intentionally passes zero damping.
 - `assets/orbit-console.js` - lightweight RK4 double-pendulum canvas console
-  used in the new trajectory section; it starts only near the viewport.
+  used in the trajectory section. It starts only near the viewport, caps
+  catch-up work and DPR, and rebuilds its abortable listener/observer graph
+  after a BFCache restore without duplicating handlers.
 - `assets/main.js` - deferred hero lifecycle, scroll progress, one-shot section
   reveals, counters, attribution, and evidence JSON hydration.
 - `assets/evidence-summary.json` - shared validation numbers copied from the
   main lab reports.
 - `assets/changelog-highlights.json` - three release highlights pinned to the
-  same main-repository commit as the evidence summary; refresh with
-  `npm run sync:changelog`.
+  same main-repository commit as the evidence summary, with release-reviewed
+  Korean copy when available; refresh with `npm run sync:changelog`.
 - `assets/og-card.png`, `assets/favicon-32.png`, and
   `assets/apple-touch-icon.png` - dimension-checked social and bookmark assets.
   The og-card is generated: `npm run assets:og-card` composites the text-free
@@ -57,8 +63,12 @@ browser laboratory for nonlinear pendulum dynamics.
   freshly synced evidence (used by the evidence-sync workflow).
 - `scripts/sync-copy-counts.mjs` (`npm run sync:copy`) - rewrites every static
   test-count occurrence (meta descriptions, OG/Twitter alt text, no-JS
-  fallback spans, the Korean dictionary) from the evidence summary; the
-  cross-repo release workflow runs it before the static gate.
+  fallback spans, and freshness wording) from the evidence summary; the
+  Korean evidence fallback is then baked by `npm run build:ko`. The cross-repo
+  release workflow runs both before the static gate.
+- `scripts/prepare-site.mjs` (`npm run prepare:site`) - materializes the
+  deterministic public-file allowlist shared by GitHub Pages and the optional
+  Cloudflare mirror.
 - `.github/workflows/landing-ci.yml` - smoke, static check, ko.html freshness,
   and Lighthouse audit.
 - `.github/workflows/node-compatibility.yml` - browser-free quick check on every
@@ -67,8 +77,11 @@ browser laboratory for nonlinear pendulum dynamics.
   simulation repo dispatches `evidence-updated`, re-runs the full gate, and
   auto-commits the sync (see ADR 0001 in the sim repo's `docs/adr/`).
 
-There is no build step. Serve the folder statically or open `index.html`
-through any local static server.
+The deployable pages are static, but two generated assets have mandatory build
+checks: `assets/scene.bundle.js` from `assets/scene.js`, and `ko.html` from the
+English source page plus the translation dictionary. Serve the folder through a
+local HTTP server; direct `file://` loading cannot reproduce CSP, module, or
+routing behavior.
 
 `404.html` supplies the GitHub Pages recovery route. `_headers`,
 `wrangler.toml`, and `docs/cloudflare-pages.md` define the optional Cloudflare
@@ -78,6 +91,9 @@ Pages mirror and its COOP/COEP experiment boundary.
 
 ```bash
 npm install
+npm run build:hero
+npm run build:ko
+npm run prepare:site
 npm run check
 npm run smoke
 npm run lighthouse
@@ -87,6 +103,32 @@ The smoke test checks that the Three.js hero either paints or falls back cleanly
 that the 2D trajectory console paints nonblank pixels and reacts to its controls,
 that EN/KO axe scans have no serious or critical violations, and that key static
 assets are reachable.
+
+`npm run prepare:site` produces the ignored `_site/` allowlist used by GitHub
+Pages. Pass `-- --headers` only for the optional Cloudflare mirror, which stages
+its `_headers` isolation policy alongside the public files.
+
+## Physics and animation lifecycle
+
+The hero is not a rotating prop. `assets/scene.js` integrates two nearby planar
+double-pendulum trajectories with deterministic classical RK4 at 240 Hz, maps
+the physical joint positions into Three.js rods and bobs, and treats scroll or
+pointer input as camera/stage motion only. The nearby trajectory begins
+`8e-4 rad` away so the visible divergence remains physically motivated. Its
+accumulator and prewarm work are bounded, and rendering stops when the hero and
+descent are outside the active region or the document is hidden.
+
+The trajectory console uses the same RHS at 150 Hz. A positive `gamma` is a
+generalized torque `-gamma * q-dot`; the shared RHS solves the coupled mass
+matrix for that torque inside all four RK4 stages. It is not a post-step visual
+velocity decay. The console caps catch-up to 12 steps, targets 30 FPS on compact
+devices and 60 FPS otherwise, bounds DPR by a pixel budget, pauses offscreen,
+and cancels RAF/idle work plus observers/listeners on page lifecycle teardown.
+
+These simulations explain the product; scientific validation remains the main
+Lab repository's responsibility. The two-repository equations, routing and
+release contract are documented in the Lab's
+`documents/product-integration.md`.
 
 ## Deployment Pipeline
 
@@ -118,10 +160,10 @@ build -> evidence sync -> landing check/smoke -> tag/release.
   and commits. The manual path (`npm run evidence:summary` in the main repo,
   then `node scripts/sync-kernel-manifest.mjs` here) remains as local
   convenience; CI can compare the two by setting `PENDULUM_LAB_EVIDENCE_PATH`.
-- After fresh evidence changes the test count, run `npm run sync:copy`,
-  `npm run assets:og-card`, and `npm run build:ko` (the static gate lists the
-  exact command when something is stale; the cross-repo release workflow runs
-  all three automatically).
+- After fresh evidence changes, run `npm run sync:changelog`, `npm run
+  sync:copy`, `npm run assets:og-card`, and `npm run build:ko` (the static gate
+  lists the exact command when something is stale; the cross-repo release
+  workflow runs all four automatically).
 - When adding new sections, keep the first viewport anchored on the product and
   leave a visible hint of the next section below the hero.
 - CTA links should remain direct, valid actions such as Open Lab, Start Guided

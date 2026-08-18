@@ -22,6 +22,7 @@
     "assets:og-card": "node scripts/generate-og-card.mjs",
     "assets:simulator-preview": "node scripts/capture-simulator-assets.mjs",
     "build:hero": "node scripts/bundle-hero.mjs",
+    "prepare:site": "node scripts/prepare-site.mjs",
     "sync:changelog": "node scripts/sync-changelog-highlights.mjs",
     "sync:copy": "node scripts/sync-copy-counts.mjs",
     "lighthouse": "node scripts/run-lighthouse.mjs",

@@ -23,6 +23,10 @@ await page.locator('[data-orbit-beat="2"]').scrollIntoViewIfNeeded();
 await page.waitForTimeout(900);
 await page.screenshot({ path: `${out}/phase-descent.png` });
 
+await page.locator('#console').scrollIntoViewIfNeeded();
+await page.waitForTimeout(700);
+await page.screenshot({ path: `${out}/console.png` });
+
 await page.evaluate(() => document.getElementById('capabilities')?.scrollIntoView());
 await page.waitForTimeout(1400);
 await page.screenshot({ path: `${out}/capabilities.png` });

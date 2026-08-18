@@ -1,5 +1,5 @@
-// Shared lightweight landing-page kernel. Source model: pendulum-lab 10.35.0.
-export const DEMO_KERNEL_VERSION = 'pendulum-demo-kernel/v1';
+// Shared lightweight landing-page kernel. Source model: pendulum-lab 10.36.0.
+export const DEMO_KERNEL_VERSION = 'pendulum-demo-kernel/v2';
 
 export function createRk4Work() {
   return { k1: [0, 0, 0, 0], k2: [0, 0, 0, 0], k3: [0, 0, 0, 0], k4: [0, 0, 0, 0], tmp: [0, 0, 0, 0] };
@@ -18,6 +18,21 @@ export function rhsDoubleInto(state, out, params) {
     - 2 * sd * m2 * (v2 * v2 * l2 + v1 * v1 * l1 * cd)) / (l1 * den);
   out[3] = (2 * sd * (v1 * v1 * l1 * (m1 + m2) + g * (m1 + m2) * Math.cos(a1)
     + v2 * v2 * l2 * m2 * cd)) / (l2 * den);
+
+  // Linear damping is a generalized torque, Q = -gamma * q-dot. Applying it
+  // through M(q)^-1 keeps the coupled dynamics physically consistent. Because
+  // this lives in the RHS, every RK4 stage samples damping at its own
+  // intermediate state instead of applying an unrelated post-step decay.
+  const dampingValue = params.damping;
+  const damping = Number.isFinite(dampingValue) && dampingValue > 0 ? dampingValue : 0;
+  if (damping > 0) {
+    const m11 = (m1 + m2) * l1 * l1;
+    const m12 = m2 * l1 * l2 * cd;
+    const m22 = m2 * l2 * l2;
+    const det = m11 * m22 - m12 * m12;
+    out[2] += damping * (-m22 * v1 + m12 * v2) / det;
+    out[3] += damping * (m12 * v1 - m11 * v2) / det;
+  }
 }
 
 function stageInto(state, derivative, scale, out) {

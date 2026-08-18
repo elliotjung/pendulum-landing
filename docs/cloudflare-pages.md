@@ -8,11 +8,12 @@ place to test cross-origin isolation headers.
 
 - Production branch: `main`
 - Framework preset: none
-- Build command: none
-- Output directory: repository root (`.`), matching `wrangler.toml`
-- Runtime dependencies: none; the published site is static
+- Build command: `npm ci && npm run build:hero && npm run build:ko && npm run prepare:site -- --headers`
+- Output directory: `_site`, matching `wrangler.toml`
+- Runtime dependencies: Node 22+ for the deterministic static build; the
+  published artifact itself is static
 
-Cloudflare Pages reads the root `_headers` file. The mirror sends COOP/COEP and
+Cloudflare Pages reads the staged `_site/_headers` file. The mirror sends COOP/COEP and
 CORP headers so `crossOriginIsolated` experiments can be run there. GitHub Pages
 does not honor `_headers`, so its behavior is unchanged.
 

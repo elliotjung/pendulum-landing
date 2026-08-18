@@ -160,6 +160,10 @@ test('default load paints instantly and defers the heavy 3D bundle until intent'
     await page.waitForTimeout(1_500);
     expect(sceneRequests).toHaveLength(0);
     expect(deferredEnhancementRequests).toHaveLength(0);
+    // Keyboard navigation is not consent to download the heavy renderer.
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(250);
+    expect(sceneRequests).toHaveLength(0);
     await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Start 3D');
     await page.locator('.hero').hover({ position: { x: 24, y: 180 } });
     await expect(page.locator('body')).toHaveClass(/hero-loading|no-webgl/);
@@ -266,11 +270,15 @@ test('hero motion control starts, pauses, and resumes the physical scene', async
   }).__hero?.dragging)).toBe(true);
   await page.mouse.move(dragStart!.x - 180, dragStart!.y, { steps: 8 });
   await page.mouse.up();
+  // The visual compositor intentionally adapts to slow GPUs. Keep the
+  // interaction assertion tied to the rendered pose, but give a throttled
+  // cinematic frame enough time to arrive instead of using Playwright's
+  // short global expect timeout.
   await expect.poll(async () => Math.abs(
     (await page.evaluate(() => (window as unknown as {
       __hero?: { scrollPose: { rotationY: number } };
     }).__hero?.scrollPose.rotationY ?? 0)) - rotationBeforeDrag
-  )).toBeGreaterThan(0.2);
+  ), { timeout: 20_000 }).toBeGreaterThan(0.2);
   const editableBox = await page.evaluate(() => {
     const editor = document.createElement('div');
     editor.setAttribute('contenteditable', '');
@@ -677,6 +685,9 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await page.waitForFunction(() => Boolean((window as unknown as {
     __landingEnhancements?: { orbitReady: boolean };
   }).__landingEnhancements?.orbitReady), null, { timeout: 20_000 });
+  await page.waitForFunction(() => Boolean((window as unknown as {
+    __orbitConsolePainted?: boolean;
+  }).__orbitConsolePainted), null, { timeout: 5_000 });
   expect(enhancementRequests.filter((path) => path.endsWith('/orbit-console.js'))).toHaveLength(1);
   expect(await page.evaluate(() => (window as unknown as {
     __orbitReplayOrder?: string[];
@@ -690,19 +701,26 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await page.unroute('**/assets/orbit-console.js');
   await expect(page.locator('#console .console-copy')).toHaveClass(/is-visible/);
   const theta = page.locator('[data-orbit-control="theta"]');
+  const separation = page.locator('[data-orbit-control="separation"]');
   const damping = page.locator('[data-orbit-control="damping"]');
   await theta.evaluate((input: HTMLInputElement) => { input.value = '2.40'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await separation.evaluate((input: HTMLInputElement) => { input.value = '0.0045'; input.dispatchEvent(new Event('input', { bubbles: true })); });
   await damping.evaluate((input: HTMLInputElement) => { input.value = '0.30'; input.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('[data-orbit-output="theta"]')).toHaveText('2.40 rad');
+  await expect(page.locator('[data-orbit-output="separation"]')).toHaveText('4.5e-3 rad');
   await expect(page.locator('[data-orbit-output="damping"]')).toHaveText('0.30');
   await expect(theta).toHaveAttribute('aria-valuetext', '2.40 radians');
+  await expect(separation).toHaveAttribute('aria-valuetext', '4.5e-3 radians');
   await expect(damping).toHaveAttribute('aria-valuetext', '0.30 damping');
+  await expect(page.locator('[data-orbit-caption="separation"]')).toHaveText('4.5e-3 rad apart');
   const href = await page.locator('[data-orbit-launch]').getAttribute('href');
   expect(href).toContain('th1=2.40');
   expect(href).toContain('gamma=0.30');
   await page.locator('[data-orbit-reset]').dispatchEvent('click');
-  const state = await page.evaluate(() => (window as unknown as { __orbitConsoleState?: { initialTheta: number; damping: number } }).__orbitConsoleState);
-  expect(state).toEqual({ initialTheta: 2.4, damping: 0.3 });
+  const state = await page.evaluate(() => (window as unknown as {
+    __orbitConsoleState?: { initialTheta: number; initialSeparation: number; damping: number };
+  }).__orbitConsoleState);
+  expect(state).toEqual({ initialTheta: 2.4, initialSeparation: 0.0045, damping: 0.3 });
   const toggle = page.locator('[data-orbit-toggle]');
   await toggle.dispatchEvent('click');
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
@@ -716,6 +734,54 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   expect(quality?.dpr).toBeLessThanOrEqual(1.6);
   expect(quality?.targetFps).toBeLessThanOrEqual(60);
   expect(quality?.maxTrail).toBeLessThanOrEqual(420);
+
+  const suspendedLifecycle = await page.evaluate(() => {
+    const event = new Event('pagehide');
+    Object.defineProperty(event, 'persisted', { value: true });
+    window.dispatchEvent(event);
+    const lifecycle = (window as unknown as {
+      __orbitConsoleLifecycle?: { active: boolean; suspended: boolean; pendingWork: boolean; observing: boolean };
+    }).__orbitConsoleLifecycle;
+    return lifecycle ? {
+      active: lifecycle.active,
+      suspended: lifecycle.suspended,
+      pendingWork: lifecycle.pendingWork,
+      observing: lifecycle.observing
+    } : null;
+  });
+  expect(suspendedLifecycle).toEqual({ active: false, suspended: true, pendingWork: false, observing: false });
+  await page.evaluate(() => {
+    const event = new Event('pageshow');
+    Object.defineProperty(event, 'persisted', { value: true });
+    window.dispatchEvent(event);
+  });
+  await page.waitForFunction(() => {
+    const lifecycle = (window as unknown as {
+      __orbitConsoleLifecycle?: { active: boolean; suspended: boolean };
+    }).__orbitConsoleLifecycle;
+    return lifecycle?.active === true && lifecycle.suspended === false;
+  });
+  // One click after rebinding must still produce one state transition; leaked
+  // duplicate listeners would toggle twice and leave aria-pressed unchanged.
+  await toggle.dispatchEvent('click');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await toggle.dispatchEvent('click');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  const terminalLifecycle = await page.evaluate(() => {
+    const event = new Event('pagehide');
+    Object.defineProperty(event, 'persisted', { value: false });
+    window.dispatchEvent(event);
+    const lifecycle = (window as unknown as {
+      __orbitConsoleLifecycle?: { active: boolean; suspended: boolean; pendingWork: boolean; observing: boolean };
+    }).__orbitConsoleLifecycle;
+    return lifecycle ? {
+      active: lifecycle.active,
+      suspended: lifecycle.suspended,
+      pendingWork: lifecycle.pendingWork,
+      observing: lifecycle.observing
+    } : null;
+  });
+  expect(terminalLifecycle).toEqual({ active: false, suspended: true, pendingWork: false, observing: false });
 
   await page.route('**/assets/orbit-console.js', (route) => route.abort('failed'));
   await page.goto('/');
@@ -781,6 +847,10 @@ test('release highlights and privacy-friendly app attribution hydrate', async ({
   await page.goto('/');
   await expect(page.locator('[data-changelog-list] .changelog-card[data-ready="true"]')).toHaveCount(3);
   await expect(page.locator('[data-changelog-source]')).toHaveAttribute('href', /blob\/[a-f0-9]{40}\/CHANGELOG\.md$/);
+  await page.goto('/ko.html?lang=ko');
+  await expect(page.locator('[data-changelog-list] .changelog-card[data-ready="true"]')).toHaveCount(3);
+  await expect(page.locator('[data-changelog-list] .changelog-card').first()).toHaveAttribute('lang', 'ko');
+  await expect(page.locator('[data-changelog-list] .changelog-card h3').first()).toHaveText('폴더 이름 변경');
   const links = await page.locator('a[data-app-link]').evaluateAll((anchors) => anchors.map((anchor) => (anchor as HTMLAnchorElement).href));
   expect(links.length).toBeGreaterThan(0);
   for (const href of links) {
@@ -884,17 +954,23 @@ test('shared demo kernel matches main rhsDouble fixtures', async ({ page }) => {
   const rows = await page.evaluate(async () => {
     const kernel = await import('/assets/pendulum-demo-kernel.js');
     const params = { m1: 1, m2: 1, l1: 1, l2: 1, g: 9.81 };
-    return [[0.2, -0.3, 0.4, -0.5], [2.18, 2.64, 0, 0]].map((state) => {
+    const values = [[0.2, -0.3, 0.4, -0.5], [2.18, 2.64, 0, 0]].map((state) => {
       const out = [0, 0, 0, 0];
       kernel.rhsDoubleInto(state, out, params);
       return out;
     });
+    const damped = [0, 0, 0, 0];
+    kernel.rhsDoubleInto([0.2, -0.3, 0.4, -0.5], damped, { ...params, damping: 0.25 });
+    return { version: kernel.DEMO_KERNEL_VERSION, values, damped };
   });
   const expected = [
     [0.4, -0.5, -5.390276136585902, 7.706173654766009],
     [0, 0, -9.910597545905812, 4.163545829940606]
   ];
-  rows.forEach((row, rowIndex) => row.forEach((value, columnIndex) => {
+  expect(rows.version).toBe('pendulum-demo-kernel/v2');
+  rows.values.forEach((row, rowIndex) => row.forEach((value, columnIndex) => {
     expect(value).toBeCloseTo(expected[rowIndex]![columnIndex]!, 12);
   }));
+  const expectedDamped = [0.4, -0.5, -5.560783122657057, 7.9808076124225416];
+  rows.damped.forEach((value, index) => expect(value).toBeCloseTo(expectedDamped[index]!, 12));
 });

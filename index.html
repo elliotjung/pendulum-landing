@@ -35,7 +35,7 @@
      anything paints. ko.html is built by scripts/build-ko-page.mjs, so Korean
      visitors get a plain static page (no runtime translation cost). The CSP
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gUWP08ylOuPqo0wpzfYlBSEPdn8G8GWZB6A9+QD2zCE=' 'sha256-YJ20yxvjGolaMfS/AsWUnwoZxxAFv28eUacHvp7QwNA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Kv8HLuG1zzdQPOnbDdZlLX2BZv44d4cxBPl/EVosX1o=' 'sha256-YJ20yxvjGolaMfS/AsWUnwoZxxAFv28eUacHvp7QwNA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
 <script id="lang-boot">(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="en"){localStorage.setItem("pendulum-landing/lang","en");return}var s=null;try{s=localStorage.getItem("pendulum-landing/lang")}catch(e){}var ko=(navigator.languages||[navigator.language||""]).some(function(t){return String(t).toLowerCase().indexOf("ko")===0});if(q.get("lang")==="ko"||s==="ko"||(!s&&ko)){var p=q.toString();location.replace("ko.html"+(p?"?"+p:"")+location.hash)}}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E" />
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
@@ -56,7 +56,7 @@
       "runtimePlatform": "Web browser",
       "license": "https://opensource.org/license/mit",
       "author": { "@type": "Person", "name": "Elliot Jung" },
-      "dateModified": "2026-07-20",
+      "dateModified": "2026-08-18",
       "applicationCategory": "EducationalApplication",
       "inLanguage": ["en", "ko"],
       "isAccessibleForFree": true,
@@ -201,7 +201,7 @@
         <span class="kicker">Scroll-Driven Chaos</span>
         <h2 id="orbit-descent-title">Fall through phase space.</h2>
         <p class="descent-live-copy">Scroll and the live double pendulum rolls out of the hero, turns through depth, and descends with you. This is not a video loop: the rods keep solving the same 240 Hz RK4 system while the camera follows.</p>
-        <p class="descent-static-copy">A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The same initial state opens in the hands-on console below.</p>
+        <p class="descent-static-copy">A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The adjustable trajectory console below lets you explore related initial conditions by hand.</p>
         <span class="descent-signal descent-live-copy"><i></i> Live equations · live camera</span>
         <span class="descent-signal descent-static-copy"><i></i> Static evidence view · motion preference respected</span>
       </div>
@@ -231,7 +231,7 @@
       <div class="descent-card">
         <span class="descent-index">04 · Measure</span>
         <h3>Then turn the spectacle into evidence.</h3>
-        <p>The descent resolves into the hands-on trajectory console below. Change the release, damping, and initial separation — then carry the exact state into the full laboratory.</p>
+        <p>The descent resolves into the hands-on trajectory console below. Tune the primary angle, damping, and initial separation — then carry the primary state into the full laboratory.</p>
         <a class="btn primary sm" href="#console">Take control <span class="arrow">↓</span></a>
       </div>
     </article>
@@ -244,7 +244,7 @@
     <div class="console-copy reveal">
       <span class="kicker">Trajectory Console</span>
       <h2 data-rise>Chaos you can feel before the app even opens.</h2>
-      <p>A lightweight canvas instrument draws two nearly identical double-pendulum releases in real time. The cyan and rose traces begin together, then peel apart as sensitivity takes over.</p>
+      <p>A lightweight canvas instrument draws two nearly identical double-pendulum releases in real time. The cyan and violet traces begin together, then peel apart as sensitivity takes over.</p>
       <div class="console-readouts" role="group" aria-label="Live console readouts">
         <div class="console-readout"><span>separation</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
         <div class="console-readout"><span>drift</span><strong data-orbit-readout="drift">0.00 px</strong></div>
@@ -258,6 +258,11 @@
         </div>
         <input id="orbit-theta" data-orbit-control="theta" type="range" min="0.40" max="3.00" step="0.01" value="2.18" aria-describedby="orbit-theta-output" aria-valuetext="2.18 radians" />
         <div class="orbit-control-meta">
+          <label for="orbit-separation">initial separation δθ₁</label>
+          <output id="orbit-separation-output" for="orbit-separation" data-orbit-output="separation">1.0e-3 rad</output>
+        </div>
+        <input id="orbit-separation" data-orbit-control="separation" type="range" min="0.0001" max="0.0200" step="0.0001" value="0.0010" aria-describedby="orbit-separation-output" aria-valuetext="1.0e-3 radians" />
+        <div class="orbit-control-meta">
           <label for="orbit-damping">damping γ</label>
           <output id="orbit-damping-output" for="orbit-damping" data-orbit-output="damping">0.06</output>
         </div>
@@ -268,18 +273,23 @@
         </div>
       </div>
       <div class="console-actions">
-        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&tab=lab&sysType=double&th1=2.18&th2=2.64&iw1=0&iw2=0&m1=1&m2=1&l1=1&l2=1&g=9.81&gamma=0.06" data-app-link data-orbit-launch>Open This State <span class="arrow">→</span></a>
+        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&tab=lab&sysType=double&th1=2.18&th2=2.64&iw1=0&iw2=0&m1=1&m2=1&l1=1&l2=1&g=9.81&gamma=0.06" data-app-link data-orbit-launch>Open primary state <span class="arrow">→</span></a>
         <a class="btn ghost sm" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">Reviewer Ledger</a>
       </div>
     </div>
 
     <figure class="orbit-console reveal" data-wipe>
+      <div class="orbit-static-fallback orbit-static-fallback-template" role="img" aria-label="Live trajectory unavailable; showing a static double-pendulum trace.">
+        <span aria-hidden="true">θ₁ / θ₂</span>
+        <strong>Static trajectory mode</strong>
+        <small>The full lab and validation evidence remain available.</small>
+      </div>
       <canvas id="orbit-console" width="920" height="620" role="img" aria-label="Animated double-pendulum trajectory console" aria-describedby="orbit-console-caption">
-        Two simulated double pendulums begin 0.001 radians apart. Their cyan and rose trajectories separate over time.
+        Two simulated double pendulums begin 0.001 radians apart. Their cyan and violet trajectories separate over time.
       </canvas>
       <figcaption id="orbit-console-caption">
-        <span>dual release</span>
-        <span>1.0e-3 rad apart</span>
+        <span data-orbit-caption-label>dual release</span>
+        <span data-orbit-caption="separation">1.0e-3 rad apart</span>
       </figcaption>
     </figure>
   </div>
@@ -615,7 +625,7 @@
             </tr>
           </tbody>
         </table>
-        <p class="evidence-freshness" data-evidence-freshness role="status">Evidence snapshot · valid through 27 Jul 2026</p>
+        <p class="evidence-freshness" data-evidence-freshness role="status">Evidence current · valid through 27 Aug 2026</p>
       </div>
 
       <div class="val-side">
@@ -675,9 +685,9 @@
       <p>These highlights are synchronized from the simulation repository at the same evidence commit used by this page.</p>
     </div>
     <div class="changelog-grid" data-changelog-list>
-      <article class="changelog-card"><span>01</span><h3>Numerical work budgets with explicit contracts</h3><p>Every chaos diagnostic now validates steps, horizons, and state up front and refuses out-of-budget work with typed errors.</p></article>
-      <article class="changelog-card"><span>02</span><h3>FTLE horizons integrate the exact residual time</h3><p>Finite-time exponents keep the precise horizon, with a Jacobi-based singular value immune to seed and overflow bias.</p></article>
-      <article class="changelog-card"><span>03</span><h3>Event detection is time-ordered and exact at the cap</h3><p>Simultaneous crossings are refined and sorted by time, and the event cap returns the last refined crossing.</p></article>
+      <article class="changelog-card"><span>01</span><h3>Folder rename</h3><p>the entire docs/ tree moved to documents/ via git mv (history preserved).</p></article>
+      <article class="changelog-card"><span>02</span><h3>Cross-repo link</h3><p>the companion pendulum-landing page (EN + KO) and its docs were repointed to .../blob/master/documents/...</p></article>
+      <article class="changelog-card"><span>03</span><h3>Historical entries preserved</h3><p>older CHANGELOG entries keep their original docs/...</p></article>
     </div>
     <div class="guide-foot reveal">
       <a class="btn ghost" data-changelog-source href="https://github.com/elliotjung/pendulum-lab/blob/master/CHANGELOG.md">Read the full changelog</a>

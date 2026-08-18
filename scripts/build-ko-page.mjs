@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { chromium } from '@playwright/test';
+import { evidenceFreshnessText, koreanEvidenceFallbacks } from './evidence-copy.mjs';
 
 /**
  * Generate ko.html — the statically translated Korean landing page.
@@ -35,6 +36,18 @@ const KO_BOOT =
 const sha256 = (text) => createHash('sha256').update(text, 'utf8').digest('base64');
 
 const html = await readFile(join(root, 'index.html'), 'utf8');
+const evidence = JSON.parse(await readFile(join(root, 'assets', 'evidence-summary.json'), 'utf8'));
+const changelog = JSON.parse(await readFile(join(root, 'assets', 'changelog-highlights.json'), 'utf8'));
+const koreanEvidence = koreanEvidenceFallbacks(evidence);
+const koreanFreshness = evidenceFreshnessText(evidence.provenance?.expiresAt, true);
+if (!koreanFreshness) {
+  console.error('build-ko-page: evidence summary has no usable provenance.expiresAt');
+  process.exit(1);
+}
+if (!Array.isArray(changelog.highlights) || changelog.highlights.length !== 3) {
+  console.error('build-ko-page: changelog highlights must contain exactly three entries');
+  process.exit(1);
+}
 const enBoot = html.match(/<script id="lang-boot">([\s\S]*?)<\/script>/)?.[1];
 if (!enBoot) {
   console.error('build-ko-page: index.html has no <script id="lang-boot"> block');
@@ -47,9 +60,33 @@ try {
   const coreSource = await readFile(join(root, 'assets', 'i18n-core.js'), 'utf8');
   await page.addScriptTag({ content: coreSource });
   const ko = await page.evaluate(
-    ({ raw, koBoot, enHash, koHash }) => {
+    ({ raw, koBoot, enHash, koHash, evidenceFallbacks, evidenceFreshness, changelogHighlights }) => {
       const doc = new DOMParser().parseFromString(raw, 'text/html');
       window.__pendulumI18nCore.applyKorean(doc);
+
+      Object.entries(evidenceFallbacks).forEach(([key, value]) => {
+        doc.querySelectorAll(`[data-evidence="${key}"]`).forEach((element) => {
+          element.textContent = String(value);
+        });
+      });
+      const freshness = doc.querySelector('[data-evidence-freshness]');
+      if (freshness) freshness.textContent = evidenceFreshness;
+
+      // Prefer release-reviewed Korean copy. When a new source bullet has not
+      // been translated yet, surface its current English text and mark it for
+      // assistive technology instead of letting an older Korean fallback lie.
+      const changelogCards = [...doc.querySelectorAll('[data-changelog-list] .changelog-card')];
+      changelogHighlights.slice(0, 3).forEach((highlight, index) => {
+        const card = changelogCards[index];
+        if (!card) return;
+        const hasKorean = typeof highlight.titleKo === 'string' && highlight.titleKo.trim()
+          && typeof highlight.summaryKo === 'string' && highlight.summaryKo.trim();
+        const title = card.querySelector('h3');
+        const summary = card.querySelector('p');
+        if (title) title.textContent = hasKorean ? highlight.titleKo : highlight.title;
+        if (summary) summary.textContent = hasKorean ? highlight.summaryKo : highlight.summary;
+        card.setAttribute('lang', hasKorean ? 'ko' : 'en');
+      });
 
       // Toggle points back to English; the label names the target language.
       const toggle = doc.getElementById('lang-toggle');
@@ -87,7 +124,15 @@ try {
 
       return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML + '\n';
     },
-    { raw: html, koBoot: KO_BOOT, enHash: `'sha256-${sha256(enBoot)}'`, koHash: `'sha256-${sha256(KO_BOOT)}'` }
+    {
+      raw: html,
+      koBoot: KO_BOOT,
+      enHash: `'sha256-${sha256(enBoot)}'`,
+      koHash: `'sha256-${sha256(KO_BOOT)}'`,
+      evidenceFallbacks: koreanEvidence,
+      evidenceFreshness: koreanFreshness,
+      changelogHighlights: changelog.highlights
+    }
   );
   await writeFile(join(root, 'ko.html'), ko, 'utf8');
   console.log(`ko.html written (${(ko.length / 1024).toFixed(0)} KB)`);

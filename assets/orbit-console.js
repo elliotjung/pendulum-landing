@@ -18,11 +18,17 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   const labels = korean ? {
     warming: '준비 중', paused: '일시정지', static: '정적', live: '실시간', standby: '대기',
     pause: '움직임 일시정지', resume: '움직임 재개', reduced: '동작 줄임', points: '점',
-    thetaValue: (value) => `${value} 라디안`, dampingValue: (value) => `감쇠 계수 ${value}`
+    thetaValue: (value) => `${value} 라디안`,
+    separationValue: (value) => `${value} 라디안`,
+    separationCaption: (value) => `${value} 라디안 간격`,
+    dampingValue: (value) => `감쇠 계수 ${value}`
   } : {
     warming: 'warming', paused: 'paused', static: 'static', live: 'live', standby: 'standby',
     pause: 'Pause motion', resume: 'Resume motion', reduced: 'Motion reduced', points: 'pts',
-    thetaValue: (value) => `${value} radians`, dampingValue: (value) => `${value} damping`
+    thetaValue: (value) => `${value} radians`,
+    separationValue: (value) => `${value} radians`,
+    separationCaption: (value) => `${value} rad apart`,
+    dampingValue: (value) => `${value} damping`
   };
   const lowPower = window.matchMedia('(max-width: 720px), (pointer: coarse)').matches
     || navigator.connection?.saveData === true
@@ -40,9 +46,12 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   };
   const controls = {
     theta: document.querySelector('[data-orbit-control="theta"]'),
+    separation: document.querySelector('[data-orbit-control="separation"]'),
     damping: document.querySelector('[data-orbit-control="damping"]'),
     thetaOutput: document.querySelector('[data-orbit-output="theta"]'),
+    separationOutput: document.querySelector('[data-orbit-output="separation"]'),
     dampingOutput: document.querySelector('[data-orbit-output="damping"]'),
+    separationCaption: document.querySelector('[data-orbit-caption="separation"]'),
     reset: document.querySelector('[data-orbit-reset]'),
     toggle: document.querySelector('[data-orbit-toggle]'),
     launch: document.querySelector('[data-orbit-launch]')
@@ -63,17 +72,26 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   let resetGeneration = 0;
   let resetRaf = 0;
   let cancelWarmChunk = null;
+  let runtimeController = null;
+  let consoleResizeObserver = null;
+  let visibilityObserver = null;
+  let suspended = false;
+  let resetAfterResume = false;
 
   const params = { m1: 1, m2: 1, l1: 1, l2: 1, g: 9.81 };
-  const runtimeParams = { ...params };
+  const runtimeParams = { ...params, damping: 0 };
   const primary = [2.18, 2.64, 0, 0];
   const twin = [2.181, 2.64, 0, 0];
   // A user can move a control while this below-the-fold module is still
   // downloading. Seed from the live form values so that first intent is never
   // overwritten by the deferred initializer.
   const initialThetaValue = Number.parseFloat(controls.theta?.value || '');
+  const initialSeparationValue = Number.parseFloat(controls.separation?.value || '');
   const dampingValue = Number.parseFloat(controls.damping?.value || '');
   let initialTheta = Number.isFinite(initialThetaValue) ? initialThetaValue : 2.18;
+  let initialSeparation = Number.isFinite(initialSeparationValue)
+    ? Math.max(0.0001, Math.min(0.02, initialSeparationValue))
+    : 0.001;
   let damping = Number.isFinite(dampingValue) ? Math.max(0, dampingValue) : 0.06;
   const maxTrail = lowPower ? 300 : 420;
   const trailA = makeTrail(maxTrail);
@@ -118,10 +136,8 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
   function rk4Into(s, work, dt) {
     runtimeParams.g = params.g;
+    runtimeParams.damping = damping;
     rk4StepDouble(s, runtimeParams, dt, work);
-    const decay = Math.exp(-damping * dt);
-    s[2] *= decay;
-    s[3] *= decay;
   }
 
   function pointInto(s, out) {
@@ -211,7 +227,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     const drift = Math.hypot(pointA.bx - pointB.bx, pointA.by - pointB.by);
     const delta = primary[0] - twin[0];
     const sep = Math.abs(Math.atan2(Math.sin(delta), Math.cos(delta)));
-    if (readouts.separation) readouts.separation.textContent = sep.toExponential(2) + ' rad';
+    if (readouts.separation) readouts.separation.textContent = `${sep.toExponential(2)}${korean ? ' 라디안' : ' rad'}`;
     if (readouts.drift) readouts.drift.textContent = drift.toFixed(2) + ' px';
     if (readouts.trace) readouts.trace.textContent = `${trailA.len} ${labels.points}`;
     if (readouts.mode) readouts.mode.textContent = warming
@@ -225,11 +241,15 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
   function updateControlSurface() {
     const thetaText = initialTheta.toFixed(2);
+    const separationText = initialSeparation.toExponential(1);
     const dampingText = damping.toFixed(2);
-    if (controls.thetaOutput) controls.thetaOutput.textContent = `${thetaText} rad`;
+    if (controls.thetaOutput) controls.thetaOutput.textContent = `${thetaText}${korean ? ' 라디안' : ' rad'}`;
+    if (controls.separationOutput) controls.separationOutput.textContent = `${separationText}${korean ? ' 라디안' : ' rad'}`;
     if (controls.dampingOutput) controls.dampingOutput.textContent = dampingText;
     controls.theta?.setAttribute('aria-valuetext', labels.thetaValue(thetaText));
+    controls.separation?.setAttribute('aria-valuetext', labels.separationValue(separationText));
     controls.damping?.setAttribute('aria-valuetext', labels.dampingValue(dampingText));
+    if (controls.separationCaption) controls.separationCaption.textContent = labels.separationCaption(separationText);
     if (controls.launch instanceof HTMLAnchorElement) {
       try {
         const url = new URL(controls.launch.href);
@@ -250,6 +270,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
   function scheduleWarmChunk(callback) {
     cancelWarmChunk?.();
+    if (suspended) return;
     if ('requestIdleCallback' in window) {
       const id = window.requestIdleCallback(callback, { timeout: 80 });
       cancelWarmChunk = () => window.cancelIdleCallback(id);
@@ -269,7 +290,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     primary[1] = 2.64;
     primary[2] = 0;
     primary[3] = 0;
-    twin[0] = initialTheta + 0.001;
+    twin[0] = initialTheta + initialSeparation;
     twin[1] = 2.64;
     twin[2] = 0;
     twin[3] = 0;
@@ -282,7 +303,14 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     const warmupSteps = reduced ? 180 : 80;
     let completed = 0;
     updateControlSurface();
-    window.__orbitConsoleState = { initialTheta, damping };
+    window.__orbitConsoleState = { initialTheta, initialSeparation, damping };
+    // Do not leave the instrument as a black rectangle while low-priority
+    // warmup yields to a busy renderer. The initial physical state, grid, and
+    // first trace sample are truthful immediately; richer history arrives in
+    // bounded idle chunks below.
+    pushTrail();
+    draw();
+    updateReadouts();
 
     function warmChunk(deadline) {
       cancelWarmChunk = null;
@@ -310,7 +338,11 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
   function scheduleReset() {
     updateControlSurface();
-    window.__orbitConsoleState = { initialTheta, damping };
+    window.__orbitConsoleState = { initialTheta, initialSeparation, damping };
+    if (suspended) {
+      resetAfterResume = true;
+      return;
+    }
     if (resetRaf) return;
     resetRaf = window.requestAnimationFrame(() => {
       resetRaf = 0;
@@ -321,9 +353,9 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   function draw() {
     drawGrid();
     drawTrail(trailA, 'rgba(24,212,248,ALPHA)');
-    drawTrail(trailB, 'rgba(255,95,143,ALPHA)');
+    drawTrail(trailB, 'rgba(157,120,255,ALPHA)');
     drawPendulum(primary, 'rgba(24,212,248,.92)');
-    drawPendulum(twin, 'rgba(255,95,143,.86)');
+    drawPendulum(twin, 'rgba(157,120,255,.86)');
     ctx.fillStyle = 'rgba(244,248,255,.86)';
     pointInto(primary, pointA);
     ctx.beginPath();
@@ -334,7 +366,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
   function tick(timestamp) {
     raf = 0;
-    if (reduced || !visible || document.hidden || warming) {
+    if (suspended || reduced || !visible || document.hidden || warming) {
       updateReadouts();
       return;
     }
@@ -359,7 +391,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   }
 
   function start() {
-    if (!paused && !warming && !raf) {
+    if (!suspended && !paused && !warming && !raf) {
       lastTick = 0;
       lastDraw = 0;
       raf = window.requestAnimationFrame(tick);
@@ -393,83 +425,154 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   // Cache the canvas rect so pointer tracking never forces a reflow per move;
   // invalidate it whenever the canvas can shift (scroll/resize).
   let canvasRect = null;
-  canvas.addEventListener('pointermove', (event) => {
-    if (!canvasRect) canvasRect = canvas.getBoundingClientRect();
-    pointerX = ((event.clientX - canvasRect.left) / canvasRect.width - 0.5) * 2;
-  }, { passive: true });
-  window.addEventListener('scroll', () => { canvasRect = null; }, { passive: true });
-  canvas.addEventListener('pointerleave', () => {
-    pointerX = 0;
-  });
-  controls.theta?.addEventListener('input', () => {
-    initialTheta = Number.parseFloat(controls.theta.value) || 2.18;
-    scheduleReset();
-  });
-  controls.damping?.addEventListener('input', () => {
-    damping = Math.max(0, Number.parseFloat(controls.damping.value) || 0);
-    scheduleReset();
-  });
-  controls.reset?.addEventListener('click', scheduleReset);
-  controls.toggle?.addEventListener('click', () => setPaused(!paused));
-
   let resizeRaf = 0;
-  window.addEventListener('resize', () => {
+
+  function scheduleCanvasResize() {
     canvasRect = null;
-    if (resizeRaf) return;
+    if (resizeRaf || suspended) return;
     resizeRaf = window.requestAnimationFrame(() => {
       resizeRaf = 0;
+      if (suspended) return;
       resize();
       draw();
     });
-  }, { passive: true });
-  document.addEventListener('visibilitychange', () => {
+  }
+
+  function handlePointerMove(event) {
+    if (!canvasRect) canvasRect = canvas.getBoundingClientRect();
+    if (canvasRect.width <= 0) return;
+    pointerX = ((event.clientX - canvasRect.left) / canvasRect.width - 0.5) * 2;
+  }
+
+  function handleThetaInput() {
+    initialTheta = Number.parseFloat(controls.theta.value) || 2.18;
+    scheduleReset();
+  }
+
+  function handleSeparationInput() {
+    const value = Number.parseFloat(controls.separation.value);
+    initialSeparation = Number.isFinite(value) ? Math.max(0.0001, Math.min(0.02, value)) : 0.001;
+    scheduleReset();
+  }
+
+  function handleDampingInput() {
+    damping = Math.max(0, Number.parseFloat(controls.damping.value) || 0);
+    scheduleReset();
+  }
+
+  function handleVisibilityChange() {
     if (document.hidden) stop();
     else if (visible && !reduced && !warming) start();
     updateReadouts();
-  });
-  reducedMotionQuery.addEventListener?.('change', () => {
+  }
+
+  function handleReducedMotionChange() {
     reduced = reducedMotionQuery.matches || captureMode;
     if (reduced) stop();
     else if (visible && !warming && !paused && !document.hidden) start();
     updateReadouts();
     setPaused(paused);
-  });
+  }
 
-  const consoleResizeObserver = 'ResizeObserver' in window
-    ? new ResizeObserver(() => {
-      canvasRect = null;
-      if (resizeRaf) return;
-      resizeRaf = window.requestAnimationFrame(() => {
-        resizeRaf = 0;
-        resize();
-        draw();
-      });
-    })
-    : null;
-  consoleResizeObserver?.observe(canvas);
-  window.visualViewport?.addEventListener('resize', () => {
+  function bindRuntime() {
+    if (runtimeController) return;
+    runtimeController = new AbortController();
+    const { signal } = runtimeController;
+    const listen = (target, type, listener, options = {}) => {
+      target?.addEventListener?.(type, listener, { ...options, signal });
+    };
+
+    listen(canvas, 'pointermove', handlePointerMove, { passive: true });
+    listen(canvas, 'pointerleave', () => { pointerX = 0; });
+    listen(window, 'scroll', () => { canvasRect = null; }, { passive: true });
+    listen(controls.theta, 'input', handleThetaInput);
+    listen(controls.separation, 'input', handleSeparationInput);
+    listen(controls.damping, 'input', handleDampingInput);
+    listen(controls.reset, 'click', scheduleReset);
+    listen(controls.toggle, 'click', () => setPaused(!paused));
+    listen(window, 'resize', scheduleCanvasResize, { passive: true });
+    listen(window.visualViewport, 'resize', scheduleCanvasResize, { passive: true });
+    listen(document, 'visibilitychange', handleVisibilityChange);
+    listen(reducedMotionQuery, 'change', handleReducedMotionChange);
+
+    consoleResizeObserver = 'ResizeObserver' in window
+      ? new ResizeObserver(scheduleCanvasResize)
+      : null;
+    consoleResizeObserver?.observe(canvas);
+
+    if ('IntersectionObserver' in window) {
+      visibilityObserver = new IntersectionObserver((entries) => {
+        setVisible(entries.some((entry) => entry.isIntersecting));
+      }, { rootMargin: '280px 0px' });
+      visibilityObserver.observe(canvas);
+    } else {
+      setVisible(true);
+    }
+  }
+
+  function suspendRuntime() {
+    if (suspended) return;
+    suspended = true;
+    resetAfterResume ||= warming || Boolean(resetRaf) || Boolean(cancelWarmChunk);
+    resetGeneration += 1;
+    cancelWarmChunk?.();
+    cancelWarmChunk = null;
+    warming = false;
+    stop();
+    if (resetRaf) window.cancelAnimationFrame(resetRaf);
+    if (resizeRaf) window.cancelAnimationFrame(resizeRaf);
+    resetRaf = 0;
+    resizeRaf = 0;
+    runtimeController?.abort();
+    runtimeController = null;
+    consoleResizeObserver?.disconnect();
+    consoleResizeObserver = null;
+    visibilityObserver?.disconnect();
+    visibilityObserver = null;
     canvasRect = null;
-    if (!resizeRaf) resizeRaf = window.requestAnimationFrame(() => {
-      resizeRaf = 0;
-      resize();
-      draw();
-    });
-  }, { passive: true });
-  window.addEventListener('pagehide', stop);
-  window.addEventListener('pageshow', () => {
-    if (visible && !reduced && !paused && !warming) start();
-  });
+    visible = false;
+  }
 
+  function resumeRuntime() {
+    if (!suspended) return;
+    suspended = false;
+    reduced = reducedMotionQuery.matches || captureMode;
+    bindRuntime();
+    resize();
+    draw();
+    if (resetAfterResume) {
+      resetAfterResume = false;
+      resetSimulation();
+    } else {
+      updateControlSurface();
+      setPaused(paused);
+      updateReadouts();
+    }
+  }
+
+  function handlePageHide() {
+    suspendRuntime();
+  }
+
+  function handlePageShow(event) {
+    if (event.persisted) resumeRuntime();
+  }
+
+  // These two root lifecycle listeners intentionally survive suspension: a
+  // bfcache-restored document does not re-evaluate this module, so pageshow is
+  // the only safe point at which to rebuild its abortable listener graph.
+  window.addEventListener('pagehide', handlePageHide);
+  window.addEventListener('pageshow', handlePageShow);
+
+  window.__orbitConsoleLifecycle = {
+    get active() { return Boolean(runtimeController); },
+    get suspended() { return suspended; },
+    get pendingWork() { return Boolean(raf || resetRaf || resizeRaf || cancelWarmChunk); },
+    get observing() { return Boolean(consoleResizeObserver || visibilityObserver); }
+  };
+
+  bindRuntime();
   resize();
   resetSimulation();
   setPaused(false);
-
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver((entries) => {
-      setVisible(entries.some((entry) => entry.isIntersecting));
-    }, { rootMargin: '280px 0px' });
-    observer.observe(canvas);
-  } else {
-    setVisible(true);
-  }
 })();

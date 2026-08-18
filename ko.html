@@ -34,7 +34,7 @@
      anything paints. ko.html is built by scripts/build-ko-page.mjs, so Korean
      visitors get a plain static page (no runtime translation cost). The CSP
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gUWP08ylOuPqo0wpzfYlBSEPdn8G8GWZB6A9+QD2zCE=' 'sha256-bpST98ciZlpoVEIyeUZBSU5N7A1PeIFhN8TztbWHMtI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Kv8HLuG1zzdQPOnbDdZlLX2BZv44d4cxBPl/EVosX1o=' 'sha256-bpST98ciZlpoVEIyeUZBSU5N7A1PeIFhN8TztbWHMtI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script id="lang-boot">(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="ko"||!localStorage.getItem("pendulum-landing/lang"))localStorage.setItem("pendulum-landing/lang","ko")}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -55,7 +55,7 @@
       "runtimePlatform": "Web browser",
       "license": "https://opensource.org/license/mit",
       "author": { "@type": "Person", "name": "Elliot Jung" },
-      "dateModified": "2026-07-20",
+      "dateModified": "2026-08-18",
       "applicationCategory": "EducationalApplication",
       "inLanguage": ["en", "ko"],
       "isAccessibleForFree": true,
@@ -199,7 +199,7 @@
         <span class="kicker">스크롤로 움직이는 카오스</span>
         <h2 id="orbit-descent-title">위상공간을 가로질러 내려가다.</h2>
         <p class="descent-live-copy">스크롤하면 살아 있는 이중진자가 첫 화면을 벗어나 깊이 회전하며 함께 내려갑니다. 영상 반복 재생이 아닙니다. 카메라가 따라가는 동안 두 막대는 같은 240 Hz RK4 계를 계속 계산합니다.</p>
-        <p class="descent-static-copy">동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 같은 초기 상태를 아래의 직접 조작 콘솔에서 열 수 있습니다.</p>
+        <p class="descent-static-copy">동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 아래의 조절 가능한 궤적 콘솔에서 관련 초기 조건을 직접 탐색할 수 있습니다.</p>
         <span class="descent-signal descent-live-copy"><i></i> 실시간 방정식 · 실시간 카메라</span>
         <span class="descent-signal descent-static-copy"><i></i> 정적 근거 화면 · 동작 환경설정 존중</span>
       </div>
@@ -229,7 +229,7 @@
       <div class="descent-card">
         <span class="descent-index">04 · 측정</span>
         <h3>장관을 검증 가능한 근거로 바꾸다.</h3>
-        <p>하강의 끝은 아래의 직접 조작 궤적 콘솔로 이어집니다. 놓는 각도, 감쇠, 초기 간격을 바꾸고 그 정확한 상태를 전체 실험실로 가져가세요.</p>
+        <p>하강의 끝은 아래의 직접 조작 궤적 콘솔로 이어집니다. 주 초기각, 감쇠, 초기 간격을 조절하고 주 상태를 전체 실험실로 가져가세요.</p>
         <a class="btn primary sm" href="#console">직접 조작하기 <span class="arrow">↓</span></a>
       </div>
     </article>
@@ -242,19 +242,24 @@
     <div class="console-copy reveal">
       <span class="kicker">궤적 콘솔</span>
       <h2 data-rise="">앱을 열기도 전에 체감되는 카오스.</h2>
-      <p>가벼운 캔버스 계기가 거의 동일한 두 이중진자 릴리스를 실시간으로 그립니다. 시안과 로즈 궤적은 함께 출발하지만, 민감성이 지배하는 순간 서로 갈라집니다.</p>
+      <p>가벼운 캔버스 계기가 거의 동일한 두 이중진자 릴리스를 실시간으로 그립니다. 시안과 보라 궤적은 함께 출발하지만, 민감성이 지배하는 순간 서로 갈라집니다.</p>
       <div class="console-readouts" role="group" aria-label="실시간 콘솔 판독">
-        <div class="console-readout"><span>separation</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
-        <div class="console-readout"><span>drift</span><strong data-orbit-readout="drift">0.00 px</strong></div>
-        <div class="console-readout"><span>trace</span><strong data-orbit-readout="trace">warming</strong></div>
-        <div class="console-readout"><span>mode</span><strong data-orbit-readout="mode">live</strong></div>
+        <div class="console-readout"><span>간격</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
+        <div class="console-readout"><span>궤적 거리</span><strong data-orbit-readout="drift">0.00 px</strong></div>
+        <div class="console-readout"><span>궤적</span><strong data-orbit-readout="trace">warming</strong></div>
+        <div class="console-readout"><span>상태</span><strong data-orbit-readout="mode">live</strong></div>
       </div>
       <div class="orbit-controls" role="group" aria-label="미니 실험실 조절기">
         <div class="orbit-control-meta">
           <label for="orbit-theta">초기각 θ₁</label>
-          <output id="orbit-theta-output" for="orbit-theta" data-orbit-output="theta">2.18 rad</output>
+          <output id="orbit-theta-output" for="orbit-theta" data-orbit-output="theta">2.18 라디안</output>
         </div>
         <input id="orbit-theta" data-orbit-control="theta" type="range" min="0.40" max="3.00" step="0.01" value="2.18" aria-describedby="orbit-theta-output" aria-valuetext="2.18 라디안">
+        <div class="orbit-control-meta">
+          <label for="orbit-separation">초기 간격 δθ₁</label>
+          <output id="orbit-separation-output" for="orbit-separation" data-orbit-output="separation">1.0e-3 라디안</output>
+        </div>
+        <input id="orbit-separation" data-orbit-control="separation" type="range" min="0.0001" max="0.0200" step="0.0001" value="0.0010" aria-describedby="orbit-separation-output" aria-valuetext="1.0e-3 라디안">
         <div class="orbit-control-meta">
           <label for="orbit-damping">감쇠 계수 γ</label>
           <output id="orbit-damping-output" for="orbit-damping" data-orbit-output="damping">0.06</output>
@@ -266,18 +271,23 @@
         </div>
       </div>
       <div class="console-actions">
-        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;tab=lab&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06&amp;lang=ko" data-app-link="" data-orbit-launch="">이 상태로 열기 <span class="arrow">→</span></a>
+        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;tab=lab&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06&amp;lang=ko" data-app-link="" data-orbit-launch="">주 상태 열기 <span class="arrow">→</span></a>
         <a class="btn ghost sm" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">리뷰어 원장</a>
       </div>
     </div>
 
     <figure class="orbit-console reveal" data-wipe="">
+      <div class="orbit-static-fallback orbit-static-fallback-template" role="img" aria-label="실시간 궤적을 사용할 수 없어 정적인 이중진자 궤적을 표시합니다.">
+        <span aria-hidden="true">θ₁ / θ₂</span>
+        <strong>정적 궤적 모드</strong>
+        <small>전체 실험실과 검증 근거는 계속 사용할 수 있습니다.</small>
+      </div>
       <canvas id="orbit-console" width="920" height="620" role="img" aria-label="이중진자 궤적 콘솔 애니메이션" aria-describedby="orbit-console-caption">
-        Two simulated double pendulums begin 0.001 radians apart. Their cyan and rose trajectories separate over time.
+        두 개의 이중진자가 0.001 라디안 차이로 시작합니다. 시안과 보라 궤적은 시간이 지날수록 갈라집니다.
       </canvas>
       <figcaption id="orbit-console-caption">
-        <span>dual release</span>
-        <span>1.0e-3 rad apart</span>
+        <span data-orbit-caption-label="">두 초기 조건</span>
+        <span data-orbit-caption="separation">1.0e-3 라디안 간격</span>
       </figcaption>
     </figure>
   </div>
@@ -573,7 +583,7 @@
       <div class="val-board reveal" data-wipe="">
         <div class="vb-head">
           <span>릴리스 검증 근거 · 동기화 및 재현 가능</span>
-          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">14 methods profiled</span></span>
+          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">14개 방법 프로파일링</span></span>
         </div>
         <table class="val-table">
           <caption>측정된 한계까지 포함한 시뮬레이션 저장소의 검증 근거 스냅숏.</caption>
@@ -583,8 +593,8 @@
           <tbody>
             <tr>
               <th scope="row" class="name">최상 에너지 프로파일</th>
-              <td><strong data-evidence="energy.bestMethod">DOP853 8(5,3)</strong><small data-evidence="energy.bestDrift">1.612e-14 max relative drift</small></td>
-              <td data-evidence="energy.profileLabel">14 methods profiled</td>
+              <td><strong data-evidence="energy.bestMethod">DOP853 8(5,3)</strong><small data-evidence="energy.bestDrift">1.612e-14 최대 상대 드리프트</small></td>
+              <td data-evidence="energy.profileLabel">14개 방법 프로파일링</td>
               <td><span class="evidence-status measured">측정됨</span></td>
             </tr>
             <tr>
@@ -601,29 +611,29 @@
             </tr>
             <tr>
               <th scope="row" class="name">실물 GPU 매트릭스</th>
-              <td class="drift" data-evidence="gpu.vendorLabel">1 / 3 vendors</td>
-              <td data-evidence="gpu.missingLabel">NVIDIA + AMD pending</td>
+              <td class="drift" data-evidence="gpu.vendorLabel">1 / 3 공급업체</td>
+              <td data-evidence="gpu.missingLabel">NVIDIA + AMD 대기 중</td>
               <td><span class="evidence-status partial">부분 완료</span></td>
             </tr>
             <tr>
               <th scope="row" class="name">공개 릴리스 체인</th>
-              <td data-evidence="publication.availableLabel">GitHub release + Pages live</td>
-              <td data-evidence="publication.missingLabel">npm + Zenodo pending</td>
-              <td><span class="evidence-status partial" data-evidence="publication.statusLabel">partial</span></td>
+              <td data-evidence="publication.availableLabel">GitHub 릴리스 + Pages 공개</td>
+              <td data-evidence="publication.missingLabel">npm + Zenodo 대기 중</td>
+              <td><span class="evidence-status partial" data-evidence="publication.statusLabel">부분 완료</span></td>
             </tr>
           </tbody>
         </table>
-        <p class="evidence-freshness" data-evidence-freshness="" role="status">검증 근거 스냅숏 · 2026년 7월 27일까지 유효</p>
+        <p class="evidence-freshness" data-evidence-freshness="" role="status">검증 근거 최신 · 2026년 8월 27일까지 유효</p>
       </div>
 
       <div class="val-side">
         <div class="val-stat reveal">
           <div class="big" data-count="1388" data-decimals="0" data-evidence-count="tests.passed"></div>
           <div class="cap">단위 테스트 · 전부 그린</div>
-          <p>여기에 Chromium·Firefox·WebKit·모바일 E2E 스위트, 그리고 기계가 읽을 수 있는 Stryker 집계 <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span>.</p>
+          <p>여기에 Chromium·Firefox·WebKit·모바일 E2E 스위트, 그리고 기계가 읽을 수 있는 Stryker 집계 <span data-evidence="mutation.scoreLabel">65.32% · 낮음 등급 · 29개 샤드</span>.</p>
         </div>
         <div class="val-stat reveal">
-          <div class="big" data-count="6" data-decimals="0" data-prefix="~" data-suffix="e-14" data-evidence="validation.scipyAgreement"></div>
+          <div class="big" data-count="6" data-decimals="0" data-prefix="~" data-suffix="e-14" data-evidence="validation.scipyAgreement">~6e-14</div>
           <div class="cap">SciPy DOP853 대비 일치도</div>
           <p>규칙 궤도는 20초 동안 ~6e-14 수준으로 일치하고, 카오스 궤도는 e^{λ₁t}로 증폭된 허용 하한까지 일치합니다.</p>
         </div>
@@ -642,11 +652,11 @@
         <span class="pass"><i></i> CI에서 강제</span>
       </div>
       <div class="ledger-rows">
-        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP-safe lint → strict typecheck → module-size ratchet → 1388 unit tests → result-count guard → docs sync → format gate</span></div>
+        <div class="ledger-row"><span class="k">verify</span><span class="v" data-evidence="ledger.verify">CSP 안전 린트 → 엄격 타입 검사 → 모듈 크기 래칫 → 1388개 단위 테스트 → 결과 수 가드 → 문서 동기화 → 포맷 게이트</span></div>
         <div class="ledger-row"><span class="k">browsers</span><span class="v">Chromium·모바일 Chrome·Firefox·WebKit에서 Playwright E2E, 호스트별 시각 회귀 기준선 포함</span></div>
         <div class="ledger-row"><span class="k">memory</span><span class="v">커밋된 브라우저 벤치마크 기준선 대비 하드 메모리 회귀 게이트</span></div>
         <div class="ledger-row"><span class="k">evidence</span><span class="v">리포트가 소스 커밋을 증명하고, 리뷰어 콘솔이 기계가 읽는 인증 체인을 읽습니다</span></div>
-        <div class="ledger-row"><span class="k">mutation</span><span class="v">Stryker 집계: <span data-evidence="mutation.detailLabel">65.32% total · 68.34% covered · low band · 29 shards</span></span></div>
+        <div class="ledger-row"><span class="k">mutation</span><span class="v">Stryker 집계: <span data-evidence="mutation.detailLabel">65.32% 전체 · 68.34% 커버됨 · 낮음 등급 · 29개 샤드</span></span></div>
       </div>
     </div>
     <div class="validation-cta reveal">
@@ -673,9 +683,9 @@
       <p>이 요약은 이 페이지의 검증 수치와 같은 커밋에 있는 시뮬레이션 저장소에서 동기화됩니다.</p>
     </div>
     <div class="changelog-grid" data-changelog-list="">
-      <article class="changelog-card"><span>01</span><h3>Numerical work budgets with explicit contracts</h3><p>Every chaos diagnostic now validates steps, horizons, and state up front and refuses out-of-budget work with typed errors.</p></article>
-      <article class="changelog-card"><span>02</span><h3>FTLE horizons integrate the exact residual time</h3><p>Finite-time exponents keep the precise horizon, with a Jacobi-based singular value immune to seed and overflow bias.</p></article>
-      <article class="changelog-card"><span>03</span><h3>Event detection is time-ordered and exact at the cap</h3><p>Simultaneous crossings are refined and sorted by time, and the event cap returns the last refined crossing.</p></article>
+      <article class="changelog-card" lang="ko"><span>01</span><h3>폴더 이름 변경</h3><p>docs/ 트리 전체를 git mv로 documents/로 옮겨 기록을 보존했습니다.</p></article>
+      <article class="changelog-card" lang="ko"><span>02</span><h3>저장소 간 연결</h3><p>연결된 pendulum-landing 페이지(EN + KO)와 문서 링크를 .../blob/master/documents/...로 다시 지정했습니다.</p></article>
+      <article class="changelog-card" lang="ko"><span>03</span><h3>기존 기록 보존</h3><p>이전 CHANGELOG 항목은 기존 docs/... 경로를 유지합니다.</p></article>
     </div>
     <div class="guide-foot reveal">
       <a class="btn ghost" data-changelog-source="" href="https://github.com/elliotjung/pendulum-lab/blob/master/CHANGELOG.md">전체 변경 기록 읽기</a>

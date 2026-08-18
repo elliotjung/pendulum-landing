@@ -237,8 +237,13 @@
       if (!card) return;
       const title = $('h3', card);
       const description = $('p', card);
-      if (!koreanPage && title) title.textContent = String(highlight.title || 'Release update');
-      if (!koreanPage && description) description.textContent = String(highlight.summary || 'See the full changelog for details.');
+      const hasKorean = typeof highlight.titleKo === 'string' && highlight.titleKo.trim()
+        && typeof highlight.summaryKo === 'string' && highlight.summaryKo.trim();
+      const localized = koreanPage && hasKorean;
+      if (title) title.textContent = String(localized ? highlight.titleKo : highlight.title || 'Release update');
+      if (description) description.textContent = String(localized ? highlight.summaryKo : highlight.summary || 'See the full changelog for details.');
+      if (koreanPage) card.setAttribute('lang', localized ? 'ko' : 'en');
+      else card.removeAttribute('lang');
       card.dataset.ready = 'true';
     });
     const source = $('[data-changelog-source]');
@@ -453,7 +458,6 @@
       requestHeroScene();
     };
     window.addEventListener('scroll', requestHeroFromScroll, scrollIntentOptions);
-    window.addEventListener('keydown', requestHeroScene, { once: true, signal: heroIntentController.signal });
   }
 
   function syncHeroPreferences({ allowLoad = true } = {}) {

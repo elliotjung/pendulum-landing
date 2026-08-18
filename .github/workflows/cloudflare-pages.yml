@@ -51,12 +51,7 @@ jobs:
       - run: npx playwright test tests/landing-smoke.spec.ts --project=chromium --project=mobile-chrome
       - run: npm run lighthouse:lhci
       - name: Prepare static mirror artifact
-        shell: bash
-        run: |
-          mkdir -p _site
-          cp index.html ko.html 404.html robots.txt sitemap.xml _headers _site/
-          mkdir -p _site/assets
-          rsync -a assets/ _site/assets/
+        run: npm run prepare:site -- --headers
       - name: Deploy mirror with custom isolation headers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -18,8 +18,10 @@ concurrency:
 jobs:
   quality-gate:
     if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' &&
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -44,16 +46,7 @@ jobs:
       - run: npm run smoke:ci
       - run: npm run lighthouse:lhci
       - name: Prepare explicit public-file allowlist
-        shell: bash
-        run: |
-          install -d _site/assets
-          cp index.html ko.html 404.html robots.txt sitemap.xml _site/
-          rsync -a --delete assets/ _site/assets/
-          test ! -e _site/package.json
-          test ! -e _site/package-lock.json
-          test ! -e _site/scripts
-          test ! -e _site/tests
-          test ! -e _site/_headers
+        run: npm run prepare:site
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: _site

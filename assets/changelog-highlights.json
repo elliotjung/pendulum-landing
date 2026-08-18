@@ -6,15 +6,21 @@
   "highlights": [
     {
       "title": "Folder rename",
-      "summary": "the entire docs/ tree moved to documents/ via git mv (history preserved)."
+      "summary": "the entire docs/ tree moved to documents/ via git mv (history preserved).",
+      "titleKo": "폴더 이름 변경",
+      "summaryKo": "docs/ 트리 전체를 git mv로 documents/로 옮겨 기록을 보존했습니다."
     },
     {
       "title": "Cross-repo link",
-      "summary": "the companion pendulum-landing page (EN + KO) and its docs were repointed to .../blob/master/documents/..."
+      "summary": "the companion pendulum-landing page (EN + KO) and its docs were repointed to .../blob/master/documents/...",
+      "titleKo": "저장소 간 연결",
+      "summaryKo": "연결된 pendulum-landing 페이지(EN + KO)와 문서 링크를 .../blob/master/documents/...로 다시 지정했습니다."
     },
     {
       "title": "Historical entries preserved",
-      "summary": "older CHANGELOG entries keep their original docs/..."
+      "summary": "older CHANGELOG entries keep their original docs/...",
+      "titleKo": "기존 기록 보존",
+      "summaryKo": "이전 CHANGELOG 항목은 기존 docs/... 경로를 유지합니다."
     }
   ]
 }

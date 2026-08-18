@@ -662,6 +662,10 @@ body.no-webgl .descent-card{
   width:min(680px,100%); opacity:1; transform:none; filter:none;
 }
 html.no-js .orbit-controls{ display:none; }
+html.no-js .orbit-console canvas{ display:none; }
+.orbit-static-fallback.orbit-static-fallback-template{ display:none; }
+html.no-js .orbit-static-fallback-template,
+body.orbit-console-static .orbit-static-fallback-template{ display:grid; }
 body.hero-live.orbit-descent-active .hero-static-art{ opacity:.025; filter:saturate(.58) brightness(.6); }
 body.orbit-descent-active #hero-canvas{ opacity:1; }
 body.reduced-motion-hero.orbit-descent-active .hero-static-art,
@@ -936,7 +940,7 @@ html.no-js .sec-head::after{ transform:scaleX(1); }
 .console-readout:nth-child(1) strong{ color:var(--cyan); }
 .console-readout:nth-child(2) strong{ color:#ffbe55; }
 .console-readout:nth-child(3) strong{ color:#34e88a; }
-.console-readout:nth-child(4) strong{ color:#ff5f8f; }
+.console-readout:nth-child(4) strong{ color:var(--primary); }
 .orbit-controls{
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
@@ -961,6 +965,8 @@ html.no-js .sec-head::after{ transform:scaleX(1); }
 }
 .orbit-control-meta label{ cursor:pointer; }
 .orbit-controls output{ color:var(--cyan); font-variant-numeric:tabular-nums; }
+.orbit-controls [data-orbit-output="separation"]{ color:var(--violet); }
+.orbit-controls [data-orbit-output="damping"]{ color:var(--warn); }
 .orbit-controls input[type="range"]{
   width:100%;
   min-width:0;
@@ -968,6 +974,8 @@ html.no-js .sec-head::after{ transform:scaleX(1); }
   accent-color:var(--cyan);
   cursor:pointer;
 }
+.orbit-controls [data-orbit-control="separation"]{ accent-color:var(--violet); }
+.orbit-controls [data-orbit-control="damping"]{ accent-color:var(--warn); }
 .orbit-controls[hidden]{ display:none; }
 .orbit-reset{
   align-self:stretch;
@@ -983,7 +991,7 @@ html.no-js .sec-head::after{ transform:scaleX(1); }
 .orbit-reset:hover{ border-color:rgba(24,212,248,.65); background:rgba(24,212,248,.12); }
 .orbit-reset:focus-visible,.orbit-controls input:focus-visible{ outline:2px solid var(--cyan); outline-offset:3px; }
 .orbit-button-row{
-  grid-column:2; grid-row:2/5; align-self:stretch;
+  grid-column:2; grid-row:2/8; align-self:stretch;
   display:flex; flex-direction:column; justify-content:center; gap:8px;
 }
 .console-actions{
@@ -1497,6 +1505,18 @@ body.reveal-observer-ready [data-stagger] > .is-visible{
   opacity:1; transform:none;
   transition:opacity var(--motion-slow) var(--ease),transform var(--motion-slow) var(--ease);
 }
+/* Keyboard focus is an interaction too: never leave a tabbable card transparent
+   while its one-shot viewport reveal is waiting for IntersectionObserver. */
+body.reveal-observer-ready .reveal:not(.is-visible):focus,
+body.reveal-observer-ready .reveal:not(.is-visible):focus-within,
+body.reveal-observer-ready [data-wipe]:not(.is-visible):focus,
+body.reveal-observer-ready [data-wipe]:not(.is-visible):focus-within,
+body.reveal-observer-ready [data-rise]:not(.is-visible):focus,
+body.reveal-observer-ready [data-rise]:not(.is-visible):focus-within,
+body.reveal-observer-ready [data-stagger] > :not(.is-visible):focus,
+body.reveal-observer-ready [data-stagger] > :not(.is-visible):focus-within{
+  opacity:1; transform:none;
+}
 
 .diverge-stage,.cap-card,.val-board,.val-stat,.step,.orbit-console,.app-preview,
 .recipe-card,.mode-card,.frontier-card,.ledger,.tcad-card,.changelog-card,.validation-cta,.error-shell{
@@ -1529,7 +1549,7 @@ body.reveal-observer-ready [data-stagger] > .is-visible{
 .console-readout:nth-child(1) strong{ color:var(--cyan); }
 .console-readout:nth-child(2) strong{ color:var(--warn); }
 .console-readout:nth-child(3) strong{ color:var(--ok); }
-.console-readout:nth-child(4) strong{ color:var(--danger); }
+.console-readout:nth-child(4) strong{ color:var(--primary); }
 .orbit-reset{ border-color:var(--line-2); border-radius:var(--radius-sm); background:var(--control); }
 .orbit-reset:hover{ border-color:rgba(139,124,246,.44); background:var(--hover); }
 .orbit-console{ padding:10px; background:var(--panel); }

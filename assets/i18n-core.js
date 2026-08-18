@@ -84,8 +84,8 @@
     'Fall through phase space.': '위상공간을 가로질러 내려가다.',
     'Scroll and the live double pendulum rolls out of the hero, turns through depth, and descends with you. This is not a video loop: the rods keep solving the same 240 Hz RK4 system while the camera follows.':
       '스크롤하면 살아 있는 이중진자가 첫 화면을 벗어나 깊이 회전하며 함께 내려갑니다. 영상 반복 재생이 아닙니다. 카메라가 따라가는 동안 두 막대는 같은 240 Hz RK4 계를 계속 계산합니다.',
-    'A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The same initial state opens in the hands-on console below.':
-      '동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 같은 초기 상태를 아래의 직접 조작 콘솔에서 열 수 있습니다.',
+    'A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The adjustable trajectory console below lets you explore related initial conditions by hand.':
+      '동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 아래의 조절 가능한 궤적 콘솔에서 관련 초기 조건을 직접 탐색할 수 있습니다.',
     'Live equations · live camera': '실시간 방정식 · 실시간 카메라',
     'Static evidence view · motion preference respected': '정적 근거 화면 · 동작 환경설정 존중',
     'One state becomes two futures.': '한 상태가 두 개의 미래가 된다.',
@@ -102,15 +102,17 @@
     'deterministic': '결정론적',
     'replayable': '재생 가능',
     'Then turn the spectacle into evidence.': '장관을 검증 가능한 근거로 바꾸다.',
-    'The descent resolves into the hands-on trajectory console below. Change the release, damping, and initial separation — then carry the exact state into the full laboratory.':
-      '하강의 끝은 아래의 직접 조작 궤적 콘솔로 이어집니다. 놓는 각도, 감쇠, 초기 간격을 바꾸고 그 정확한 상태를 전체 실험실로 가져가세요.',
+    'The descent resolves into the hands-on trajectory console below. Tune the primary angle, damping, and initial separation — then carry the primary state into the full laboratory.':
+      '하강의 끝은 아래의 직접 조작 궤적 콘솔로 이어집니다. 주 초기각, 감쇠, 초기 간격을 조절하고 주 상태를 전체 실험실로 가져가세요.',
     'Take control': '직접 조작하기',
     // ---- trajectory console -------------------------------------------------
     'Trajectory Console': '궤적 콘솔',
     'Chaos you can feel before the app even opens.': '앱을 열기도 전에 체감되는 카오스.',
-    'A lightweight canvas instrument draws two nearly identical double-pendulum releases in real time. The cyan and rose traces begin together, then peel apart as sensitivity takes over.':
-      '가벼운 캔버스 계기가 거의 동일한 두 이중진자 릴리스를 실시간으로 그립니다. 시안과 로즈 궤적은 함께 출발하지만, 민감성이 지배하는 순간 서로 갈라집니다.',
-    'Open This State': '이 상태로 열기',
+    'A lightweight canvas instrument draws two nearly identical double-pendulum releases in real time. The cyan and violet traces begin together, then peel apart as sensitivity takes over.':
+      '가벼운 캔버스 계기가 거의 동일한 두 이중진자 릴리스를 실시간으로 그립니다. 시안과 보라 궤적은 함께 출발하지만, 민감성이 지배하는 순간 서로 갈라집니다.',
+    'Two simulated double pendulums begin 0.001 radians apart. Their cyan and violet trajectories separate over time.':
+      '두 개의 이중진자가 0.001 라디안 차이로 시작합니다. 시안과 보라 궤적은 시간이 지날수록 갈라집니다.',
+    'Open primary state': '주 상태 열기',
     'Reviewer Ledger': '리뷰어 원장',
     // ---- live preview --------------------------------------------------------
     'Live Workbench': '라이브 워크벤치',
@@ -238,7 +240,6 @@
     'measured': '측정됨',
     'passed': '통과',
     'partial': '부분 완료',
-    'Evidence snapshot · valid through 27 Jul 2026': '검증 근거 스냅숏 · 2026년 7월 27일까지 유효',
     'Every integrator is cross-checked against closed-form, energy, and reference-method criteria, then externally cross-validated against an independent SciPy DOP853 reference for both the double and triple pendulum.':
       '모든 적분기를 닫힌형 해·에너지·레퍼런스 방법 기준으로 교차 점검한 뒤, 이중·삼중 진자 모두 독립적인 SciPy DOP853 레퍼런스와 외부 교차 검증합니다.',
     'Long-run energy drift · conservative double · T = 200 s': '장기 에너지 드리프트 · 보존계 이중진자 · T = 200 s',
@@ -296,10 +297,21 @@
     'Cite this repository': '이 저장소 인용하기',
     // ---- mini lab controls -------------------------------------------------
     'Mini lab controls': '미니 실험실 조절기',
+    'separation': '간격',
+    'drift': '궤적 거리',
+    'trace': '궤적',
+    'mode': '상태',
     'initial angle θ₁': '초기각 θ₁',
+    'initial separation δθ₁': '초기 간격 δθ₁',
+    '2.18 rad': '2.18 라디안',
+    '1.0e-3 rad': '1.0e-3 라디안',
     'damping γ': '감쇠 계수 γ',
     'Reset trace': '궤적 초기화',
     'Pause motion': '움직임 일시정지',
+    'dual release': '두 초기 조건',
+    '1.0e-3 rad apart': '1.0e-3 라디안 간격',
+    'Static trajectory mode': '정적 궤적 모드',
+    'The full lab and validation evidence remain available.': '전체 실험실과 검증 근거는 계속 사용할 수 있습니다.',
     // ---- TCAD mapping ------------------------------------------------------
     'Why this maps to TCAD': '이 경험이 TCAD로 이어지는 이유',
     'A chaos lab built with device-simulation discipline.': '소자 시뮬레이션의 원칙으로 만든 카오스 실험실.',
@@ -327,15 +339,14 @@
     'What changed — from the source, not a marketing rewrite.': '마케팅 문구가 아닌 원본에서 가져온 변경 사항.',
     'These highlights are synchronized from the simulation repository at the same evidence commit used by this page.':
       '이 요약은 이 페이지의 검증 수치와 같은 커밋에 있는 시뮬레이션 저장소에서 동기화됩니다.',
-    'The light theme is now whole.': '라이트 테마가 이제 완전해졌습니다.',
-    'A final-position porcelain theme now covers every surface, component, and adopted stylesheet.':
-      '최종 순서의 포슬린 테마가 모든 표면, 컴포넌트, 채택된 스타일시트를 포괄합니다.',
-    'Shared finish, baseline-frozen dark': '공통 마감, 기준선이 고정된 다크 테마',
-    'Analysis canvases gain an instrument-face idle state while existing dark visual baselines remain pinned.':
-      '분석 캔버스에 계기판형 대기 화면을 더하면서 기존 다크 시각 기준선은 그대로 고정했습니다.',
-    'Locale contract restored': '로케일 계약 복구',
-    'Localized tooltips retain the canonical English tool name alongside translated guidance.':
-      '현지화된 툴팁이 번역 안내와 함께 표준 영어 도구 이름을 유지합니다.',
+    'Folder rename': '폴더 이름 변경',
+    'the entire docs/ tree moved to documents/ via git mv (history preserved).':
+      'docs/ 트리 전체를 git mv로 documents/로 옮겨 기록을 보존했습니다.',
+    'Cross-repo link': '저장소 간 연결',
+    'the companion pendulum-landing page (EN + KO) and its docs were repointed to .../blob/master/documents/...':
+      '연결된 pendulum-landing 페이지(EN + KO)와 문서 링크를 .../blob/master/documents/...로 다시 지정했습니다.',
+    'Historical entries preserved': '기존 기록 보존',
+    'older CHANGELOG entries keep their original docs/...': '이전 CHANGELOG 항목은 기존 docs/... 경로를 유지합니다.',
     'Read the full changelog': '전체 변경 기록 읽기',
     'Synced with release evidence': '릴리스 증거와 동기화됨'
   };
@@ -348,7 +359,9 @@
     ['.console-readouts', 'aria-label', '실시간 콘솔 판독'],
     ['.orbit-controls', 'aria-label', '미니 실험실 조절기'],
     ['#orbit-theta', 'aria-valuetext', '2.18 라디안'],
+    ['#orbit-separation', 'aria-valuetext', '1.0e-3 라디안'],
     ['#orbit-damping', 'aria-valuetext', '감쇠 계수 0.06'],
+    ['.orbit-static-fallback-template', 'aria-label', '실시간 궤적을 사용할 수 없어 정적인 이중진자 궤적을 표시합니다.'],
     ['.recipe-grid', 'aria-label', '30초 실험 레시피'],
     ['#orbit-console', 'aria-label', '이중진자 궤적 콘솔 애니메이션'],
     ['.diverge-stage svg', 'aria-label', '민감한 의존성: 갈라지는 두 궤적'],
@@ -372,7 +385,7 @@
 
   // Skip dynamic/data-driven surfaces and deliberate terminal chrome.
   const SKIP_CLOSEST =
-    '[data-evidence],[data-evidence-count],[data-count],[data-typetext],[data-orbit-readout],.marquee,.spec-row .v,.console-readout strong,.diverge-tag,.science-footnote,.orbit-console figcaption,.val-table .drift,.ledger-row .k,.by,script,style';
+    '[data-evidence],[data-evidence-count],[data-count],[data-typetext],[data-orbit-readout],.marquee,.spec-row .v,.console-readout strong,.diverge-tag,.science-footnote,.val-table .drift,.ledger-row .k,.by,script,style';
 
   function translateTextNodes(doc) {
     const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
