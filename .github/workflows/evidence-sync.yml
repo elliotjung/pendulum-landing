@@ -89,13 +89,13 @@ jobs:
       - name: Commit and push the sync if anything changed
         shell: bash
         run: |
-          if git diff --quiet -- assets/evidence-summary.json assets/changelog-highlights.json assets/demo-kernel-manifest.json assets/i18n-core.js assets/og-card.png assets/og-card-meta.json index.html ko.html; then
+          if git diff --quiet -- assets/evidence-summary.json assets/changelog-highlights.json assets/demo-kernel-manifest.json assets/i18n-core.js assets/og-card.png assets/og-card-meta.json index.html ko.html sitemap.xml; then
             echo "evidence already in sync; nothing to commit"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           source_commit="$(node -e "process.stdout.write(require('./assets/evidence-summary.json').provenance.sourceCommit.slice(0, 12))")"
-          git add -- assets/evidence-summary.json assets/changelog-highlights.json assets/demo-kernel-manifest.json assets/i18n-core.js assets/og-card.png assets/og-card-meta.json index.html ko.html
+          git add -- assets/evidence-summary.json assets/changelog-highlights.json assets/demo-kernel-manifest.json assets/i18n-core.js assets/og-card.png assets/og-card-meta.json index.html ko.html sitemap.xml
           git commit -m "chore: sync evidence from pendulum-lab@${source_commit}"
           git push

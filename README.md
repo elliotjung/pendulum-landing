@@ -21,10 +21,15 @@ browser laboratory for nonlinear pendulum dynamics.
 - `assets/landing.css` - shared graphite/indigo/cyan visual system, responsive
   layout, quiet reveal states, and trajectory-console styling.
 - `assets/scene.js` - Three.js hero sculpture that morphs from order to chaos.
-- `assets/pendulum-demo-kernel.js` - shared allocation-free double-pendulum
-  equation and RK4 step used by the hero and mini console. The state is
-  `[theta1, theta2, omega1, omega2]`; force-level damping is evaluated inside
-  every RK4 stage, while the hero intentionally passes zero damping.
+- `assets/pendulum-demo-kernel.js` - the `pendulum-demo-kernel/v3` browser ESM
+  generated from the Lab's authoritative `rhsDouble` implementation, rather
+  than a separately maintained equation port. It supplies the allocation-free
+  double-pendulum equation and RK4 step used by the hero and mini console. The
+  state is `[theta1, theta2, omega1, omega2]`; force-level damping is evaluated
+  inside every RK4 stage, while the hero intentionally passes zero damping.
+- `assets/demo-kernel-manifest.json` - SHA-256 and release-evidence provenance
+  for the generated v3 kernel. The static gate verifies the file and its
+  runtime export before deployment.
 - `assets/orbit-console.js` - lightweight RK4 double-pendulum canvas console
   used in the trajectory section. It starts only near the viewport, caps
   catch-up work and DPR, and rebuilds its abortable listener/observer graph
@@ -59,8 +64,9 @@ browser laboratory for nonlinear pendulum dynamics.
   of every inline script on both pages against the CSP).
 - `scripts/build-ko-page.mjs` - generates `ko.html` (CI rebuilds and fails on
   drift).
-- `scripts/sync-kernel-manifest.mjs` - realigns the demo-kernel manifest with
-  freshly synced evidence (used by the evidence-sync workflow).
+- `scripts/sync-kernel-manifest.mjs` - realigns the generated v3 demo-kernel
+  manifest with freshly synced evidence and refuses an unexpected kernel
+  contract (used by the evidence-sync workflow).
 - `scripts/sync-copy-counts.mjs` (`npm run sync:copy`) - rewrites every static
   test-count occurrence (meta descriptions, OG/Twitter alt text, no-JS
   fallback spans, and freshness wording) from the evidence summary; the

@@ -600,21 +600,24 @@ test('mobile launch CTA stays inside the viewport', async ({ page }) => {
       const heading = document.querySelector('h1')?.getBoundingClientRect();
       const hero = document.querySelector('.hero')?.getBoundingClientRect();
       const clientWidth = document.documentElement.clientWidth;
+      const amount = document.documentElement.scrollWidth - window.innerWidth;
       const headerItems = Array.from(document.querySelectorAll('.brand, #lang-toggle, .nav-launch, .nav-menu > summary')).map((element) => {
         const rect = element.getBoundingClientRect();
         return { label: element.getAttribute('aria-label') || element.className, left: rect.left, right: rect.right };
       });
       return {
         clientWidth,
-        amount: document.documentElement.scrollWidth - window.innerWidth,
+        amount,
         heading: heading ? { left: heading.left, right: heading.right } : null,
         heroHeight: hero?.height ?? 0,
         headerItems,
         brandNameVisible: Boolean(document.querySelector('.brand .name')?.getClientRects().length),
-        offenders: Array.from(document.querySelectorAll('*')).map((element) => {
-          const rect = element.getBoundingClientRect();
-          return { tag: element.tagName, id: element.id, className: String(element.className || ''), left: rect.left, right: rect.right, width: rect.width };
-        }).filter((item) => item.left < -0.5 || item.right > window.innerWidth + 0.5).slice(0, 12)
+        offenders: amount > 0
+          ? Array.from(document.querySelectorAll('*')).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return { tag: element.tagName, id: element.id, className: String(element.className || ''), left: rect.left, right: rect.right, width: rect.width };
+          }).filter((item) => item.left < -0.5 || item.right > window.innerWidth + 0.5).slice(0, 12)
+          : []
       };
     });
     expect(layout.amount, JSON.stringify(layout.offenders, null, 2)).toBeLessThanOrEqual(0);
@@ -967,7 +970,7 @@ test('shared demo kernel matches main rhsDouble fixtures', async ({ page }) => {
     [0.4, -0.5, -5.390276136585902, 7.706173654766009],
     [0, 0, -9.910597545905812, 4.163545829940606]
   ];
-  expect(rows.version).toBe('pendulum-demo-kernel/v2');
+  expect(rows.version).toBe('pendulum-demo-kernel/v3');
   rows.values.forEach((row, rowIndex) => row.forEach((value, columnIndex) => {
     expect(value).toBeCloseTo(expected[rowIndex]![columnIndex]!, 12);
   }));

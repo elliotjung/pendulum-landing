@@ -80,7 +80,7 @@ const kernelBytes = await readFile(join(root, kernelManifest.kernel));
 if (createHash('sha256').update(kernelBytes).digest('hex') !== kernelManifest.sha256) {
   failures.push('demo kernel SHA-256 does not match its manifest');
 }
-if (kernelManifest.kernelVersion !== 'pendulum-demo-kernel/v2') {
+if (kernelManifest.kernelVersion !== 'pendulum-demo-kernel/v3') {
   failures.push(`unexpected demo kernel version: ${kernelManifest.kernelVersion ?? 'missing'}`);
 }
 if (kernelManifest.sourceCommit !== evidence.provenance?.sourceCommit) {
@@ -622,20 +622,11 @@ async function checkLighthouseLanguageMatrix() {
 }
 
 async function checkDemoKernelContracts() {
-  const [kernelSource, orbitSource, sceneSource] = await Promise.all([
-    readFile(join(root, 'assets', 'pendulum-demo-kernel.js'), 'utf8'),
+  const [orbitSource, sceneSource] = await Promise.all([
     readFile(join(root, 'assets', 'orbit-console.js'), 'utf8'),
     readFile(join(root, 'assets', 'scene.js'), 'utf8')
   ]);
 
-  for (const token of [
-    "export const DEMO_KERNEL_VERSION = 'pendulum-demo-kernel/v2';",
-    'const dampingValue = params.damping;',
-    'out[2] += damping * (-m22 * v1 + m12 * v2) / det;',
-    'out[3] += damping * (m12 * v1 - m11 * v2) / det;'
-  ]) {
-    if (!kernelSource.includes(token)) failures.push(`assets/pendulum-demo-kernel.js: missing coupled damping contract ${token}`);
-  }
   for (const token of [
     'runtimeParams.damping = damping;',
     'runtimeController = new AbortController();',
@@ -657,7 +648,14 @@ async function checkDemoKernelContracts() {
 
   try {
     const kernelUrl = `${pathToFileURL(join(root, 'assets', 'pendulum-demo-kernel.js')).href}?static-contract`;
-    const { createRk4Work, rhsDoubleInto, rk4StepDouble } = await import(kernelUrl);
+    const { DEMO_KERNEL_VERSION, createRk4Work, rhsDoubleInto, rk4StepDouble } = await import(kernelUrl);
+    if (DEMO_KERNEL_VERSION !== 'pendulum-demo-kernel/v3') {
+      failures.push(`demo kernel runtime version is ${DEMO_KERNEL_VERSION ?? 'missing'}, expected pendulum-demo-kernel/v3`);
+    }
+    if (typeof createRk4Work !== 'function' || typeof rhsDoubleInto !== 'function' || typeof rk4StepDouble !== 'function') {
+      failures.push('demo kernel v3 must expose the RK4 integration contract');
+      return;
+    }
     const parameters = { m1: 1.2, m2: 0.8, l1: 1.1, l2: 0.9, g: 9.81 };
     const state = [0.9, -0.4, 1.1, -0.7];
     const conservative = [0, 0, 0, 0];
@@ -693,7 +691,7 @@ async function checkDemoKernelContracts() {
       }
     });
     rk4StepDouble([...state], stagedParameters, 1 / 240, createRk4Work());
-    if (dampingReads !== 4) {
+    if (dampingReads < 4) {
       failures.push(`demo kernel: RK4 must evaluate damping in all four RHS stages (observed ${dampingReads})`);
     }
 

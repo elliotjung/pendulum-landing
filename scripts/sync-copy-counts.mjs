@@ -9,6 +9,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { evidenceFreshnessText } from './evidence-copy.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -23,6 +24,11 @@ const comma = new Intl.NumberFormat('en-US').format(total);
 const freshness = evidenceFreshnessText(evidence.provenance?.expiresAt);
 if (!freshness) {
   console.error('evidence summary has no usable provenance.expiresAt');
+  process.exit(1);
+}
+const evidenceDay = typeof evidence.generatedAt === 'string' ? evidence.generatedAt.slice(0, 10) : '';
+if (!/^\d{4}-\d{2}-\d{2}$/.test(evidenceDay) || !Number.isFinite(Date.parse(evidenceDay))) {
+  console.error('evidence summary has no usable generatedAt day');
   process.exit(1);
 }
 
@@ -41,7 +47,8 @@ const edits = [
       [
         /(data-evidence-freshness[^>]*>)[^<]*(<)/,
         `$1${freshness}$2`
-      ]
+      ],
+      [/"dateModified": "\d{4}-\d{2}-\d{2}"/, `"dateModified": "${evidenceDay}"`]
     ]
   },
   {
@@ -49,6 +56,29 @@ const edits = [
     replacements: [[/[\d,]+개 단위 테스트/g, `${comma}개 단위 테스트`]]
   }
 ];
+
+function jsonLdHashes(html) {
+  return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+    .filter((match) => /\btype\s*=\s*"application\/ld\+json"/i.test(match[1] ?? ''))
+    .map((match) => createHash('sha256').update(match[2] ?? '', 'utf8').digest('base64'));
+}
+
+function syncJsonLdCspHash(original, updated) {
+  const before = jsonLdHashes(original);
+  const after = jsonLdHashes(updated);
+  if (before.length !== 1 || after.length !== 1) {
+    console.error('index.html must contain exactly one inline application/ld+json block');
+    process.exit(1);
+  }
+  if (before[0] === after[0]) return updated;
+  const oldToken = `'sha256-${before[0]}'`;
+  const newToken = `'sha256-${after[0]}'`;
+  if (!updated.includes(oldToken)) {
+    console.error('index.html CSP does not pin the inline application/ld+json block');
+    process.exit(1);
+  }
+  return updated.replace(oldToken, newToken);
+}
 
 for (const { file, replacements } of edits) {
   const path = join(root, file);
@@ -61,6 +91,18 @@ for (const { file, replacements } of edits) {
     }
     updated = updated.replace(pattern, replacement);
   }
+  if (file === 'index.html') updated = syncJsonLdCspHash(original, updated);
   if (updated !== original) await writeFile(path, updated);
 }
-console.log(`copy and evidence fallbacks synced: ${comma} tests (${passed} passed) — remember npm run build:ko`);
+
+const sitemapPath = join(root, 'sitemap.xml');
+const sitemap = await readFile(sitemapPath, 'utf8');
+const sitemapLastmods = [...sitemap.matchAll(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g)];
+if (sitemapLastmods.length !== 2) {
+  console.error(`expected exactly two sitemap lastmod entries, found ${sitemapLastmods.length}`);
+  process.exit(1);
+}
+const syncedSitemap = sitemap.replace(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g, `<lastmod>${evidenceDay}</lastmod>`);
+if (syncedSitemap !== sitemap) await writeFile(sitemapPath, syncedSitemap);
+
+console.log(`copy and evidence fallbacks synced: ${comma} tests (${passed} passed), ${evidenceDay} — remember npm run build:ko`);

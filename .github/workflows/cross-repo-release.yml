@@ -122,7 +122,7 @@ jobs:
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            unexpected="$(git status --short | cut -c4- | grep -Ev '^(assets/(evidence-summary\.json|demo-kernel-manifest\.json|changelog-highlights\.json|i18n-core\.js|og-card\.png|og-card-meta\.json)|index\.html|ko\.html)$' || true)"
+            unexpected="$(git status --short | cut -c4- | grep -Ev '^(assets/(evidence-summary\.json|demo-kernel-manifest\.json|changelog-highlights\.json|i18n-core\.js|og-card\.png|og-card-meta\.json)|index\.html|ko\.html|sitemap\.xml)$' || true)"
             [ -z "$unexpected" ] || {
               echo "Refusing to commit unexpected generated paths:" >&2
               printf '%s\n' "$unexpected" >&2
@@ -130,7 +130,7 @@ jobs:
             }
             git add -- assets/evidence-summary.json assets/demo-kernel-manifest.json \
               assets/changelog-highlights.json assets/i18n-core.js assets/og-card.png \
-              assets/og-card-meta.json index.html ko.html
+              assets/og-card-meta.json index.html ko.html sitemap.xml
             git commit -m "chore: sync ${RELEASE_TAG} release evidence"
             git push
           fi

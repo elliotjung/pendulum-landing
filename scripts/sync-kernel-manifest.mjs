@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
 /**
- * Align the demo-kernel manifest with the (freshly synced) evidence summary.
+ * Align the Lab-generated v3 demo-kernel manifest with the freshly synced
+ * evidence summary.
  *
  * `npm run check` enforces two invariants that would otherwise make automated
  * evidence sync impossible:
@@ -23,6 +24,13 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const evidence = JSON.parse(await readFile(join(root, 'assets', 'evidence-summary.json'), 'utf8'));
 const manifestPath = join(root, 'assets', 'demo-kernel-manifest.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+const expectedKernel = 'assets/pendulum-demo-kernel.js';
+const expectedKernelVersion = 'pendulum-demo-kernel/v3';
+
+if (manifest.kernel !== expectedKernel || manifest.kernelVersion !== expectedKernelVersion) {
+  console.error(`sync-kernel-manifest: expected ${expectedKernelVersion} at ${expectedKernel}`);
+  process.exit(1);
+}
 
 const sourceCommit = evidence.provenance?.sourceCommit;
 const packageVersion = evidence.provenance?.packageVersion;
@@ -31,7 +39,7 @@ if (!/^[a-f0-9]{40}$/i.test(sourceCommit ?? '')) {
   process.exit(1);
 }
 
-const kernelBytes = await readFile(join(root, manifest.kernel));
+const kernelBytes = await readFile(join(root, expectedKernel));
 manifest.sha256 = createHash('sha256').update(kernelBytes).digest('hex');
 manifest.sourceCommit = sourceCommit;
 if (typeof packageVersion === 'string' && packageVersion !== 'unknown') {
