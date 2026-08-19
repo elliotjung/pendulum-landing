@@ -3,6 +3,6 @@
   "kernel": "assets/pendulum-demo-kernel.js",
   "kernelVersion": "pendulum-demo-kernel/v3",
   "sourcePackageVersion": "10.36.0",
-  "sourceCommit": "23cbb922037d0fe4fc964934abea9db5129a86e5",
+  "sourceCommit": "e569156565857216198fe8161615a04bf8f13183",
   "sha256": "f9851c4994351e2f30fe76df04a6e53ecbdf132a8e27d9e02118ef3dc93c25f2"
 }
