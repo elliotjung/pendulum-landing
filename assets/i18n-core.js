@@ -60,7 +60,7 @@
     '-validated': '-검증',
     'reproducible by design': '설계부터 재현 가능',
     'Explore the divergence': '발산 탐색',
-    'Scroll to follow · drag the live field to orbit': '스크롤로 따라가기 · 라이브 필드를 드래그해 궤도 회전',
+    'Scroll to orbit the camera · drag to orbit by hand': '스크롤로 카메라 궤도 이동 · 드래그로 직접 시점 회전',
     'Engine Spec': '엔진 사양',
     'Verified': '검증됨',
     'system': '시스템',
@@ -75,6 +75,7 @@
     'Drag to orbit · move to parallax': '드래그로 궤도 회전 · 마우스로 시차 효과',
     // ---- scroll-driven 3D descent -----------------------------------------
     'PHASE DESCENT': '위상공간 하강',
+    'VIEW / DEPTH': '시점 / 깊이',
     '01 · RELEASE': '01 · 놓기',
     '01 · Release': '01 · 놓기',
     '02 · Divergence': '02 · 발산',
@@ -82,11 +83,11 @@
     '04 · Measure': '04 · 측정',
     'Scroll-Driven Chaos': '스크롤로 움직이는 카오스',
     'Fall through phase space.': '위상공간을 가로질러 내려가다.',
-    'Scroll and the live double pendulum rolls out of the hero, turns through depth, and descends with you. This is not a video loop: the rods keep solving the same 240 Hz RK4 system while the camera follows.':
-      '스크롤하면 살아 있는 이중진자가 첫 화면을 벗어나 깊이 회전하며 함께 내려갑니다. 영상 반복 재생이 아닙니다. 카메라가 따라가는 동안 두 막대는 같은 240 Hz RK4 계를 계속 계산합니다.',
+    'Scroll and the camera orbits a live double-spherical pendulum whose links sweep separate azimuths through real depth. This is not a video loop: both 3D positions and velocities advance in a constrained 240 Hz RK4 solve while the viewpoint circles independently.':
+      '스크롤하면 카메라가 서로 다른 방위각으로 실제 깊이를 가로지르는 이중 구면진자 주위를 회전합니다. 영상 반복 재생이 아닙니다. 시점이 독립적으로 궤도를 도는 동안 두 링크의 3D 위치와 속도는 길이 제약을 적용한 240 Hz RK4 해에서 계속 전진합니다.',
     'A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The adjustable trajectory console below lets you explore related initial conditions by hand.':
       '동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 아래의 조절 가능한 궤적 콘솔에서 관련 초기 조건을 직접 탐색할 수 있습니다.',
-    'Live equations · live camera': '실시간 방정식 · 실시간 카메라',
+    'Live equations · spatial links · orbit camera': '실시간 방정식 · 공간 링크 · 궤도 카메라',
     'Static evidence view · motion preference respected': '정적 근거 화면 · 동작 환경설정 존중',
     'One state becomes two futures.': '한 상태가 두 개의 미래가 된다.',
     'The pale shadow begins only 8×10⁻⁴ radians away. Its orbit peels from the primary trajectory as the sculpture completes a full turn.':
@@ -167,8 +168,8 @@
     // ---- modes -----------------------------------------------------------------
     'Three Workspaces': '세 가지 워크스페이스',
     'From first swing to peer review — the interface grows with you.': '첫 스윙부터 동료 심사까지 — 인터페이스가 당신과 함께 자랍니다.',
-    'Every launch opens a workspace chooser. A five-step spotlight tour greets first-time visitors, every menu entry explains itself in one plain-language line — in English or Korean — and a command palette (Ctrl+K) reaches everything.':
-      '실행할 때마다 워크스페이스 선택기가 열립니다. 첫 방문자는 5단계 스포트라이트 투어가 맞이하고, 모든 메뉴 항목은 쉬운 말 한 줄로 스스로를 설명하며 — 영어와 한국어 모두 — 커맨드 팔레트(Ctrl+K)로 어디든 닿습니다.',
+    'Each launch carries its intended workspace and mission hint into the lab. A five-step spotlight tour greets first-time visitors, every menu entry explains itself in one plain-language line — in English or Korean — and a command palette (Ctrl+K) reaches everything.':
+      '각 실행 링크는 의도한 워크스페이스와 미션 힌트를 랩으로 전달합니다. 첫 방문자는 5단계 스포트라이트 투어가 맞이하고, 모든 메뉴 항목은 쉬운 말 한 줄로 스스로를 설명하며 — 영어와 한국어 모두 — 커맨드 팔레트(Ctrl+K)로 어디든 닿습니다.',
     'Watch it move': '움직임을 지켜보기',
     'A focused simulator: the live pendulum, one-click presets from': '집중형 시뮬레이터: 살아 있는 진자, 원클릭 프리셋은',
     'Butterfly': '나비',
@@ -378,6 +379,7 @@
   const TITLE_KO = 'Pendulum Lab — 질서, 카오스에 무너지다';
   const META_DESCRIPTION_KO =
     '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,459개 단위 테스트, SciPy와 출판 문헌으로 검증.';
+  const SHARE_IMAGE_ALT_KO = 'Pendulum Lab — 질서, 카오스에 무너지다. 1,459개 테스트와 SciPy 검증.';
 
   function normalize(text) {
     return text.replace(/\s+/g, ' ').trim();
@@ -422,6 +424,10 @@
     if (twitterTitle) twitterTitle.setAttribute('content', TITLE_KO);
     const twitterDescription = doc.querySelector('meta[name="twitter:description"]');
     if (twitterDescription) twitterDescription.setAttribute('content', META_DESCRIPTION_KO);
+    const ogImageAlt = doc.querySelector('meta[property="og:image:alt"]');
+    if (ogImageAlt) ogImageAlt.setAttribute('content', SHARE_IMAGE_ALT_KO);
+    const twitterImageAlt = doc.querySelector('meta[name="twitter:image:alt"]');
+    if (twitterImageAlt) twitterImageAlt.setAttribute('content', SHARE_IMAGE_ALT_KO);
     const ogLocale = doc.querySelector('meta[property="og:locale"]');
     if (ogLocale) ogLocale.setAttribute('content', 'ko_KR');
     const ogLocaleAlternate = doc.querySelector('meta[property="og:locale:alternate"]');
@@ -450,5 +456,13 @@
     localizeAppLinks(doc);
   }
 
-  window.__pendulumI18nCore = { TEXT, ATTRS, TYPE_PHRASES_KO, TITLE_KO, META_DESCRIPTION_KO, applyKorean };
+  window.__pendulumI18nCore = {
+    TEXT,
+    ATTRS,
+    TYPE_PHRASES_KO,
+    TITLE_KO,
+    META_DESCRIPTION_KO,
+    SHARE_IMAGE_ALT_KO,
+    applyKorean,
+  };
 })();

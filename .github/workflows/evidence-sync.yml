@@ -4,18 +4,19 @@ name: Evidence Sync
 # assets/evidence-summary.json by hand). The simulation repo dispatches
 # `evidence-updated` whenever its committed evidence summary changes
 # (.github/workflows/evidence-dispatch.yml over there); this workflow pulls
-# the summary, realigns the demo-kernel manifest provenance, re-runs the full
-# static gate + smoke suite (which pins the kernel's numeric parity with the
-# main repo), and only then commits the sync to main. That push is rebuilt and
-# published by the repository's single Pages workflow. A weekly cron catches
-# missed dispatches.
+# the summary, verifies that the already-installed Lab kernel pair has the same
+# exact source/package provenance, re-runs the full static gate + smoke suite,
+# and only then commits the sync to main. It never relabels old kernel bytes;
+# evidence that needs a new kernel must use the coordinated release workflow.
+# That push is rebuilt and published by the repository's single Pages workflow.
+# A weekly cron catches missed dispatches.
 
 on:
   repository_dispatch:
     types: [evidence-updated]
   workflow_dispatch:
   schedule:
-    - cron: "17 3 * * 1"
+    - cron: '17 3 * * 1'
 
 permissions:
   contents: read
@@ -71,8 +72,8 @@ jobs:
           done
           echo "raw content never caught up with the dispatched commit" >&2
           exit 1
-      - name: Align demo-kernel manifest provenance
-        run: node scripts/sync-kernel-manifest.mjs
+      - name: Fail closed unless the current demo-kernel pair matches the evidence
+        run: node scripts/sync-kernel-manifest.mjs --verify-current
       - name: Synchronize evidence-backed copy and generated page
         run: |
           npm run sync:changelog
@@ -83,19 +84,18 @@ jobs:
         env:
           PENDULUM_EXPECTED_SOURCE_COMMIT: ${{ github.event.client_payload.source_commit || '' }}
         run: npm run check
-      # The smoke suite includes the kernel-parity fixture test, which is what
-      # makes the manifest realignment above honest (see sync-kernel-manifest.mjs).
+      # The smoke suite still pins the already verified pair's numeric behavior.
       - run: npm run smoke
       - name: Commit and push the sync if anything changed
         shell: bash
         run: |
-          if git diff --quiet -- assets/evidence-summary.json assets/changelog-highlights.json assets/demo-kernel-manifest.json assets/i18n-core.js assets/og-card.png assets/og-card-meta.json index.html ko.html sitemap.xml; then
+          if git diff --quiet -- assets/evidence-summary.json assets/changelog-highlights.json assets/i18n-core.js assets/og-card.png assets/og-card-meta.json index.html ko.html sitemap.xml; then
             echo "evidence already in sync; nothing to commit"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           source_commit="$(node -e "process.stdout.write(require('./assets/evidence-summary.json').provenance.sourceCommit.slice(0, 12))")"
-          git add -- assets/evidence-summary.json assets/changelog-highlights.json assets/demo-kernel-manifest.json assets/i18n-core.js assets/og-card.png assets/og-card-meta.json index.html ko.html sitemap.xml
+          git add -- assets/evidence-summary.json assets/changelog-highlights.json assets/i18n-core.js assets/og-card.png assets/og-card-meta.json index.html ko.html sitemap.xml
           git commit -m "chore: sync evidence from pendulum-lab@${source_commit}"
           git push

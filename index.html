@@ -35,7 +35,7 @@
      anything paints. ko.html is built by scripts/build-ko-page.mjs, so Korean
      visitors get a plain static page (no runtime translation cost). The CSP
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BhzjEcyYvikXzy4LPh6pXeIfW0R16Iwo68gniWGQ0tQ=' 'sha256-YJ20yxvjGolaMfS/AsWUnwoZxxAFv28eUacHvp7QwNA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YJ20yxvjGolaMfS/AsWUnwoZxxAFv28eUacHvp7QwNA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
 <script id="lang-boot">(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="en"){localStorage.setItem("pendulum-landing/lang","en");return}var s=null;try{s=localStorage.getItem("pendulum-landing/lang")}catch(e){}var ko=(navigator.languages||[navigator.language||""]).some(function(t){return String(t).toLowerCase().indexOf("ko")===0});if(q.get("lang")==="ko"||s==="ko"||(!s&&ko)){var p=q.toString();location.replace("ko.html"+(p?"?"+p:"")+location.hash)}}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E" />
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
@@ -49,19 +49,31 @@
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "WebPage",
+      "@id": "https://elliotjung.github.io/pendulum-landing/#webpage",
+      "url": "https://elliotjung.github.io/pendulum-landing/",
+      "name": "Pendulum Lab — Order, Undone by Chaos",
+      "description": "Explore nonlinear pendulum dynamics in a browser lab with 1,457 verified tests, SciPy cross-validation, Lyapunov analysis, WebGPU, and reproducible exports.",
+      "inLanguage": "en",
+      "dateModified": "2026-08-20",
+      "mainEntity": { "@id": "https://elliotjung.github.io/pendulum-landing/#software" }
+    },
+    {
       "@type": "SoftwareSourceCode",
+      "@id": "https://elliotjung.github.io/pendulum-landing/#software",
       "name": "Pendulum Lab",
       "codeRepository": "https://github.com/elliotjung/pendulum-lab",
       "programmingLanguage": "TypeScript",
       "runtimePlatform": "Web browser",
       "license": "https://opensource.org/license/mit",
       "author": { "@type": "Person", "name": "Elliot Jung" },
-      "dateModified": "2026-08-19",
+      "dateModified": "2026-08-20",
       "applicationCategory": "EducationalApplication",
       "inLanguage": ["en", "ko"],
       "isAccessibleForFree": true,
       "keywords": ["double pendulum", "nonlinear dynamics", "chaos", "Lyapunov exponent", "numerical integration"],
-      "description": "A browser-native nonlinear pendulum dynamics workbench with reproducible validation evidence."
+      "description": "A browser-native nonlinear pendulum dynamics workbench with reproducible validation evidence.",
+      "mainEntityOfPage": { "@id": "https://elliotjung.github.io/pendulum-landing/#webpage" }
     },
     {
       "@type": "ScholarlyArticle",
@@ -114,7 +126,7 @@
   </div>
   <div class="nav-cta">
     <a id="lang-toggle" class="lang-toggle" href="ko.html?lang=ko" hreflang="ko" aria-label="한국어로 전환">한국어</a>
-    <a class="btn primary sm nav-launch" href="https://elliotjung.github.io/pendulum-lab/?tab=lab" data-app-link aria-label="Open Pendulum Lab simulation"><span class="cta-full">Open Lab</span><span class="cta-short">Open</span><span class="arrow">→</span></a>
+    <a class="btn primary sm nav-launch" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="nav-open" aria-label="Open Pendulum Lab simulation"><span class="cta-full">Open Lab</span><span class="cta-short">Open</span><span class="arrow">→</span></a>
     <!-- Small-screen section menu. Pure details/summary so it works with CSP
          and without JavaScript; main.js only adds close-on-navigate sugar. -->
     <details class="nav-menu" id="nav-menu">
@@ -147,7 +159,7 @@
           universes — then measure exactly how fast prediction disappears.
         </p>
         <div class="hero-actions">
-          <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&preset=butterfly&tab=lab" data-app-link>Open Lab <span class="arrow">→</span></a>
+          <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;preset=butterfly&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="hero-explore">Open Lab <span class="arrow">→</span></a>
           <a class="btn ghost" href="#console">Run the Experiment</a>
         </div>
         <p class="hero-trust-line">
@@ -161,13 +173,13 @@
 
       <div class="hero-stage" aria-hidden="true">
         <div class="hero-stage-status"><span><i></i> <b data-hero-stage-state>3D ready</b></span><b data-hero-stage-rate>starts on interaction</b></div>
-        <div class="hero-stage-axis"><span>θ₁</span><span>θ₂</span><span>Δθ₀ = 8×10⁻⁴ rad</span></div>
+        <div class="hero-stage-axis"><span>θ₁ / φ₁</span><span>θ₂ / φ₂</span><span>Δθ₀ = 8×10⁻⁴ rad</span></div>
       </div>
     </div>
 
     <div class="hero-foot">
       <a class="scroll-cue" href="#orbit-descent" aria-label="Explore the scroll-driven divergence story"><i aria-hidden="true"></i> Explore the divergence</a>
-      <span>Scroll to follow · drag the live field to orbit</span>
+      <span>Scroll to orbit the camera · drag to orbit by hand</span>
     </div>
   </div>
 </header>
@@ -191,6 +203,8 @@
     <div class="orbit-descent-coordinates">
       <span>θ₁ / θ₂</span>
       <strong data-descent-coordinate>2.34 / 2.72</strong>
+      <span>VIEW / DEPTH</span>
+      <strong data-descent-view>000° / z 0.00</strong>
     </div>
   </div>
 
@@ -200,9 +214,9 @@
         <span class="descent-index">01 · Release</span>
         <span class="kicker">Scroll-Driven Chaos</span>
         <h2 id="orbit-descent-title">Fall through phase space.</h2>
-        <p class="descent-live-copy">Scroll and the live double pendulum rolls out of the hero, turns through depth, and descends with you. This is not a video loop: the rods keep solving the same 240 Hz RK4 system while the camera follows.</p>
+        <p class="descent-live-copy">Scroll and the camera orbits a live double-spherical pendulum whose links sweep separate azimuths through real depth. This is not a video loop: both 3D positions and velocities advance in a constrained 240 Hz RK4 solve while the viewpoint circles independently.</p>
         <p class="descent-static-copy">A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The adjustable trajectory console below lets you explore related initial conditions by hand.</p>
-        <span class="descent-signal descent-live-copy"><i></i> Live equations · live camera</span>
+        <span class="descent-signal descent-live-copy"><i></i> Live equations · spatial links · orbit camera</span>
         <span class="descent-signal descent-static-copy"><i></i> Static evidence view · motion preference respected</span>
       </div>
     </article>
@@ -273,7 +287,7 @@
         </div>
       </div>
       <div class="console-actions">
-        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&tab=lab&sysType=double&th1=2.18&th2=2.64&iw1=0&iw2=0&m1=1&m2=1&l1=1&l2=1&g=9.81&gamma=0.06" data-app-link data-orbit-launch>Open primary state <span class="arrow">→</span></a>
+        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06" data-app-link data-orbit-launch data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="orbit-primary">Open primary state <span class="arrow">→</span></a>
         <a class="btn ghost sm" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">Reviewer Ledger</a>
       </div>
     </div>
@@ -303,17 +317,17 @@
       <h2 data-rise="">Real lab screens, not a teaser mockup.</h2>
       <p>The first click can open a ready-made experiment state: a beginner-safe butterfly preset, a student Lyapunov reading, or the research workbench with reviewer evidence close at hand.</p>
       <div class="recipe-grid" role="group" aria-label="30-second experiment recipes">
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;preset=butterfly&amp;tab=lab" data-app-link="">
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;preset=butterfly&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="recipe-beginner">
           <span>Beginner</span>
           <strong>Butterfly Motion</strong>
           <em>Open Lab with the clean starter preset.</em>
         </a>
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=student&amp;preset=chaotic&amp;tab=lyap" data-app-link="">
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=en&amp;preset=chaotic&amp;tab=lyap" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-student-lyapunov">
           <span>Student</span>
           <strong>Lyapunov Reading</strong>
           <em>Jump straight to chaos-rate diagnostics.</em>
         </a>
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=research&amp;preset=periodic&amp;tab=research" data-app-link="">
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=reproduce&amp;audience=research&amp;lang=en&amp;preset=periodic&amp;tab=research" data-app-link="" data-cta-goal="reproduce" data-cta-persona="research" data-utm-content="recipe-research-reproduce">
           <span>Research</span>
           <strong>Reviewer Evidence</strong>
           <em>Open the persisted research workbench.</em>
@@ -451,7 +465,7 @@
     <div class="sec-head reveal">
       <span class="kicker">Three Workspaces</span>
       <h2 data-rise>From first swing to peer review — the interface grows with you.</h2>
-      <p>Every launch opens a workspace chooser. A five-step spotlight tour greets first-time visitors, every menu entry explains itself in one plain-language line — in English or Korean — and a command palette (Ctrl+K) reaches everything.</p>
+      <p>Each launch carries its intended workspace and mission hint into the lab. A five-step spotlight tour greets first-time visitors, every menu entry explains itself in one plain-language line — in English or Korean — and a command palette (Ctrl+K) reaches everything.</p>
     </div>
 
     <div class="mode-grid" data-stagger>
@@ -669,8 +683,7 @@
       <div class="validation-actions">
         <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">Inspect the reviewer console <span class="arrow">→</span></a>
         <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/paper/">Read the mini-paper</a>
-        <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?lang=ko&amp;audience=beginner">Launch the guided live demo</a>
-        <a class="text-link" href="https://elliotjung.github.io/pendulum-lab/paper/">Read the methods paper</a>
+        <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="validation-guided">Launch the guided live demo</a>
       </div>
     </div>
   </div>
@@ -727,7 +740,7 @@
     </div>
 
     <div class="guide-foot reveal">
-      <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?tab=lab" data-app-link>Open Lab now <span class="arrow">→</span></a>
+      <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="guide-open">Open Lab now <span class="arrow">→</span></a>
       <span class="note">Runs in your browser · no install</span>
     </div>
   </div>
@@ -740,8 +753,8 @@
     <h2 class="display" data-rise><span class="grad">Release it. Watch it </span><span class="dissolve">diverge.</span></h2>
     <p class="lede">The full simulator runs in your browser — fifteen primary integrators, every analysis tab, and hash-verifiable research exports. No install, no account. Just the unvarnished mathematics of chaos.</p>
     <div class="launch-actions">
-      <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?tab=lab" data-app-link>Open Lab <span class="arrow">→</span></a>
-      <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&audience=beginner" data-app-link>Start Guided Mode</a>
+      <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="launch-explore">Open Lab <span class="arrow">→</span></a>
+      <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="launch-guided">Start Guided Mode</a>
       <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">View Research Evidence</a>
       <a class="btn ghost" href="https://github.com/elliotjung/pendulum-lab">Source on GitHub</a>
     </div>
@@ -767,7 +780,7 @@
       </span>
     </div>
     <div class="meta">
-      <a href="https://elliotjung.github.io/pendulum-lab/">Launch app</a>
+      <a href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="footer-launch">Launch app</a>
       <a href="https://github.com/elliotjung/pendulum-lab">GitHub</a>
       <a href="https://elliotjung.github.io/pendulum-lab/reviewer.html">Reviewer console</a>
       <a href="https://elliotjung.github.io/pendulum-lab/paper/">Mini-paper</a>

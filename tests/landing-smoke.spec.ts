@@ -261,8 +261,8 @@ test('hero motion control starts, pauses, and resumes the physical scene', async
   });
   expect(dragStart).toBeTruthy();
   const rotationBeforeDrag = await page.evaluate(() => (window as unknown as {
-    __hero?: { scrollPose: { rotationY: number } };
-  }).__hero?.scrollPose.rotationY ?? 0);
+    __hero?: { scrollPose: { cameraAzimuth: number } };
+  }).__hero?.scrollPose.cameraAzimuth ?? 0);
   await page.mouse.move(dragStart!.x, dragStart!.y);
   await page.mouse.down();
   expect(await page.evaluate(() => (window as unknown as {
@@ -276,8 +276,8 @@ test('hero motion control starts, pauses, and resumes the physical scene', async
   // short global expect timeout.
   await expect.poll(async () => Math.abs(
     (await page.evaluate(() => (window as unknown as {
-      __hero?: { scrollPose: { rotationY: number } };
-    }).__hero?.scrollPose.rotationY ?? 0)) - rotationBeforeDrag
+      __hero?: { scrollPose: { cameraAzimuth: number } };
+    }).__hero?.scrollPose.cameraAzimuth ?? 0)) - rotationBeforeDrag
   ), { timeout: 20_000 }).toBeGreaterThan(0.2);
   const editableBox = await page.evaluate(() => {
     const editor = document.createElement('div');
@@ -313,6 +313,60 @@ test('hero motion control starts, pauses, and resumes the physical scene', async
   await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Pause 3D');
 });
 
+test('hero integrates a constrained double-spherical state independently of camera orbit', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto('/');
+  await page.locator('[data-hero-toggle]').click();
+  await page.waitForFunction(() => document.body.classList.contains('hero-live')
+    || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
+  test.skip(await page.locator('body').evaluate((body) => body.classList.contains('no-webgl')), 'WebGL2 is unavailable');
+
+  type SpatialSnapshot = {
+    time: number;
+    bob1: { x: number; y: number; z: number };
+    bob2: { x: number; y: number; z: number };
+    azimuths: number[];
+    constraintErrors: number[];
+    tangentErrors: number[];
+  };
+  const readSpatial = () => page.evaluate(() => (window as unknown as {
+    __hero?: { spatialState: SpatialSnapshot };
+  }).__hero?.spatialState);
+  const initial = await readSpatial();
+  expect(initial).toBeTruthy();
+  expect(Math.abs(initial?.bob1.z ?? 0)).toBeGreaterThan(0.02);
+  expect(Math.abs(initial?.bob2.z ?? 0)).toBeGreaterThan(0.02);
+
+  await expect.poll(async () => (await readSpatial())?.time ?? 0, { timeout: 10_000 })
+    .toBeGreaterThan((initial?.time ?? 0) + 0.15);
+  const evolved = await readSpatial();
+  expect(evolved).toBeTruthy();
+  const azimuthTravel = Math.hypot(
+    (evolved?.azimuths[0] ?? 0) - (initial?.azimuths[0] ?? 0),
+    (evolved?.azimuths[1] ?? 0) - (initial?.azimuths[1] ?? 0)
+  );
+  expect(azimuthTravel).toBeGreaterThan(0.002);
+  evolved?.constraintErrors.forEach((error) => expect(Math.abs(error)).toBeLessThan(1e-9));
+  evolved?.tangentErrors.forEach((error) => expect(Math.abs(error)).toBeLessThan(1e-9));
+
+  await page.locator('[data-hero-toggle]').click();
+  await expect(page.locator('[data-hero-toggle]')).toHaveAttribute('aria-pressed', 'true');
+  const frozenPhysics = await readSpatial();
+  const frozenCamera = await page.evaluate(() => (window as unknown as {
+    __hero?: { scrollPose: { cameraAzimuth: number } };
+  }).__hero?.scrollPose.cameraAzimuth ?? 0);
+  await page.locator('[data-orbit-beat="2"]').scrollIntoViewIfNeeded();
+  await page.waitForFunction((startAzimuth) => Math.abs(
+    ((window as unknown as { __hero?: { scrollPose: { cameraAzimuth: number } } }).__hero?.scrollPose.cameraAzimuth ?? 0)
+      - startAzimuth
+  ) > 2, frozenCamera, { timeout: 20_000 });
+  const afterCameraOrbit = await readSpatial();
+  expect(afterCameraOrbit?.time).toBe(frozenPhysics?.time);
+  expect(afterCameraOrbit?.bob1).toEqual(frozenPhysics?.bob1);
+  expect(afterCameraOrbit?.bob2).toEqual(frozenPhysics?.bob2);
+  expect(afterCameraOrbit?.azimuths).toEqual(frozenPhysics?.azimuths);
+});
+
 test('a failed 3D module request settles permanently on the usable static mode', async ({ page }) => {
   test.setTimeout(60_000);
   await page.route('**/assets/scene.bundle.js', (route) => route.abort('failed'));
@@ -327,7 +381,7 @@ test('a failed 3D module request settles permanently on the usable static mode',
   await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Static artwork');
 });
 
-test('scrolling through phase descent rotates and lowers the live 3D sculpture', async ({ page }) => {
+test('scrolling through phase descent orbits the camera around spatial pendulum motion', async ({ page }) => {
   test.setTimeout(90_000);
   await page.goto('/');
   await page.locator('[data-hero-toggle]').click();
@@ -335,21 +389,42 @@ test('scrolling through phase descent rotates and lowers the live 3D sculpture',
     || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
   test.skip(await page.locator('body').evaluate((body) => body.classList.contains('no-webgl')), 'WebGL2 is unavailable');
   const initial = await page.evaluate(() => (window as unknown as {
-    __hero?: { scrollPose: { progress: number; rotationY: number; y: number } }
+    __hero?: { scrollPose: {
+      progress: number;
+      cameraAzimuth: number;
+      cameraElevation: number;
+      camera: { x: number; y: number; z: number };
+      bobDepth: number;
+      linkAzimuths: number[];
+      y: number;
+    } }
   }).__hero?.scrollPose);
   expect(initial).toBeTruthy();
   await page.locator('[data-orbit-beat="2"]').scrollIntoViewIfNeeded();
   await page.waitForFunction((start) => {
     const runtime = window as unknown as {
       __orbitScrollProgress?: number;
-      __hero?: { scrollPose: { progress: number; rotationY: number; y: number } };
+      __hero?: { scrollPose: {
+        progress: number;
+        cameraAzimuth: number;
+        camera: { x: number; y: number; z: number };
+        bobDepth: number;
+        y: number;
+      } };
     };
     const pose = runtime.__hero?.scrollPose;
+    const cameraTravel = pose ? Math.hypot(
+      pose.camera.x - start.camera.x,
+      pose.camera.y - start.camera.y,
+      pose.camera.z - start.camera.z
+    ) : 0;
     return Boolean(
       pose
       && (runtime.__orbitScrollProgress ?? 0) > 0.4
       && pose.progress > start.progress
-      && Math.abs(pose.rotationY - start.rotationY) > 2
+      && Math.abs(pose.cameraAzimuth - start.cameraAzimuth) > 2
+      && cameraTravel > 2
+      && Math.abs(pose.bobDepth) > 0.025
       && pose.y < start.y - 0.5
     );
   }, initial!, { timeout: 45_000 });
@@ -357,12 +432,28 @@ test('scrolling through phase descent rotates and lowers the live 3D sculpture',
   await expect(page.locator('body')).toHaveClass(/hero-scene-active/);
   await expect(page.locator('.descent-beat[aria-current="step"]')).toHaveCount(1);
   const final = await page.evaluate(() => (window as unknown as {
-    __hero?: { scrollPose: { progress: number; rotationY: number; y: number } }
+    __hero?: { scrollPose: {
+      progress: number;
+      cameraAzimuth: number;
+      cameraElevation: number;
+      camera: { x: number; y: number; z: number };
+      bobDepth: number;
+      linkAzimuths: number[];
+      y: number;
+    } }
   }).__hero?.scrollPose);
   expect(final?.progress ?? 0).toBeGreaterThan(initial?.progress ?? 0);
-  expect(Math.abs((final?.rotationY ?? 0) - (initial?.rotationY ?? 0))).toBeGreaterThan(2);
+  expect(Math.abs((final?.cameraAzimuth ?? 0) - (initial?.cameraAzimuth ?? 0))).toBeGreaterThan(2);
+  expect(Math.hypot(
+    (final?.camera.x ?? 0) - (initial?.camera.x ?? 0),
+    (final?.camera.y ?? 0) - (initial?.camera.y ?? 0),
+    (final?.camera.z ?? 0) - (initial?.camera.z ?? 0)
+  )).toBeGreaterThan(2);
+  expect(Math.abs(final?.bobDepth ?? 0)).toBeGreaterThan(0.025);
+  expect(Math.abs((final?.linkAzimuths?.[0] ?? 0) - (final?.linkAzimuths?.[1] ?? 0))).toBeGreaterThan(0.02);
   expect(final?.y ?? 0).toBeLessThan((initial?.y ?? 0) - 0.5);
   await expect(page.locator('[data-descent-coordinate]')).not.toHaveText('2.34 / 2.72');
+  await expect(page.locator('[data-descent-view]')).toHaveText(/^\d{3}° \/ z -?\d+\.\d{2}$/);
 });
 
 test('prewarm preference changes stay static and restart the same scene module', async ({ page }) => {
@@ -845,6 +936,101 @@ for (const route of ['/', '/ko.html?lang=ko']) {
     expect(blocking, blocking.map((violation) => `${violation.id}: ${violation.help}`).join('\n')).toEqual([]);
   });
 }
+
+test('discovery metadata and Lab launch contracts stay canonical across EN and KO', async ({ page }) => {
+  const variants = [
+    {
+      file: new URL('../index.html', import.meta.url),
+      route: '/?lang=en',
+      lang: 'en',
+      canonical: 'https://elliotjung.github.io/pendulum-landing/',
+      locale: 'en_US'
+    },
+    {
+      file: new URL('../ko.html', import.meta.url),
+      route: '/ko.html?lang=ko',
+      lang: 'ko',
+      canonical: 'https://elliotjung.github.io/pendulum-landing/ko.html',
+      locale: 'ko_KR'
+    }
+  ] as const;
+
+  for (const variant of variants) {
+    const raw = await readFile(variant.file, 'utf8');
+    const rawContracts = await page.evaluate((markup) => {
+      const doc = new DOMParser().parseFromString(markup, 'text/html');
+      return [...doc.querySelectorAll<HTMLAnchorElement>('a[data-app-link]')].map((anchor) => ({
+        href: anchor.getAttribute('href') || '',
+        goal: anchor.dataset.ctaGoal || '',
+        persona: anchor.dataset.ctaPersona || '',
+        content: anchor.dataset.utmContent || ''
+      }));
+    }, raw);
+    expect(rawContracts.length).toBeGreaterThanOrEqual(10);
+    for (const contract of rawContracts) {
+      const url = new URL(contract.href);
+      expect(url.searchParams.get('goal')).toBe(contract.goal);
+      expect(url.searchParams.get('audience')).toBe(contract.persona);
+      expect(url.searchParams.get('lang')).toBe(variant.lang);
+      expect(url.searchParams.get('tab')).toBeTruthy();
+      expect(contract.content).toMatch(/^[a-z][a-z0-9-]+$/);
+    }
+
+    await page.goto(variant.route);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', variant.canonical);
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', variant.canonical);
+    await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute('content', variant.locale);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /index,follow/);
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute(
+      'href',
+      'https://elliotjung.github.io/pendulum-landing/'
+    );
+    await expect(page.locator('link[rel="alternate"][hreflang="ko"]')).toHaveAttribute(
+      'href',
+      'https://elliotjung.github.io/pendulum-landing/ko.html'
+    );
+    await expect(page.locator('link[rel="alternate"][hreflang="x-default"]')).toHaveAttribute(
+      'href',
+      'https://elliotjung.github.io/pendulum-landing/'
+    );
+
+    const hydratedContracts = await page.locator('a[data-app-link]').evaluateAll((anchors) => anchors.map((anchor) => {
+      const element = anchor as HTMLAnchorElement;
+      return {
+        href: element.href,
+        goal: element.dataset.ctaGoal || '',
+        persona: element.dataset.ctaPersona || '',
+        content: element.dataset.utmContent || ''
+      };
+    }));
+    expect(hydratedContracts).toHaveLength(rawContracts.length);
+    for (const contract of hydratedContracts) {
+      const url = new URL(contract.href);
+      expect(url.searchParams.get('goal')).toBe(contract.goal);
+      expect(url.searchParams.get('audience')).toBe(contract.persona);
+      expect(url.searchParams.get('lang')).toBe(variant.lang);
+      expect(url.searchParams.get('utm_source')).toBe('pendulum-landing');
+      expect(url.searchParams.get('utm_medium')).toBe('referral');
+      expect(url.searchParams.get('utm_campaign')).toBe('research-lab');
+      expect(url.searchParams.get('utm_content')).toBe(contract.content);
+      expect(url.searchParams.get('utm_content')).not.toMatch(/^cta-\d+$/);
+    }
+
+    const structuredData = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent || '{}')));
+    const graph = structuredData.flatMap((entry) => entry['@graph'] || []);
+    expect(graph.some((entry) => (
+      entry['@type'] === 'SoftwareSourceCode' && entry.dateModified === '2026-08-20'
+    ))).toBe(true);
+    expect(graph.some((entry) => (
+      entry['@type'] === 'WebPage'
+      && entry['@id'] === `${variant.canonical}#webpage`
+      && entry.url === variant.canonical
+      && entry.inLanguage === variant.lang
+      && entry.dateModified === '2026-08-20'
+    ))).toBe(true);
+  }
+});
 
 test('release highlights and privacy-friendly app attribution hydrate', async ({ page }) => {
   await page.goto('/');

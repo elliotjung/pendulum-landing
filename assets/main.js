@@ -33,13 +33,21 @@
   // ---- Privacy-friendly referral attribution -------------------------------
   // No tracking script or cookie is needed: the app receives ordinary UTM
   // parameters and may aggregate them under its own first-party policy.
-  $$('a[data-app-link]').forEach((anchor, index) => {
+  $$('a[data-app-link]').forEach((anchor) => {
     try {
       const url = new URL(anchor.href);
+      const goal = anchor.dataset.ctaGoal;
+      const persona = anchor.dataset.ctaPersona;
+      // Keep the semantic launch contract in both raw HTML and the hydrated
+      // URL. The app can treat goal as the mission and audience as the UI
+      // persona without relying on storage left by an earlier visit.
+      if (goal) url.searchParams.set('goal', goal);
+      if (persona) url.searchParams.set('audience', persona);
+      url.searchParams.set('lang', koreanPage ? 'ko' : 'en');
       url.searchParams.set('utm_source', 'pendulum-landing');
       url.searchParams.set('utm_medium', 'referral');
       url.searchParams.set('utm_campaign', 'research-lab');
-      url.searchParams.set('utm_content', anchor.dataset.utmContent || `cta-${index + 1}`);
+      if (anchor.dataset.utmContent) url.searchParams.set('utm_content', anchor.dataset.utmContent);
       anchor.href = url.toString();
     } catch {
       /* leave malformed/non-HTTP fallback links untouched */

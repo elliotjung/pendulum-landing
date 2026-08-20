@@ -540,7 +540,7 @@ body.hero-user-paused .hero-stage-status i{ background:var(--gold); box-shadow:0
 }
 .orbit-descent-reticle{
   position:absolute; left:72%; top:48%; width:min(44vw,620px); aspect-ratio:1;
-  transform:translate(-50%,-50%) rotate(calc(var(--orbit-scroll) * 110deg));
+  transform:translate(-50%,-50%) rotate(calc(var(--orbit-scroll) * 486deg));
   border:1px solid rgba(80,205,245,.11); border-radius:50%;
   opacity:calc(.24 + var(--orbit-scroll) * .38);
   transition:opacity .2s linear;
@@ -569,11 +569,18 @@ body.hero-user-paused .hero-stage-status i{ background:var(--gold); box-shadow:0
   background:linear-gradient(180deg,var(--cyan),var(--violet)); box-shadow:0 0 14px rgba(24,212,248,.72);
 }
 .orbit-descent-coordinates{
-  position:absolute; right:clamp(22px,3vw,48px); bottom:clamp(22px,4vh,46px);
-  display:grid; justify-items:end; gap:5px; font-family:var(--font-mono); letter-spacing:.12em;
+  position:absolute; right:clamp(22px,3vw,48px); bottom:clamp(82px,10vh,108px);
+  display:grid; justify-items:end; gap:5px; min-width:138px; padding:11px 12px;
+  border:1px solid rgba(126,173,211,.14); border-radius:12px;
+  background:rgba(5,9,18,.48); box-shadow:inset 0 1px rgba(255,255,255,.035);
+  font-family:var(--font-mono); letter-spacing:.12em;
 }
 .orbit-descent-coordinates span{ color:rgba(144,174,205,.52); font-size:9px; }
 .orbit-descent-coordinates strong{ color:rgba(202,235,255,.72); font-size:10px; font-weight:500; font-variant-numeric:tabular-nums; }
+.orbit-descent-coordinates span:nth-of-type(2){
+  width:100%; margin-top:4px; padding-top:7px; border-top:1px solid rgba(126,173,211,.11); text-align:right;
+}
+.orbit-descent-coordinates [data-descent-view]{ color:rgba(169,151,255,.86); }
 .orbit-descent-track{ position:relative; z-index:2; margin-top:-100vh; margin-top:-100svh; }
 .descent-beat{
   min-height:100vh; min-height:100svh;
@@ -1646,8 +1653,8 @@ body.reveal-observer-ready [data-stagger] > :not(.is-visible):focus-within{
   .hero-trust-line{ max-width:31ch; gap:6px; font-size:11.5px; line-height:1.5; }
   .hero-actions{ flex-direction:column; align-items:stretch; }
   .hero-copy::before{
-    inset:-18px -14px -18px;
-    background:linear-gradient(180deg, rgba(5,6,15,.94), rgba(5,6,15,.74) 62%, rgba(5,6,15,.28));
+    inset:-96px -14px -18px;
+    background:linear-gradient(180deg,transparent,rgba(5,6,15,.9) 92px,rgba(5,6,15,.74) 72%,rgba(5,6,15,.28));
     filter:none;
   }
   .lede{

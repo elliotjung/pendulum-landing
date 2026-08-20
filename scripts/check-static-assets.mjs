@@ -76,7 +76,13 @@ for (const pageName of PAGES) {
 const evidence = JSON.parse(await readFile(join(root, 'assets', 'evidence-summary.json'), 'utf8'));
 const kernelManifest = JSON.parse(await readFile(join(root, 'assets', 'demo-kernel-manifest.json'), 'utf8'));
 const changelog = JSON.parse(await readFile(join(root, 'assets', 'changelog-highlights.json'), 'utf8'));
-const kernelBytes = await readFile(join(root, kernelManifest.kernel));
+if (kernelManifest.schemaVersion !== 'pendulum-demo-kernel-manifest/v1') {
+  failures.push(`unexpected demo kernel manifest schema: ${kernelManifest.schemaVersion ?? 'missing'}`);
+}
+if (kernelManifest.kernel !== 'assets/pendulum-demo-kernel.js') {
+  failures.push(`unexpected demo kernel path: ${kernelManifest.kernel ?? 'missing'}`);
+}
+const kernelBytes = await readFile(join(root, 'assets', 'pendulum-demo-kernel.js'));
 if (createHash('sha256').update(kernelBytes).digest('hex') !== kernelManifest.sha256) {
   failures.push('demo kernel SHA-256 does not match its manifest');
 }
@@ -85,6 +91,9 @@ if (kernelManifest.kernelVersion !== 'pendulum-demo-kernel/v3') {
 }
 if (kernelManifest.sourceCommit !== evidence.provenance?.sourceCommit) {
   failures.push('demo kernel sourceCommit does not match the evidence summary');
+}
+if (kernelManifest.sourcePackageVersion !== evidence.provenance?.packageVersion) {
+  failures.push('demo kernel sourcePackageVersion does not match the evidence summary');
 }
 if (evidence.schemaVersion !== 'pendulum-evidence-summary/v1') {
   failures.push(`unexpected evidence schema: ${evidence.schemaVersion ?? 'missing'}`);
@@ -118,6 +127,7 @@ await checkLighthouseLanguageMatrix();
 await checkDemoKernelContracts();
 await checkHeroRuntimeContracts();
 await checkWorkflowNetworkContracts();
+await checkKernelPairReleaseContract();
 await checkWorkflowTimeoutContracts();
 await checkPagesDeploymentContract();
 await checkPlaywrightServerContract();
@@ -170,6 +180,71 @@ async function checkWorkflowNetworkContracts() {
     for (const token of contract.required) {
       if (!block.includes(token)) failures.push(`${contract.file}: ${contract.step} must include ${token}`);
     }
+  }
+}
+
+async function checkKernelPairReleaseContract() {
+  const [releaseWorkflow, evidenceWorkflow, syncScript] = await Promise.all([
+    readFile(join(root, '.github', 'workflows', 'cross-repo-release.yml'), 'utf8').catch(() => ''),
+    readFile(join(root, '.github', 'workflows', 'evidence-sync.yml'), 'utf8').catch(() => ''),
+    readFile(join(root, 'scripts', 'sync-kernel-manifest.mjs'), 'utf8').catch(() => '')
+  ]);
+
+  for (const token of [
+    'github.event.client_payload.kernel_base64',
+    'github.event.client_payload.kernel_sha256',
+    'github.event.client_payload.kernel_manifest_base64',
+    'github.event.client_payload.kernel_manifest_sha256',
+    'The exact kernel and manifest base64 payloads are required',
+    'Materialize and verify the exact dispatched demo-kernel pair',
+    'node scripts/sync-kernel-manifest.mjs --materialize-dispatched',
+    'assets/pendulum-demo-kernel.js assets/demo-kernel-manifest.json'
+  ]) {
+    if (!releaseWorkflow.includes(token)) {
+      failures.push(`.github/workflows/cross-repo-release.yml: missing exact kernel-pair contract ${token}`);
+    }
+  }
+  const materializePosition = releaseWorkflow.indexOf(
+    'node scripts/sync-kernel-manifest.mjs --materialize-dispatched'
+  );
+  const staticGatePosition = releaseWorkflow.indexOf('- name: Static, accessibility, and browser gate');
+  if (materializePosition < 0 || staticGatePosition <= materializePosition) {
+    failures.push('cross-repo release: the exact kernel pair must be materialized before any static/browser gate');
+  }
+
+  if (!evidenceWorkflow.includes('node scripts/sync-kernel-manifest.mjs --verify-current')) {
+    failures.push('evidence sync: the installed kernel pair must be verified without rewriting provenance');
+  }
+  if (/node scripts\/sync-kernel-manifest\.mjs\s*(?:\r?\n|$)/u.test(evidenceWorkflow)) {
+    failures.push('evidence sync: sync-kernel-manifest must always receive an explicit fail-closed mode');
+  }
+
+  for (const token of [
+    'decodeCanonicalBase64',
+    "requiredEnvironment('EXPECTED_KERNEL_SHA256')",
+    "requiredEnvironment('EXPECTED_KERNEL_MANIFEST_SHA256')",
+    'RELEASE_TAG does not match evidence provenance.packageVersion',
+    'EXPECTED_SOURCE_COMMIT does not match evidence provenance.sourceCommit',
+    'kernelSha256 !== dispatchedHashes.kernelSha256',
+    'manifestSha256 !== dispatchedHashes.manifestSha256',
+    'sourcePackageVersion: evidenceCoordinate.packageVersion',
+    'sourceCommit: evidenceCoordinate.sourceCommit',
+    "const expectedKernelVersion = 'pendulum-demo-kernel/v3'",
+    'validatePair(stagedKernelBytes, stagedManifestBytes, evidenceCoordinate, dispatchedHashes)',
+    'constants.COPYFILE_EXCL',
+    "['--materialize-dispatched', '--verify-current']"
+  ]) {
+    if (!syncScript.includes(token)) failures.push(`scripts/sync-kernel-manifest.mjs: missing pair contract ${token}`);
+  }
+  for (const forbidden of ['manifest.sha256 =', 'manifest.sourceCommit =', 'manifest.sourcePackageVersion =']) {
+    if (syncScript.includes(forbidden)) {
+      failures.push(`scripts/sync-kernel-manifest.mjs: forbidden provenance restamp remains: ${forbidden}`);
+    }
+  }
+  const kernelRename = syncScript.indexOf('await rename(stagedKernel, kernelPath)');
+  const manifestRename = syncScript.indexOf('await rename(stagedManifest, manifestPath)');
+  if (kernelRename < 0 || manifestRename <= kernelRename) {
+    failures.push('scripts/sync-kernel-manifest.mjs: kernel bytes must be replaced before the manifest commit marker');
   }
 }
 
@@ -473,7 +548,7 @@ async function checkCopyCounts(summary) {
       failures.push(`${pageName}: meta description test count (${descCount ?? 'none'}) != evidence total ${total} — run scripts/sync-copy-counts.mjs and npm run build:ko`);
     }
     for (const alt of [...html.matchAll(/(?:og|twitter):image:alt" content="([^"]*)"/g)].map((m) => m[1])) {
-      const altCount = alt.match(/([\d,]+) tests/)?.[1];
+      const altCount = alt.match(/([\d,]+)(?: tests|개 테스트)/)?.[1];
       if (!altCount || parseCount(altCount) !== total) {
         failures.push(`${pageName}: image alt test count (${altCount ?? 'none'}) != evidence total ${total} — run scripts/sync-copy-counts.mjs and npm run build:ko`);
       }
@@ -862,6 +937,17 @@ async function checkHeroRuntimeContracts() {
   if (contextProbe < 0 || rendererConstruction < 0 || contextProbe > rendererConstruction) {
     failures.push('assets/scene.js: WebGL2 must be acquired before constructing THREE.WebGLRenderer');
   }
+  for (const token of [
+    'function spatialDerivative',
+    'function projectSpatialConstraints',
+    'function rk4StepSpatial',
+    'const SPATIAL_STATE_SIZE = 12',
+    'get spatialState()',
+    'constraintErrors',
+    'tangentErrors'
+  ]) {
+    if (!scene.includes(token)) failures.push(`assets/scene.js: missing constrained double-spherical dynamics contract ${token}`);
+  }
   const scrollSyncStart = scene.indexOf('setScrollActive(nextActive)');
   const scrollPoseStart = scene.indexOf('get scrollPose()', scrollSyncStart);
   if (
@@ -942,7 +1028,20 @@ async function checkHeroRuntimeContracts() {
   if (!smoke.includes("window.dispatchEvent(new Event('scroll'))")) {
     failures.push('tests/landing-smoke.spec.ts: synthetic scroll restoration must preserve the zero-request startup contract');
   }
-  for (const token of ['cssProgress', 'getComputedStyle(orbitDescentElement)', "progress: 0", 'Number.isFinite(scrollState.velocity)', 'pose.rotationY - start.rotationY', 'pose.y < start.y - 0.5']) {
+  for (const token of [
+    'cssProgress',
+    'getComputedStyle(orbitDescentElement)',
+    "progress: 0",
+    'Number.isFinite(scrollState.velocity)',
+    'pose.cameraAzimuth - start.cameraAzimuth',
+    'cameraTravel > 2',
+    'pose.y < start.y - 0.5',
+    '__hero?: { spatialState: SpatialSnapshot }',
+    'azimuthTravel',
+    'constraintErrors',
+    'tangentErrors',
+    'toEqual(frozenPhysics?.bob1)'
+  ]) {
     if (!smoke.includes(token)) failures.push(`tests/landing-smoke.spec.ts: missing finite static-scroll regression ${token}`);
   }
   for (const token of [

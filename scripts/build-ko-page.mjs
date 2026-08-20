@@ -110,6 +110,31 @@ try {
       const ogUrl = doc.querySelector('meta[property="og:url"]');
       if (ogUrl) ogUrl.setAttribute('content', koUrl);
 
+      // Keep structured discovery data aligned with this locale's canonical
+      // identity instead of embedding the English WebPage node unchanged.
+      const structuredData = doc.querySelector('script[type="application/ld+json"]');
+      if (structuredData) {
+        try {
+          const graph = JSON.parse(structuredData.textContent || '{}');
+          const nodes = Array.isArray(graph['@graph']) ? graph['@graph'] : [];
+          const webPage = nodes.find((node) => node?.['@type'] === 'WebPage');
+          const software = nodes.find((node) => node?.['@type'] === 'SoftwareSourceCode');
+          const webPageId = `${koUrl}#webpage`;
+          if (webPage) {
+            webPage['@id'] = webPageId;
+            webPage.url = koUrl;
+            webPage.name = doc.title;
+            webPage.description = doc.querySelector('meta[name="description"]')?.getAttribute('content') || webPage.description;
+            webPage.inLanguage = 'ko';
+          }
+          if (software) software.mainEntityOfPage = { '@id': webPageId };
+          structuredData.textContent = JSON.stringify(graph, null, 2);
+        } catch {
+          // The static validation gate parses this block and will fail closed
+          // if its source becomes malformed.
+        }
+      }
+
       // Korean's first viewport uses the local Pretendard regular face for the
       // hero lede. Discover it from HTML rather than waiting for CSS so the
       // swap cannot become a late LCP candidate on throttled mobile profiles.

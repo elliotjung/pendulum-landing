@@ -18,6 +18,22 @@ on:
         description: Expected evidence source commit SHA
         type: string
         required: true
+      kernel_base64:
+        description: Exact base64-encoded Lab demo kernel
+        type: string
+        required: true
+      kernel_sha256:
+        description: SHA-256 of the exact Lab demo kernel
+        type: string
+        required: true
+      kernel_manifest_base64:
+        description: Exact base64-encoded Lab demo-kernel manifest
+        type: string
+        required: true
+      kernel_manifest_sha256:
+        description: SHA-256 of the exact Lab demo-kernel manifest
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -38,6 +54,10 @@ jobs:
       EXPECTED_SOURCE_COMMIT: ${{ github.event.client_payload.source_commit || inputs.source_commit }}
       EVIDENCE_BASE64: ${{ github.event.client_payload.evidence_base64 || '' }}
       EXPECTED_EVIDENCE_SHA256: ${{ github.event.client_payload.evidence_sha256 || '' }}
+      KERNEL_BASE64: ${{ github.event.client_payload.kernel_base64 || inputs.kernel_base64 || '' }}
+      EXPECTED_KERNEL_SHA256: ${{ github.event.client_payload.kernel_sha256 || inputs.kernel_sha256 || '' }}
+      KERNEL_MANIFEST_BASE64: ${{ github.event.client_payload.kernel_manifest_base64 || inputs.kernel_manifest_base64 || '' }}
+      EXPECTED_KERNEL_MANIFEST_SHA256: ${{ github.event.client_payload.kernel_manifest_sha256 || inputs.kernel_manifest_sha256 || '' }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -60,6 +80,18 @@ jobs:
           }
           [[ "$EXPECTED_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
             echo "source_commit must be a full lowercase SHA-1" >&2
+            exit 1
+          }
+          test -n "$KERNEL_BASE64" && test -n "$KERNEL_MANIFEST_BASE64" || {
+            echo "The exact kernel and manifest base64 payloads are required" >&2
+            exit 1
+          }
+          [[ "$EXPECTED_KERNEL_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "kernel_sha256 must be a full lowercase SHA-256" >&2
+            exit 1
+          }
+          [[ "$EXPECTED_KERNEL_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "kernel_manifest_sha256 must be a full lowercase SHA-256" >&2
             exit 1
           }
           if [ -n "$EXPECTED_EVIDENCE_SHA256" ]; then
@@ -99,7 +131,8 @@ jobs:
             echo "evidence source $actual does not match dispatched $EXPECTED_SOURCE_COMMIT" >&2
             exit 1
           }
-      - run: node scripts/sync-kernel-manifest.mjs
+      - name: Materialize and verify the exact dispatched demo-kernel pair
+        run: node scripts/sync-kernel-manifest.mjs --materialize-dispatched
       - run: npm run sync:changelog
       # Static copy (meta description, OG alt text, no-JS fallbacks, Korean
       # dictionary) and the count baked into the og-card pixels follow the
@@ -122,13 +155,13 @@ jobs:
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            unexpected="$(git status --short | cut -c4- | grep -Ev '^(assets/(evidence-summary\.json|demo-kernel-manifest\.json|changelog-highlights\.json|i18n-core\.js|og-card\.png|og-card-meta\.json)|index\.html|ko\.html|sitemap\.xml)$' || true)"
+            unexpected="$(git status --short | cut -c4- | grep -Ev '^(assets/(evidence-summary\.json|pendulum-demo-kernel\.js|demo-kernel-manifest\.json|changelog-highlights\.json|i18n-core\.js|og-card\.png|og-card-meta\.json)|index\.html|ko\.html|sitemap\.xml)$' || true)"
             [ -z "$unexpected" ] || {
               echo "Refusing to commit unexpected generated paths:" >&2
               printf '%s\n' "$unexpected" >&2
               exit 1
             }
-            git add -- assets/evidence-summary.json assets/demo-kernel-manifest.json \
+            git add -- assets/evidence-summary.json assets/pendulum-demo-kernel.js assets/demo-kernel-manifest.json \
               assets/changelog-highlights.json assets/i18n-core.js assets/og-card.png \
               assets/og-card-meta.json index.html ko.html sitemap.xml
             git commit -m "chore: sync ${RELEASE_TAG} release evidence"

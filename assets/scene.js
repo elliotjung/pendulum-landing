@@ -1,17 +1,16 @@
 // ============================================================================
 // PENDULUM LAB — live hero instrument
-// A physically integrated double pendulum, rendered as a chrome sculpture with
-// cyan/violet trajectory memory, glitter dust, and an anchor glint — the same
-// composition as the static hero artwork, but alive. The canvas is decorative,
-// yet the motion is not arbitrary: both the visible pendulum and its nearby
-// shadow trajectory advance through the shared RK4 kernel used by the mini lab.
+// A constrained double-spherical pendulum, rendered as a chrome sculpture with
+// cyan/violet trajectory memory, glitter dust, and an anchor glint. Both links
+// evolve as 3D Cartesian positions and velocities under gravity; RK4 advances
+// the system at 240 Hz and a mass-weighted projection keeps both rod lengths
+// fixed. Camera orbit is presentation-only and never feeds back into physics.
 // ============================================================================
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
 const CYAN = new THREE.Color('#2fe0ff');
 const VIOLET = new THREE.Color('#8f5bff');
@@ -65,6 +64,8 @@ let stageBaseY = 0;
 let stageBaseScale = 1;
 let lastTelemetryAt = 0;
 let coordinateActiveLastFrame = false;
+let cameraOrbitAzimuth = 0;
+let cameraOrbitElevation = 0;
 let userPaused = window.__heroUserPaused === true;
 let resizeFrame = 0;
 let qualityTier = compact ? 'compact' : 'cinematic';
@@ -72,18 +73,42 @@ let renderCostEma = 0;
 let renderSamples = 0;
 let slowWindows = 0;
 const coordinateReadout = document.querySelector('[data-descent-coordinate]');
+const viewReadout = document.querySelector('[data-descent-view]');
 
 const params = Object.freeze({ m1: 1, m2: 1, l1: 1.14, l2: 1.02, g: 9.81 });
-const state = [2.34, 2.72, 0, 0];
-const shadowState = [2.3408, 2.72, 0, 0];
-const work = createRk4Work();
-const shadowWork = createRk4Work();
+const SPATIAL_STATE_SIZE = 12;
+const P1 = 0;
+const P2 = 3;
+const V1 = 6;
+const V2 = 9;
 const anchor = new THREE.Vector3(0, 1.55, 0);
 const yAxis = new THREE.Vector3(0, 1, 0);
 const direction = new THREE.Vector3();
 const midpoint = new THREE.Vector3();
-const currentPoints = { first: new THREE.Vector3(), second: new THREE.Vector3() };
-const nearbyPoints = { first: new THREE.Vector3(), second: new THREE.Vector3() };
+const cameraGoal = new THREE.Vector3();
+const cameraFocus = new THREE.Vector3();
+const cameraFocusGoal = new THREE.Vector3();
+const currentPoints = {
+  first: new THREE.Vector3(),
+  second: new THREE.Vector3(),
+  azimuth1: 0,
+  azimuth2: 0,
+  theta1: 0,
+  theta2: 0,
+};
+const nearbyPoints = {
+  first: new THREE.Vector3(),
+  second: new THREE.Vector3(),
+  azimuth1: 0,
+  azimuth2: 0,
+  theta1: 0,
+  theta2: 0,
+};
+const state = createSpatialState({ theta1: 2.34, theta2: 2.72, phi1: 0.22, phi2: -0.38, phiDot1: 0.42, phiDot2: -0.31 });
+const shadowState = createSpatialState({ theta1: 2.3408, theta2: 2.72, phi1: 0.22, phi2: -0.38, phiDot1: 0.42, phiDot2: -0.31 });
+const work = createSpatialWork();
+const shadowWork = createSpatialWork();
+const constraintSolution = new Float64Array(2);
 const pointer = { x: 0, y: 0, targetX: 0, targetY: 0 };
 let dragging = false;
 let dragStart = 0;
@@ -113,6 +138,201 @@ function deterministicRandom(seed = 0x51f15e) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 0x100000000;
   };
+}
+
+function writeSphericalLink(target, positionOffset, velocityOffset, {
+  theta,
+  phi,
+  thetaDot = 0,
+  phiDot = 0,
+  length,
+}) {
+  const sinTheta = Math.sin(theta);
+  const cosTheta = Math.cos(theta);
+  const sinPhi = Math.sin(phi);
+  const cosPhi = Math.cos(phi);
+  target[positionOffset] = length * sinTheta * cosPhi;
+  target[positionOffset + 1] = -length * cosTheta;
+  target[positionOffset + 2] = length * sinTheta * sinPhi;
+  target[velocityOffset] = length * (cosTheta * cosPhi * thetaDot - sinTheta * sinPhi * phiDot);
+  target[velocityOffset + 1] = length * sinTheta * thetaDot;
+  target[velocityOffset + 2] = length * (cosTheta * sinPhi * thetaDot + sinTheta * cosPhi * phiDot);
+}
+
+function createSpatialState({
+  theta1,
+  theta2,
+  phi1,
+  phi2,
+  thetaDot1 = 0,
+  thetaDot2 = 0,
+  phiDot1 = 0,
+  phiDot2 = 0,
+}) {
+  const next = new Float64Array(SPATIAL_STATE_SIZE);
+  writeSphericalLink(next, P1, V1, {
+    theta: theta1,
+    phi: phi1,
+    thetaDot: thetaDot1,
+    phiDot: phiDot1,
+    length: params.l1,
+  });
+  const second = new Float64Array(6);
+  writeSphericalLink(second, 0, 3, {
+    theta: theta2,
+    phi: phi2,
+    thetaDot: thetaDot2,
+    phiDot: phiDot2,
+    length: params.l2,
+  });
+  for (let axis = 0; axis < 3; axis += 1) {
+    next[P2 + axis] = next[P1 + axis] + second[axis];
+    next[V2 + axis] = next[V1 + axis] + second[3 + axis];
+  }
+  return next;
+}
+
+function createSpatialWork() {
+  return {
+    k1: new Float64Array(SPATIAL_STATE_SIZE),
+    k2: new Float64Array(SPATIAL_STATE_SIZE),
+    k3: new Float64Array(SPATIAL_STATE_SIZE),
+    k4: new Float64Array(SPATIAL_STATE_SIZE),
+    temp: new Float64Array(SPATIAL_STATE_SIZE),
+  };
+}
+
+function solveConstraintPair(a11, a12, a22, b1, b2) {
+  const determinant = Math.max(a11 * a22 - a12 * a12, 1e-12);
+  constraintSolution[0] = (b1 * a22 - b2 * a12) / determinant;
+  constraintSolution[1] = (a11 * b2 - a12 * b1) / determinant;
+}
+
+function spatialDerivative(source, out) {
+  const p1x = source[P1];
+  const p1y = source[P1 + 1];
+  const p1z = source[P1 + 2];
+  const dx = source[P2] - p1x;
+  const dy = source[P2 + 1] - p1y;
+  const dz = source[P2 + 2] - p1z;
+  const v1x = source[V1];
+  const v1y = source[V1 + 1];
+  const v1z = source[V1 + 2];
+  const dvx = source[V2] - v1x;
+  const dvy = source[V2 + 1] - v1y;
+  const dvz = source[V2 + 2] - v1z;
+  const inverseM1 = 1 / params.m1;
+  const inverseM2 = 1 / params.m2;
+  const p1Squared = p1x * p1x + p1y * p1y + p1z * p1z;
+  const dSquared = dx * dx + dy * dy + dz * dz;
+  const coupling = p1x * dx + p1y * dy + p1z * dz;
+  const a11 = p1Squared * inverseM1;
+  const a12 = -coupling * inverseM1;
+  const a22 = dSquared * (inverseM1 + inverseM2);
+  const speed1Squared = v1x * v1x + v1y * v1y + v1z * v1z;
+  const relativeSpeedSquared = dvx * dvx + dvy * dvy + dvz * dvz;
+  solveConstraintPair(
+    a11,
+    a12,
+    a22,
+    -speed1Squared + params.g * p1y,
+    -relativeSpeedSquared,
+  );
+  const lambda1 = constraintSolution[0];
+  const lambda2 = constraintSolution[1];
+
+  out[P1] = v1x;
+  out[P1 + 1] = v1y;
+  out[P1 + 2] = v1z;
+  out[P2] = source[V2];
+  out[P2 + 1] = source[V2 + 1];
+  out[P2 + 2] = source[V2 + 2];
+  out[V1] = (p1x * lambda1 - dx * lambda2) * inverseM1;
+  out[V1 + 1] = -params.g + (p1y * lambda1 - dy * lambda2) * inverseM1;
+  out[V1 + 2] = (p1z * lambda1 - dz * lambda2) * inverseM1;
+  out[V2] = dx * lambda2 * inverseM2;
+  out[V2 + 1] = -params.g + dy * lambda2 * inverseM2;
+  out[V2 + 2] = dz * lambda2 * inverseM2;
+}
+
+function projectSpatialConstraints(source) {
+  const inverseM1 = 1 / params.m1;
+  const inverseM2 = 1 / params.m2;
+  for (let iteration = 0; iteration < 6; iteration += 1) {
+    const p1x = source[P1];
+    const p1y = source[P1 + 1];
+    const p1z = source[P1 + 2];
+    const dx = source[P2] - p1x;
+    const dy = source[P2 + 1] - p1y;
+    const dz = source[P2 + 2] - p1z;
+    const p1Squared = p1x * p1x + p1y * p1y + p1z * p1z;
+    const dSquared = dx * dx + dy * dy + dz * dz;
+    const error1 = 0.5 * (p1Squared - params.l1 * params.l1);
+    const error2 = 0.5 * (dSquared - params.l2 * params.l2);
+    if (Math.max(Math.abs(error1), Math.abs(error2)) < 1e-13) break;
+    const coupling = p1x * dx + p1y * dy + p1z * dz;
+    solveConstraintPair(
+      p1Squared * inverseM1,
+      -coupling * inverseM1,
+      dSquared * (inverseM1 + inverseM2),
+      -error1,
+      -error2,
+    );
+    const lambda1 = constraintSolution[0];
+    const lambda2 = constraintSolution[1];
+    source[P1] += (p1x * lambda1 - dx * lambda2) * inverseM1;
+    source[P1 + 1] += (p1y * lambda1 - dy * lambda2) * inverseM1;
+    source[P1 + 2] += (p1z * lambda1 - dz * lambda2) * inverseM1;
+    source[P2] += dx * lambda2 * inverseM2;
+    source[P2 + 1] += dy * lambda2 * inverseM2;
+    source[P2 + 2] += dz * lambda2 * inverseM2;
+  }
+
+  const p1x = source[P1];
+  const p1y = source[P1 + 1];
+  const p1z = source[P1 + 2];
+  const dx = source[P2] - p1x;
+  const dy = source[P2 + 1] - p1y;
+  const dz = source[P2 + 2] - p1z;
+  const v1x = source[V1];
+  const v1y = source[V1 + 1];
+  const v1z = source[V1 + 2];
+  const dvx = source[V2] - v1x;
+  const dvy = source[V2 + 1] - v1y;
+  const dvz = source[V2 + 2] - v1z;
+  const p1Squared = p1x * p1x + p1y * p1y + p1z * p1z;
+  const dSquared = dx * dx + dy * dy + dz * dz;
+  const coupling = p1x * dx + p1y * dy + p1z * dz;
+  solveConstraintPair(
+    p1Squared * inverseM1,
+    -coupling * inverseM1,
+    dSquared * (inverseM1 + inverseM2),
+    -(p1x * v1x + p1y * v1y + p1z * v1z),
+    -(dx * dvx + dy * dvy + dz * dvz),
+  );
+  const impulse1 = constraintSolution[0];
+  const impulse2 = constraintSolution[1];
+  source[V1] += (p1x * impulse1 - dx * impulse2) * inverseM1;
+  source[V1 + 1] += (p1y * impulse1 - dy * impulse2) * inverseM1;
+  source[V1 + 2] += (p1z * impulse1 - dz * impulse2) * inverseM1;
+  source[V2] += dx * impulse2 * inverseM2;
+  source[V2 + 1] += dy * impulse2 * inverseM2;
+  source[V2 + 2] += dz * impulse2 * inverseM2;
+}
+
+function rk4StepSpatial(source, dt, spatialWork) {
+  const { k1, k2, k3, k4, temp } = spatialWork;
+  spatialDerivative(source, k1);
+  for (let i = 0; i < SPATIAL_STATE_SIZE; i += 1) temp[i] = source[i] + k1[i] * dt * 0.5;
+  spatialDerivative(temp, k2);
+  for (let i = 0; i < SPATIAL_STATE_SIZE; i += 1) temp[i] = source[i] + k2[i] * dt * 0.5;
+  spatialDerivative(temp, k3);
+  for (let i = 0; i < SPATIAL_STATE_SIZE; i += 1) temp[i] = source[i] + k3[i] * dt;
+  spatialDerivative(temp, k4);
+  for (let i = 0; i < SPATIAL_STATE_SIZE; i += 1) {
+    source[i] += dt * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]) / 6;
+  }
+  projectSpatialConstraints(source);
 }
 
 // Soft round sprite shared by every additive point cloud — square GL points
@@ -382,17 +602,25 @@ function setRod(mesh, from, to) {
 }
 
 function pointsFromState(source, points) {
-  const theta1 = source[0];
-  const theta2 = source[1];
+  const firstX = source[P1];
+  const firstY = source[P1 + 1];
+  const firstZ = source[P1 + 2];
+  const secondLinkX = source[P2] - firstX;
+  const secondLinkY = source[P2 + 1] - firstY;
+  const secondLinkZ = source[P2 + 2] - firstZ;
+  points.azimuth1 = Math.atan2(firstZ, firstX);
+  points.azimuth2 = Math.atan2(secondLinkZ, secondLinkX);
+  points.theta1 = Math.acos(THREE.MathUtils.clamp(-firstY / params.l1, -1, 1));
+  points.theta2 = Math.acos(THREE.MathUtils.clamp(-secondLinkY / params.l2, -1, 1));
   points.first.set(
-    anchor.x + params.l1 * Math.sin(theta1),
-    anchor.y - params.l1 * Math.cos(theta1),
-    0,
+    anchor.x + firstX,
+    anchor.y + firstY,
+    anchor.z + firstZ,
   );
   points.second.set(
-    points.first.x + params.l2 * Math.sin(theta2),
-    points.first.y - params.l2 * Math.cos(theta2),
-    0,
+    anchor.x + source[P2],
+    anchor.y + source[P2 + 1],
+    anchor.z + source[P2 + 2],
   );
   return points;
 }
@@ -444,11 +672,19 @@ function buildGrid() {
   grid.material.depthWrite = false;
   stage.add(grid);
 
+  // A dim floor plane gives camera orbits a stable depth reference.
+  const floor = new THREE.GridHelper(8, 16, 0x173b58, 0x101b2b);
+  floor.position.set(0, -1.5, -0.25);
+  floor.material.transparent = true;
+  floor.material.opacity = compact ? 0.035 : 0.055;
+  floor.material.depthWrite = false;
+  stage.add(floor);
+
   [1.15, 2.18].forEach((radius, index) => {
     const points = [];
     for (let i = 0; i <= 128; i += 1) {
       const angle = (i / 128) * Math.PI * 2;
-      points.push(new THREE.Vector3(Math.cos(angle) * radius, anchor.y + Math.sin(angle) * radius, -0.65));
+      points.push(new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0));
     }
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const orbit = new THREE.Line(
@@ -460,6 +696,10 @@ function buildGrid() {
         depthWrite: false,
       }),
     );
+    orbit.position.copy(anchor);
+    orbit.position.z = -0.56 + index * 0.12;
+    orbit.rotation.x = index === 0 ? -0.2 : 0.34;
+    orbit.rotation.y = index === 0 ? 0.48 : -0.62;
     stage.add(orbit);
   });
 
@@ -467,7 +707,11 @@ function buildGrid() {
   const dashPoints = [];
   for (let i = 0; i <= 180; i += 1) {
     const angle = (i / 180) * Math.PI * 2;
-    dashPoints.push(new THREE.Vector3(Math.cos(angle) * 2.95, anchor.y - 0.25 + Math.sin(angle) * 2.5, -0.72));
+    dashPoints.push(new THREE.Vector3(
+      Math.cos(angle) * 2.95,
+      anchor.y - 0.25 + Math.sin(angle) * 2.5,
+      -0.72 + Math.sin(angle * 2 + 0.4) * 0.38,
+    ));
   }
   const dashed = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints(dashPoints),
@@ -536,8 +780,8 @@ function pushCurrentTrail() {
 }
 
 function stepSimulation(fixedStep) {
-  rk4StepDouble(state, params, fixedStep, work);
-  rk4StepDouble(shadowState, params, fixedStep, shadowWork);
+  rk4StepSpatial(state, fixedStep, work);
+  rk4StepSpatial(shadowState, fixedStep, shadowWork);
   simulationTime += fixedStep;
   trailTick += 1;
   if (trailTick % (compact ? 4 : 3) === 0) pushCurrentTrail();
@@ -693,7 +937,6 @@ function buildScene() {
 
   primary = createPendulum();
   shadow = createPendulum({ ghost: true });
-  shadow.group.position.z = -0.055;
   stage.add(shadow.group, primary.group, buildAnchor());
   positionStage();
 
@@ -842,11 +1085,20 @@ function renderFrame({ frozen = false } = {}) {
   const orbitEase = orbitProgress * orbitProgress * (3 - 2 * orbitProgress);
   const scrollVelocity = Math.max(-1, Math.min(1, Number(window.__orbitScrollVelocity) || 0));
   window.__orbitScrollVelocity = scrollVelocity * Math.exp(-elapsed * 9.1);
-  stage.rotation.y = manualRotation + pointer.x * 0.16 + Math.sin(simulationTime * 0.13) * 0.035
-    + orbitEase * Math.PI * 4.5 + scrollVelocity * 0.24;
-  stage.rotation.x = -0.035 + pointer.y * 0.055 + heroProgress * 0.035
-    + Math.sin(orbitEase * Math.PI * 1.65) * 0.38;
-  stage.rotation.z = Math.sin(orbitEase * Math.PI * 2) * 0.14 - orbitEase * 0.06 + scrollVelocity * 0.04;
+  const targetCameraAzimuth = manualRotation + pointer.x * 0.18
+    + orbitEase * Math.PI * 2.7 + scrollVelocity * 0.2;
+  const targetCameraElevation = 0.035 - pointer.y * 0.12
+    + Math.sin(orbitEase * Math.PI * 1.7) * 0.15;
+  const orbitBlend = frozen ? 1 : 1 - Math.exp(-elapsed * 5.2);
+  cameraOrbitAzimuth += (targetCameraAzimuth - cameraOrbitAzimuth) * orbitBlend;
+  cameraOrbitElevation += (targetCameraElevation - cameraOrbitElevation) * orbitBlend;
+
+  // Keep the sculpture itself almost still: scroll changes the viewer's
+  // position around the spatial trajectories instead of spinning a planar
+  // stage in front of a fixed lens.
+  stage.rotation.y = Math.sin(simulationTime * 0.13) * 0.028;
+  stage.rotation.x = -0.025 + pointer.y * 0.025 + heroProgress * 0.02;
+  stage.rotation.z = Math.sin(orbitEase * Math.PI * 2) * 0.035 + scrollVelocity * 0.018;
   stage.position.x = stageBaseX + Math.sin(orbitEase * Math.PI * 2.2) * (compact ? 0.22 : 0.86);
   stage.position.y = stageBaseY - orbitEase * (compact ? 1.08 : 1.86);
   stage.position.z = Math.sin(orbitEase * Math.PI) * 0.7 - orbitEase * 0.28;
@@ -865,23 +1117,35 @@ function renderFrame({ frozen = false } = {}) {
     const glintScale = 0.86 + Math.sin(simulationTime * 1.21) * 0.07;
     glint.scale.set(glintScale, glintScale, 1);
   }
-  const targetCameraX = pointer.x * 0.5 + Math.sin(orbitEase * Math.PI * 2) * (compact ? 0.18 : 0.7);
-  const targetCameraY = 0.12 - pointer.y * 0.28 - orbitEase * 0.24;
-  const targetCameraZ = 8.4 - Math.sin(orbitEase * Math.PI) * 1.38 + orbitEase * 0.74;
-  camera.position.x += (targetCameraX - camera.position.x) * 0.035;
-  camera.position.y += (targetCameraY - camera.position.y) * 0.035;
-  camera.position.z += (targetCameraZ - camera.position.z) * 0.035;
-  camera.lookAt(
-    (width < 760 ? 0 : 1.3) + Math.sin(orbitEase * Math.PI) * 0.28,
-    (width < 760 ? -0.4 : 0.05) - orbitEase * 0.42,
-    0,
+  const radius = 8.4 - Math.sin(orbitEase * Math.PI) * 1.32 + orbitEase * 0.66;
+  const horizontalRadius = radius * Math.cos(cameraOrbitElevation);
+  const heroCompositionOffset = compact ? 0.12 : (1 - orbitEase) * 1.02;
+  cameraFocusGoal.set(
+    stage.position.x - heroCompositionOffset,
+    stage.position.y + (compact ? -0.05 : 0.12),
+    stage.position.z,
   );
+  cameraGoal.set(
+    cameraFocusGoal.x + Math.sin(cameraOrbitAzimuth) * horizontalRadius,
+    cameraFocusGoal.y + Math.sin(cameraOrbitElevation) * radius,
+    cameraFocusGoal.z + Math.cos(cameraOrbitAzimuth) * horizontalRadius,
+  );
+  const cameraBlend = frozen ? 1 : 1 - Math.exp(-elapsed * 4.8);
+  const focusBlend = frozen ? 1 : 1 - Math.exp(-elapsed * 6.2);
+  camera.position.lerp(cameraGoal, cameraBlend);
+  cameraFocus.lerp(cameraFocusGoal, focusBlend);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(cameraFocus);
   camera.rotation.z += (Math.sin(orbitEase * Math.PI * 2) * 0.035 - camera.rotation.z) * 0.04;
 
   const coordinateActive = document.body.classList.contains('orbit-descent-active');
   if (coordinateReadout && coordinateActive && (!coordinateActiveLastFrame || now - lastTelemetryAt >= 180)) {
     const wrapAngle = (value) => ((value + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
-    coordinateReadout.textContent = `${wrapAngle(state[0]).toFixed(2)} / ${wrapAngle(state[1]).toFixed(2)}`;
+    coordinateReadout.textContent = `${wrapAngle(currentPoints.theta1).toFixed(2)} / ${wrapAngle(currentPoints.theta2).toFixed(2)}`;
+    if (viewReadout) {
+      const bearing = ((THREE.MathUtils.radToDeg(cameraOrbitAzimuth) % 360) + 360) % 360;
+      viewReadout.textContent = `${bearing.toFixed(0).padStart(3, '0')}° / z ${currentPoints.second.z.toFixed(2)}`;
+    }
     lastTelemetryAt = now;
   }
   coordinateActiveLastFrame = coordinateActive;
@@ -1091,16 +1355,51 @@ function installHeroApi() {
     get scrollPose() {
       return {
         progress: Math.max(0, Math.min(1, Number(window.__orbitScrollProgress) || 0)),
-        rotationY: stage.rotation.y,
+        // Compatibility alias: this now reports the camera orbit, not a
+        // rotation applied to the entire sculpture.
+        rotationY: cameraOrbitAzimuth,
+        cameraAzimuth: cameraOrbitAzimuth,
+        cameraElevation: cameraOrbitElevation,
+        camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+        focus: { x: cameraFocus.x, y: cameraFocus.y, z: cameraFocus.z },
+        bobDepth: currentPoints.second.z,
+        linkAzimuths: [currentPoints.azimuth1, currentPoints.azimuth2],
         y: stage.position.y,
         z: stage.position.z,
         scale: stage.scale.x,
       };
     },
+    get spatialState() {
+      const link2x = state[P2] - state[P1];
+      const link2y = state[P2 + 1] - state[P1 + 1];
+      const link2z = state[P2 + 2] - state[P1 + 2];
+      const relativeVelocityX = state[V2] - state[V1];
+      const relativeVelocityY = state[V2 + 1] - state[V1 + 1];
+      const relativeVelocityZ = state[V2 + 2] - state[V1 + 2];
+      const link1Length = Math.hypot(state[P1], state[P1 + 1], state[P1 + 2]);
+      const link2Length = Math.hypot(link2x, link2y, link2z);
+      return {
+        time: simulationTime,
+        bob1: { x: state[P1], y: state[P1 + 1], z: state[P1 + 2] },
+        bob2: { x: state[P2], y: state[P2 + 1], z: state[P2 + 2] },
+        azimuths: [currentPoints.azimuth1, currentPoints.azimuth2],
+        polarAngles: [currentPoints.theta1, currentPoints.theta2],
+        constraintErrors: [link1Length - params.l1, link2Length - params.l2],
+        tangentErrors: [
+          state[P1] * state[V1] + state[P1 + 1] * state[V1 + 1] + state[P1 + 2] * state[V1 + 2],
+          link2x * relativeVelocityX + link2y * relativeVelocityY + link2z * relativeVelocityZ,
+        ],
+      };
+    },
     get divergence() {
-      const d1 = Math.atan2(Math.sin(state[0] - shadowState[0]), Math.cos(state[0] - shadowState[0]));
-      const d2 = Math.atan2(Math.sin(state[1] - shadowState[1]), Math.cos(state[1] - shadowState[1]));
-      return Math.hypot(d1, d2);
+      return Math.hypot(
+        state[P1] - shadowState[P1],
+        state[P1 + 1] - shadowState[P1 + 1],
+        state[P1 + 2] - shadowState[P1 + 2],
+        state[P2] - shadowState[P2],
+        state[P2 + 1] - shadowState[P2 + 1],
+        state[P2 + 2] - shadowState[P2 + 2],
+      );
     },
   };
 }

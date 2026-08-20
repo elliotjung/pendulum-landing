@@ -19,12 +19,12 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,459 tests and SciPy-validated.">
+<meta property="og:image:alt" content="Pendulum Lab — 질서, 카오스에 무너지다. 1,459개 테스트와 SciPy 검증.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Pendulum Lab — 질서, 카오스에 무너지다">
 <meta name="twitter:description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,459개 단위 테스트, SciPy와 출판 문헌으로 검증.">
 <meta name="twitter:image" content="https://elliotjung.github.io/pendulum-landing/assets/og-card.png">
-<meta name="twitter:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,459 tests and SciPy-validated.">
+<meta name="twitter:image:alt" content="Pendulum Lab — 질서, 카오스에 무너지다. 1,459개 테스트와 SciPy 검증.">
 <link rel="canonical" href="https://elliotjung.github.io/pendulum-landing/ko.html">
 <link rel="alternate" hreflang="en" href="https://elliotjung.github.io/pendulum-landing/">
 <link rel="alternate" hreflang="ko" href="https://elliotjung.github.io/pendulum-landing/ko.html">
@@ -34,7 +34,7 @@
      anything paints. ko.html is built by scripts/build-ko-page.mjs, so Korean
      visitors get a plain static page (no runtime translation cost). The CSP
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BhzjEcyYvikXzy4LPh6pXeIfW0R16Iwo68gniWGQ0tQ=' 'sha256-bpST98ciZlpoVEIyeUZBSU5N7A1PeIFhN8TztbWHMtI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bpST98ciZlpoVEIyeUZBSU5N7A1PeIFhN8TztbWHMtI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script id="lang-boot">(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="ko"||!localStorage.getItem("pendulum-landing/lang"))localStorage.setItem("pendulum-landing/lang","ko")}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -43,37 +43,71 @@
 <link rel="preload" href="assets/hero-fallback-960.webp" as="image" type="image/webp" media="(max-width: 760px)" fetchpriority="high">
 <link rel="preload" href="assets/fonts/Pretendard-Regular.subset.woff2" as="font" type="font/woff2" crossorigin="anonymous"><link rel="stylesheet" href="assets/landing.css">
 
-<script type="application/ld+json">
-{
+<script type="application/ld+json">{
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "WebPage",
+      "@id": "https://elliotjung.github.io/pendulum-landing/ko.html#webpage",
+      "url": "https://elliotjung.github.io/pendulum-landing/ko.html",
+      "name": "Pendulum Lab — 질서, 카오스에 무너지다",
+      "description": "비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,457개 단위 테스트, SciPy와 출판 문헌으로 검증.",
+      "inLanguage": "ko",
+      "dateModified": "2026-08-20",
+      "mainEntity": {
+        "@id": "https://elliotjung.github.io/pendulum-landing/#software"
+      }
+    },
+    {
       "@type": "SoftwareSourceCode",
+      "@id": "https://elliotjung.github.io/pendulum-landing/#software",
       "name": "Pendulum Lab",
       "codeRepository": "https://github.com/elliotjung/pendulum-lab",
       "programmingLanguage": "TypeScript",
       "runtimePlatform": "Web browser",
       "license": "https://opensource.org/license/mit",
-      "author": { "@type": "Person", "name": "Elliot Jung" },
-      "dateModified": "2026-08-19",
+      "author": {
+        "@type": "Person",
+        "name": "Elliot Jung"
+      },
+      "dateModified": "2026-08-20",
       "applicationCategory": "EducationalApplication",
-      "inLanguage": ["en", "ko"],
+      "inLanguage": [
+        "en",
+        "ko"
+      ],
       "isAccessibleForFree": true,
-      "keywords": ["double pendulum", "nonlinear dynamics", "chaos", "Lyapunov exponent", "numerical integration"],
-      "description": "A browser-native nonlinear pendulum dynamics workbench with reproducible validation evidence."
+      "keywords": [
+        "double pendulum",
+        "nonlinear dynamics",
+        "chaos",
+        "Lyapunov exponent",
+        "numerical integration"
+      ],
+      "description": "A browser-native nonlinear pendulum dynamics workbench with reproducible validation evidence.",
+      "mainEntityOfPage": {
+        "@id": "https://elliotjung.github.io/pendulum-landing/ko.html#webpage"
+      }
     },
     {
       "@type": "ScholarlyArticle",
       "headline": "Measuring the gap between the Melnikov threshold and the period-doubling cascade in the damped driven pendulum",
       "isPartOf": "Pendulum Lab",
-      "author": { "@type": "Person", "name": "Elliot Jung" },
+      "author": {
+        "@type": "Person",
+        "name": "Elliot Jung"
+      },
       "url": "https://elliotjung.github.io/pendulum-lab/paper/",
       "inLanguage": "en",
-      "about": ["nonlinear dynamics", "Melnikov theory", "period-doubling", "chaos"]
+      "about": [
+        "nonlinear dynamics",
+        "Melnikov theory",
+        "period-doubling",
+        "chaos"
+      ]
     }
   ]
-}
-</script>
+}</script>
 </head>
 <body>
 
@@ -113,7 +147,7 @@
   </div>
   <div class="nav-cta">
     <a id="lang-toggle" class="lang-toggle" href="index.html?lang=en" hreflang="en" aria-label="Switch to English">English</a>
-    <a class="btn primary sm nav-launch" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&amp;lang=ko" data-app-link="" aria-label="Pendulum Lab 시뮬레이션 열기"><span class="cta-full">랩 열기</span><span class="cta-short">열기</span><span class="arrow">→</span></a>
+    <a class="btn primary sm nav-launch" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="nav-open" aria-label="Pendulum Lab 시뮬레이션 열기"><span class="cta-full">랩 열기</span><span class="cta-short">열기</span><span class="arrow">→</span></a>
     <!-- Small-screen section menu. Pure details/summary so it works with CSP
          and without JavaScript; main.js only adds close-on-navigate sugar. -->
     <details class="nav-menu" id="nav-menu">
@@ -145,7 +179,7 @@
           거의 같은 두 진자를 놓아 보세요. 확실성이 두 개의 세계로 갈라지는 순간을 보고, 예측이 얼마나 빠르게 사라지는지 정확히 측정할 수 있습니다.
         </p>
         <div class="hero-actions">
-          <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;preset=butterfly&amp;tab=lab&amp;lang=ko" data-app-link="">랩 열기 <span class="arrow">→</span></a>
+          <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;preset=butterfly&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="hero-explore">랩 열기 <span class="arrow">→</span></a>
           <a class="btn ghost" href="#console">실험 실행</a>
         </div>
         <p class="hero-trust-line">
@@ -159,13 +193,13 @@
 
       <div class="hero-stage" aria-hidden="true">
         <div class="hero-stage-status"><span><i></i> <b data-hero-stage-state="">3D 준비</b></span><b data-hero-stage-rate="">조작하면 시작</b></div>
-        <div class="hero-stage-axis"><span>θ₁</span><span>θ₂</span><span>Δθ₀ = 8×10⁻⁴ rad</span></div>
+        <div class="hero-stage-axis"><span>θ₁ / φ₁</span><span>θ₂ / φ₂</span><span>Δθ₀ = 8×10⁻⁴ rad</span></div>
       </div>
     </div>
 
     <div class="hero-foot">
       <a class="scroll-cue" href="#orbit-descent" aria-label="스크롤로 움직이는 발산 이야기 탐색"><i aria-hidden="true"></i> 발산 탐색</a>
-      <span>스크롤로 따라가기 · 라이브 필드를 드래그해 궤도 회전</span>
+      <span>스크롤로 카메라 궤도 이동 · 드래그로 직접 시점 회전</span>
     </div>
   </div>
 </header>
@@ -189,6 +223,8 @@
     <div class="orbit-descent-coordinates">
       <span>θ₁ / θ₂</span>
       <strong data-descent-coordinate="">2.34 / 2.72</strong>
+      <span>시점 / 깊이</span>
+      <strong data-descent-view="">000° / z 0.00</strong>
     </div>
   </div>
 
@@ -198,9 +234,9 @@
         <span class="descent-index">01 · 놓기</span>
         <span class="kicker">스크롤로 움직이는 카오스</span>
         <h2 id="orbit-descent-title">위상공간을 가로질러 내려가다.</h2>
-        <p class="descent-live-copy">스크롤하면 살아 있는 이중진자가 첫 화면을 벗어나 깊이 회전하며 함께 내려갑니다. 영상 반복 재생이 아닙니다. 카메라가 따라가는 동안 두 막대는 같은 240 Hz RK4 계를 계속 계산합니다.</p>
+        <p class="descent-live-copy">스크롤하면 카메라가 서로 다른 방위각으로 실제 깊이를 가로지르는 이중 구면진자 주위를 회전합니다. 영상 반복 재생이 아닙니다. 시점이 독립적으로 궤도를 도는 동안 두 링크의 3D 위치와 속도는 길이 제약을 적용한 240 Hz RK4 해에서 계속 전진합니다.</p>
         <p class="descent-static-copy">동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 아래의 조절 가능한 궤적 콘솔에서 관련 초기 조건을 직접 탐색할 수 있습니다.</p>
-        <span class="descent-signal descent-live-copy"><i></i> 실시간 방정식 · 실시간 카메라</span>
+        <span class="descent-signal descent-live-copy"><i></i> 실시간 방정식 · 공간 링크 · 궤도 카메라</span>
         <span class="descent-signal descent-static-copy"><i></i> 정적 근거 화면 · 동작 환경설정 존중</span>
       </div>
     </article>
@@ -271,7 +307,7 @@
         </div>
       </div>
       <div class="console-actions">
-        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;tab=lab&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06&amp;lang=ko" data-app-link="" data-orbit-launch="">주 상태 열기 <span class="arrow">→</span></a>
+        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06" data-app-link="" data-orbit-launch="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="orbit-primary">주 상태 열기 <span class="arrow">→</span></a>
         <a class="btn ghost sm" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">리뷰어 원장</a>
       </div>
     </div>
@@ -301,17 +337,17 @@
       <h2 data-rise="">티저 목업이 아닌, 실제 랩 화면.</h2>
       <p>첫 클릭에 준비된 실험 상태가 열립니다: 입문자용 나비 프리셋, 학생용 랴푸노프 판독, 혹은 리뷰어 증거가 곁에 있는 연구 워크벤치.</p>
       <div class="recipe-grid" role="group" aria-label="30초 실험 레시피">
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=beginner&amp;preset=butterfly&amp;tab=lab&amp;lang=ko" data-app-link="">
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;preset=butterfly&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="recipe-beginner">
           <span>입문자</span>
           <strong>나비 운동</strong>
           <em>깔끔한 스타터 프리셋으로 랩 열기.</em>
         </a>
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=student&amp;preset=chaotic&amp;tab=lyap&amp;lang=ko" data-app-link="">
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=ko&amp;preset=chaotic&amp;tab=lyap" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-student-lyapunov">
           <span>학생</span>
           <strong>랴푸노프 판독</strong>
           <em>카오스 속도 진단으로 바로 이동.</em>
         </a>
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?audience=research&amp;preset=periodic&amp;tab=research&amp;lang=ko" data-app-link="">
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=reproduce&amp;audience=research&amp;lang=ko&amp;preset=periodic&amp;tab=research" data-app-link="" data-cta-goal="reproduce" data-cta-persona="research" data-utm-content="recipe-research-reproduce">
           <span>연구</span>
           <strong>리뷰어 증거</strong>
           <em>저장된 연구 워크벤치 열기.</em>
@@ -449,7 +485,7 @@
     <div class="sec-head reveal">
       <span class="kicker">세 가지 워크스페이스</span>
       <h2 data-rise="">첫 스윙부터 동료 심사까지 — 인터페이스가 당신과 함께 자랍니다.</h2>
-      <p>실행할 때마다 워크스페이스 선택기가 열립니다. 첫 방문자는 5단계 스포트라이트 투어가 맞이하고, 모든 메뉴 항목은 쉬운 말 한 줄로 스스로를 설명하며 — 영어와 한국어 모두 — 커맨드 팔레트(Ctrl+K)로 어디든 닿습니다.</p>
+      <p>각 실행 링크는 의도한 워크스페이스와 미션 힌트를 랩으로 전달합니다. 첫 방문자는 5단계 스포트라이트 투어가 맞이하고, 모든 메뉴 항목은 쉬운 말 한 줄로 스스로를 설명하며 — 영어와 한국어 모두 — 커맨드 팔레트(Ctrl+K)로 어디든 닿습니다.</p>
     </div>
 
     <div class="mode-grid" data-stagger="">
@@ -667,8 +703,7 @@
       <div class="validation-actions">
         <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">리뷰어 콘솔에서 검증하기 <span class="arrow">→</span></a>
         <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/paper/">미니 논문 읽기</a>
-        <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?lang=ko&amp;audience=beginner">한국어 가이드 데모 실행</a>
-        <a class="text-link" href="https://elliotjung.github.io/pendulum-lab/paper/">방법론 논문 읽기</a>
+        <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="validation-guided">한국어 가이드 데모 실행</a>
       </div>
     </div>
   </div>
@@ -725,7 +760,7 @@
     </div>
 
     <div class="guide-foot reveal">
-      <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&amp;lang=ko" data-app-link="">지금 랩 열기 <span class="arrow">→</span></a>
+      <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="guide-open">지금 랩 열기 <span class="arrow">→</span></a>
       <span class="note">브라우저에서 실행 · 설치 없음</span>
     </div>
   </div>
@@ -738,8 +773,8 @@
     <h2 class="display" data-rise=""><span class="grad">놓아라. 지켜보라, </span><span class="dissolve">갈라짐을.</span></h2>
     <p class="lede">풀 시뮬레이터가 브라우저에서 그대로 돌아갑니다 — 15종의 주력 적분기, 모든 분석 탭, 해시 검증 연구 내보내기. 설치도 계정도 없이. 오직 가공되지 않은 카오스의 수학만.</p>
     <div class="launch-actions">
-      <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&amp;lang=ko" data-app-link="">랩 열기 <span class="arrow">→</span></a>
-      <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?tab=lab&amp;audience=beginner&amp;lang=ko" data-app-link="">가이드 모드 시작</a>
+      <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="launch-explore">랩 열기 <span class="arrow">→</span></a>
+      <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="launch-guided">가이드 모드 시작</a>
       <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">연구 증거 보기</a>
       <a class="btn ghost" href="https://github.com/elliotjung/pendulum-lab">GitHub 소스</a>
     </div>
@@ -765,7 +800,7 @@
       </span>
     </div>
     <div class="meta">
-      <a href="https://elliotjung.github.io/pendulum-lab/">앱 실행</a>
+      <a href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="footer-launch">앱 실행</a>
       <a href="https://github.com/elliotjung/pendulum-lab">GitHub</a>
       <a href="https://elliotjung.github.io/pendulum-lab/reviewer.html">리뷰어 콘솔</a>
       <a href="https://elliotjung.github.io/pendulum-lab/paper/">미니 논문</a>
