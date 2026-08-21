@@ -60,7 +60,7 @@
     '-validated': '-검증',
     'reproducible by design': '설계부터 재현 가능',
     'Explore the divergence': '발산 탐색',
-    'Scroll to orbit the camera · drag to orbit by hand': '스크롤로 카메라 궤도 이동 · 드래그로 직접 시점 회전',
+    'Scroll for a measured camera orbit · drag to inspect by hand': '스크롤로 절제된 카메라 궤도 이동 · 드래그로 직접 살펴보기',
     'Engine Spec': '엔진 사양',
     'Verified': '검증됨',
     'system': '시스템',
@@ -83,15 +83,15 @@
     '04 · Measure': '04 · 측정',
     'Scroll-Driven Chaos': '스크롤로 움직이는 카오스',
     'Fall through phase space.': '위상공간을 가로질러 내려가다.',
-    'Scroll and the camera orbits a live double-spherical pendulum whose links sweep separate azimuths through real depth. This is not a video loop: both 3D positions and velocities advance in a constrained 240 Hz RK4 solve while the viewpoint circles independently.':
-      '스크롤하면 카메라가 서로 다른 방위각으로 실제 깊이를 가로지르는 이중 구면진자 주위를 회전합니다. 영상 반복 재생이 아닙니다. 시점이 독립적으로 궤도를 도는 동안 두 링크의 3D 위치와 속도는 길이 제약을 적용한 240 Hz RK4 해에서 계속 전진합니다.',
+    'Scroll and the camera follows a measured arc around a live double-spherical pendulum whose links sweep separate azimuths through real depth. This is not a video loop: both 3D positions and velocities advance in a constrained 240 Hz RK4 solve while the viewpoint remains independent of the physics.':
+      '스크롤하면 카메라가 실제 깊이에서 서로 다른 방위각을 훑는 이중 구면진자 둘레를 절제된 호로 이동합니다. 영상 반복 재생이 아닙니다. 3차원 위치와 속도는 길이 제약을 적용한 240 Hz RK4 계산으로 진전하며, 시점은 물리 계산과 독립적으로 유지됩니다.',
     'A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The adjustable trajectory console below lets you explore related initial conditions by hand.':
       '동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 아래의 조절 가능한 궤적 콘솔에서 관련 초기 조건을 직접 탐색할 수 있습니다.',
     'Live equations · spatial links · orbit camera': '실시간 방정식 · 공간 링크 · 궤도 카메라',
     'Static evidence view · motion preference respected': '정적 근거 화면 · 동작 환경설정 존중',
     'One state becomes two futures.': '한 상태가 두 개의 미래가 된다.',
-    'The pale shadow begins only 8×10⁻⁴ radians away. Its orbit peels from the primary trajectory as the sculpture completes a full turn.':
-      '옅은 그림자는 불과 8×10⁻⁴ 라디안 떨어진 곳에서 시작합니다. 조형물이 한 바퀴 도는 동안 그 궤도는 주 궤적에서 갈라집니다.',
+    'The pale shadow begins only 8×10⁻⁴ radians away. Its trajectory peels from the primary state as the measured viewpoint shift reveals their separation.':
+      '옅은 그림자 상태는 불과 8×10⁻⁴ 라디안 차이에서 시작합니다. 절제된 시점 변화가 두 상태의 분리를 드러내면서 그림자 궤적이 기준 상태에서 벗어납니다.',
     'The pale reference state begins only 8×10⁻⁴ radians away. The static traces preserve the two initial conditions without implying that animation is running.':
       '옅은 기준 상태는 불과 8×10⁻⁴ 라디안 떨어진 곳에서 시작합니다. 정적 궤적은 애니메이션이 실행된다고 암시하지 않으면서 두 초기 조건을 보존합니다.',
     'The path becomes the instrument.': '지나온 길 자체가 계측기가 된다.',

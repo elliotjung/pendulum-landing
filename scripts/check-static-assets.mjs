@@ -1034,10 +1034,11 @@ async function checkHeroRuntimeContracts() {
     "progress: 0",
     'Number.isFinite(scrollState.velocity)',
     'pose.cameraAzimuth - start.cameraAzimuth',
-    'cameraTravel > 2',
-    'pose.y < start.y - 0.5',
+    'cameraTravel > 1.5',
+    'pose.y < start.y - 0.2',
     '__hero?: { spatialState: SpatialSnapshot }',
     'azimuthTravel',
+    'toBeLessThan(2.35)',
     'constraintErrors',
     'tangentErrors',
     'toEqual(frozenPhysics?.bob1)'

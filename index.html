@@ -179,7 +179,7 @@
 
     <div class="hero-foot">
       <a class="scroll-cue" href="#orbit-descent" aria-label="Explore the scroll-driven divergence story"><i aria-hidden="true"></i> Explore the divergence</a>
-      <span>Scroll to orbit the camera · drag to orbit by hand</span>
+      <span>Scroll for a measured camera orbit · drag to inspect by hand</span>
     </div>
   </div>
 </header>
@@ -194,7 +194,6 @@
 <!-- ======================== SCROLL-DRIVEN 3D DESCENT ======================== -->
 <section class="orbit-descent" id="orbit-descent" aria-labelledby="orbit-descent-title">
   <div class="orbit-descent-sticky" aria-hidden="true">
-    <div class="orbit-descent-reticle"><i></i><i></i><i></i></div>
     <div class="orbit-descent-meter">
       <span>PHASE DESCENT</span>
       <b data-descent-phase>01 · RELEASE</b>
@@ -214,7 +213,7 @@
         <span class="descent-index">01 · Release</span>
         <span class="kicker">Scroll-Driven Chaos</span>
         <h2 id="orbit-descent-title">Fall through phase space.</h2>
-        <p class="descent-live-copy">Scroll and the camera orbits a live double-spherical pendulum whose links sweep separate azimuths through real depth. This is not a video loop: both 3D positions and velocities advance in a constrained 240 Hz RK4 solve while the viewpoint circles independently.</p>
+        <p class="descent-live-copy">Scroll and the camera follows a measured arc around a live double-spherical pendulum whose links sweep separate azimuths through real depth. This is not a video loop: both 3D positions and velocities advance in a constrained 240 Hz RK4 solve while the viewpoint remains independent of the physics.</p>
         <p class="descent-static-copy">A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The adjustable trajectory console below lets you explore related initial conditions by hand.</p>
         <span class="descent-signal descent-live-copy"><i></i> Live equations · spatial links · orbit camera</span>
         <span class="descent-signal descent-static-copy"><i></i> Static evidence view · motion preference respected</span>
@@ -225,7 +224,7 @@
       <div class="descent-card">
         <span class="descent-index">02 · Divergence</span>
         <h3>One state becomes two futures.</h3>
-        <p class="descent-live-copy">The pale shadow begins only 8×10⁻⁴ radians away. Its orbit peels from the primary trajectory as the sculpture completes a full turn.</p>
+        <p class="descent-live-copy">The pale shadow begins only 8×10⁻⁴ radians away. Its trajectory peels from the primary state as the measured viewpoint shift reveals their separation.</p>
         <p class="descent-static-copy">The pale reference state begins only 8×10⁻⁴ radians away. The static traces preserve the two initial conditions without implying that animation is running.</p>
         <div class="descent-equation"><span>δ(t)</span><strong>≈ δ₀e<sup>λ₁t</sup></strong></div>
       </div>

@@ -160,10 +160,11 @@ section[id],header[id]{ scroll-margin-top:88px; }
     linear-gradient(180deg, rgba(2,4,11,.04) 52%, rgba(2,4,11,.6) 94%),
     url("hero-fallback.webp") center/cover no-repeat;
   opacity:.96;
+  filter:saturate(.58) brightness(.78);
   transition:opacity .8s var(--ease), filter .8s var(--ease);
 }
 .hero-loading .hero-static-art{ will-change:opacity,filter; }
-.hero-live .hero-static-art{ opacity:.08; filter:saturate(.7); }
+.hero-live .hero-static-art{ opacity:.08; filter:saturate(.5) brightness(.66); }
 /* Small screens skip WebGL (low-power path), so the artwork carries the whole
    hero: swap to the lighter 960w encode and keep the pendulum in frame. */
 @media (max-width:760px){
@@ -193,7 +194,7 @@ section[id],header[id]{ scroll-margin-top:88px; }
 }
 .reduced-motion-hero .hero-static-art,
 .low-power-hero .hero-static-art,
-.no-webgl .hero-static-art{ opacity:.94; filter:none; }
+.no-webgl .hero-static-art{ opacity:.94; filter:saturate(.58) brightness(.78); }
 .reduced-motion-hero #hero-canvas,.low-power-hero #hero-canvas,.no-webgl #hero-canvas{ display:none; }
 
 /* A real user control follows the fixed scene through the hero and descent
@@ -538,21 +539,6 @@ body.hero-user-paused .hero-stage-status i{ background:var(--gold); box-shadow:0
   position:sticky; top:0; z-index:1; height:100vh; height:100svh;
   overflow:hidden; pointer-events:none;
 }
-.orbit-descent-reticle{
-  position:absolute; left:72%; top:48%; width:min(44vw,620px); aspect-ratio:1;
-  transform:translate(-50%,-50%) rotate(calc(var(--orbit-scroll) * 486deg));
-  border:1px solid rgba(80,205,245,.11); border-radius:50%;
-  opacity:calc(.24 + var(--orbit-scroll) * .38);
-  transition:opacity .2s linear;
-}
-.orbit-descent-reticle::before,.orbit-descent-reticle::after,
-.orbit-descent-reticle i{
-  content:""; position:absolute; inset:12%; border:1px dashed rgba(153,120,255,.13); border-radius:50%;
-}
-.orbit-descent-reticle::after{ inset:31%; border-style:solid; border-color:rgba(24,212,248,.16); }
-.orbit-descent-reticle i:nth-child(1){ inset:48% -7%; border:0; height:1px; background:linear-gradient(90deg,transparent,rgba(24,212,248,.18),transparent); }
-.orbit-descent-reticle i:nth-child(2){ inset:-7% 48%; border:0; width:1px; background:linear-gradient(180deg,transparent,rgba(157,120,255,.18),transparent); }
-.orbit-descent-reticle i:nth-child(3){ inset:4%; border-color:rgba(208,232,255,.07); transform:rotate(-31deg); }
 .orbit-descent-meter{
   position:absolute; left:clamp(20px,3.2vw,52px); top:50%; transform:translateY(-50%);
   display:grid; grid-template-columns:auto 3px; column-gap:14px; row-gap:7px;
@@ -677,7 +663,7 @@ body.hero-live.orbit-descent-active .hero-static-art{ opacity:.025; filter:satur
 body.orbit-descent-active #hero-canvas{ opacity:1; }
 body.reduced-motion-hero.orbit-descent-active .hero-static-art,
 body.low-power-hero.orbit-descent-active .hero-static-art,
-body.no-webgl.orbit-descent-active .hero-static-art{ opacity:.94; filter:none; }
+body.no-webgl.orbit-descent-active .hero-static-art{ opacity:.94; filter:saturate(.58) brightness(.78); }
 
 /* ============================================================================
    GENERIC SECTION CHROME
@@ -1377,9 +1363,10 @@ a:focus-visible,button:focus-visible{ outline-color:var(--primary); }
     linear-gradient(180deg,rgba(7,9,16,.08) 54%,rgba(7,9,16,.88)),
     url("hero-fallback.webp") center/cover no-repeat;
   opacity:.82;
+  filter:saturate(.58) brightness(.78);
   transition:opacity var(--motion-slow) var(--ease);
 }
-.hero-live .hero-static-art{ opacity:.08; filter:none; }
+.hero-live .hero-static-art{ opacity:.08; filter:saturate(.5) brightness(.66); }
 
 .nav{
   padding-top:calc(16px + var(--safe-top));
@@ -1475,8 +1462,7 @@ a:focus-visible,button:focus-visible{ outline-color:var(--primary); }
 .signal-strip-track .dot{ color:var(--primary); text-shadow:none; }
 
 .orbit-descent{ background:linear-gradient(180deg,rgba(7,9,16,.28),rgba(11,14,23,.96) 90%); }
-.orbit-descent::before{ opacity:.28; }
-.orbit-descent-reticle{ opacity:.18; }
+.orbit-descent::before{ opacity:.06; }
 .descent-card{
   border-color:var(--line-2); border-radius:var(--radius-lg); background:rgba(16,20,31,.96);
   box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; filter:none;
@@ -1684,14 +1670,12 @@ body.reveal-observer-ready [data-stagger] > :not(.is-visible):focus-within{
 }
 
 @media (max-width:980px){
-  .orbit-descent-reticle{ left:62%; width:min(72vw,590px); }
   .orbit-descent-meter{ left:18px; }
   .descent-card{ width:min(500px,62vw); }
 }
 
 @media (max-width:560px){
-  .orbit-descent::before{ background-size:48px 48px; opacity:.65; }
-  .orbit-descent-reticle{ left:50%; top:39%; width:92vw; opacity:calc(.14 + var(--orbit-scroll) * .24); }
+  .orbit-descent::before{ background-size:48px 48px; opacity:.06; }
   .orbit-descent-meter{ left:12px; top:39%; }
   .orbit-descent-meter>span{ display:none; }
   .orbit-descent-meter>b{ min-height:108px; font-size:8px; }

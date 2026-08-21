@@ -19,6 +19,7 @@
     "build:ko": "node scripts/build-ko-page.mjs",
     "assets:icons": "node scripts/generate-icons.mjs",
     "assets:fonts": "python scripts/subset-pretendard.py",
+    "assets:hero-fallback": "node scripts/capture-hero-fallback.mjs",
     "assets:og-card": "node scripts/generate-og-card.mjs",
     "assets:simulator-preview": "node scripts/capture-simulator-assets.mjs",
     "build:hero": "node scripts/bundle-hero.mjs",

@@ -73,10 +73,19 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
     const fallback = document.body.classList.contains('no-webgl') || document.body.classList.contains('low-power-hero') || document.body.classList.contains('reduced-motion-hero');
     if (!gl || canvas.width === 0 || canvas.height === 0) return fallback;
-    const pixels = new Uint8Array(16 * 16 * 4);
-    const probes = [[0.42, 0.5], [0.56, 0.32], [0.66, 0.5], [0.76, 0.68], [0.86, 0.42]];
+    const probeSize = 48;
+    const pixels = new Uint8Array(probeSize * probeSize * 4);
+    const probes = [[0.5, 0.74], [0.58, 0.62], [0.66, 0.52], [0.76, 0.68], [0.82, 0.82]];
     for (const [x, y] of probes) {
-      gl.readPixels(Math.floor(canvas.width * x), Math.floor(canvas.height * y), 16, 16, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      gl.readPixels(
+        Math.max(0, Math.floor(canvas.width * x - probeSize / 2)),
+        Math.max(0, Math.floor(canvas.height * y - probeSize / 2)),
+        probeSize,
+        probeSize,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        pixels
+      );
       for (let i = 0; i < pixels.length; i += 4) {
         if (pixels[i] !== 0 || pixels[i + 1] !== 0 || pixels[i + 2] !== 0 || pixels[i + 3] !== 0) return true;
       }
@@ -359,7 +368,7 @@ test('hero integrates a constrained double-spherical state independently of came
   await page.waitForFunction((startAzimuth) => Math.abs(
     ((window as unknown as { __hero?: { scrollPose: { cameraAzimuth: number } } }).__hero?.scrollPose.cameraAzimuth ?? 0)
       - startAzimuth
-  ) > 2, frozenCamera, { timeout: 20_000 });
+  ) > 0.5, frozenCamera, { timeout: 20_000 });
   const afterCameraOrbit = await readSpatial();
   expect(afterCameraOrbit?.time).toBe(frozenPhysics?.time);
   expect(afterCameraOrbit?.bob1).toEqual(frozenPhysics?.bob1);
@@ -422,10 +431,10 @@ test('scrolling through phase descent orbits the camera around spatial pendulum 
       pose
       && (runtime.__orbitScrollProgress ?? 0) > 0.4
       && pose.progress > start.progress
-      && Math.abs(pose.cameraAzimuth - start.cameraAzimuth) > 2
-      && cameraTravel > 2
+      && Math.abs(pose.cameraAzimuth - start.cameraAzimuth) > 0.5
+      && cameraTravel > 1.5
       && Math.abs(pose.bobDepth) > 0.025
-      && pose.y < start.y - 0.5
+      && pose.y < start.y - 0.2
     );
   }, initial!, { timeout: 45_000 });
   await expect(page.locator('body')).toHaveClass(/orbit-descent-active/);
@@ -443,15 +452,17 @@ test('scrolling through phase descent orbits the camera around spatial pendulum 
     } }
   }).__hero?.scrollPose);
   expect(final?.progress ?? 0).toBeGreaterThan(initial?.progress ?? 0);
-  expect(Math.abs((final?.cameraAzimuth ?? 0) - (initial?.cameraAzimuth ?? 0))).toBeGreaterThan(2);
+  const azimuthTravel = Math.abs((final?.cameraAzimuth ?? 0) - (initial?.cameraAzimuth ?? 0));
+  expect(azimuthTravel).toBeGreaterThan(0.5);
+  expect(azimuthTravel).toBeLessThan(2.35);
   expect(Math.hypot(
     (final?.camera.x ?? 0) - (initial?.camera.x ?? 0),
     (final?.camera.y ?? 0) - (initial?.camera.y ?? 0),
     (final?.camera.z ?? 0) - (initial?.camera.z ?? 0)
-  )).toBeGreaterThan(2);
+  )).toBeGreaterThan(1.5);
   expect(Math.abs(final?.bobDepth ?? 0)).toBeGreaterThan(0.025);
   expect(Math.abs((final?.linkAzimuths?.[0] ?? 0) - (final?.linkAzimuths?.[1] ?? 0))).toBeGreaterThan(0.02);
-  expect(final?.y ?? 0).toBeLessThan((initial?.y ?? 0) - 0.5);
+  expect(final?.y ?? 0).toBeLessThan((initial?.y ?? 0) - 0.2);
   await expect(page.locator('[data-descent-coordinate]')).not.toHaveText('2.34 / 2.72');
   await expect(page.locator('[data-descent-view]')).toHaveText(/^\d{3}° \/ z -?\d+\.\d{2}$/);
 });

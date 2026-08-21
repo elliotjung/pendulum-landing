@@ -199,7 +199,7 @@
 
     <div class="hero-foot">
       <a class="scroll-cue" href="#orbit-descent" aria-label="스크롤로 움직이는 발산 이야기 탐색"><i aria-hidden="true"></i> 발산 탐색</a>
-      <span>스크롤로 카메라 궤도 이동 · 드래그로 직접 시점 회전</span>
+      <span>스크롤로 절제된 카메라 궤도 이동 · 드래그로 직접 살펴보기</span>
     </div>
   </div>
 </header>
@@ -214,7 +214,6 @@
 <!-- ======================== SCROLL-DRIVEN 3D DESCENT ======================== -->
 <section class="orbit-descent" id="orbit-descent" aria-labelledby="orbit-descent-title">
   <div class="orbit-descent-sticky" aria-hidden="true">
-    <div class="orbit-descent-reticle"><i></i><i></i><i></i></div>
     <div class="orbit-descent-meter">
       <span>위상공간 하강</span>
       <b data-descent-phase="">01 · 놓기</b>
@@ -234,7 +233,7 @@
         <span class="descent-index">01 · 놓기</span>
         <span class="kicker">스크롤로 움직이는 카오스</span>
         <h2 id="orbit-descent-title">위상공간을 가로질러 내려가다.</h2>
-        <p class="descent-live-copy">스크롤하면 카메라가 서로 다른 방위각으로 실제 깊이를 가로지르는 이중 구면진자 주위를 회전합니다. 영상 반복 재생이 아닙니다. 시점이 독립적으로 궤도를 도는 동안 두 링크의 3D 위치와 속도는 길이 제약을 적용한 240 Hz RK4 해에서 계속 전진합니다.</p>
+        <p class="descent-live-copy">스크롤하면 카메라가 실제 깊이에서 서로 다른 방위각을 훑는 이중 구면진자 둘레를 절제된 호로 이동합니다. 영상 반복 재생이 아닙니다. 3차원 위치와 속도는 길이 제약을 적용한 240 Hz RK4 계산으로 진전하며, 시점은 물리 계산과 독립적으로 유지됩니다.</p>
         <p class="descent-static-copy">동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 아래의 조절 가능한 궤적 콘솔에서 관련 초기 조건을 직접 탐색할 수 있습니다.</p>
         <span class="descent-signal descent-live-copy"><i></i> 실시간 방정식 · 공간 링크 · 궤도 카메라</span>
         <span class="descent-signal descent-static-copy"><i></i> 정적 근거 화면 · 동작 환경설정 존중</span>
@@ -245,7 +244,7 @@
       <div class="descent-card">
         <span class="descent-index">02 · 발산</span>
         <h3>한 상태가 두 개의 미래가 된다.</h3>
-        <p class="descent-live-copy">옅은 그림자는 불과 8×10⁻⁴ 라디안 떨어진 곳에서 시작합니다. 조형물이 한 바퀴 도는 동안 그 궤도는 주 궤적에서 갈라집니다.</p>
+        <p class="descent-live-copy">옅은 그림자 상태는 불과 8×10⁻⁴ 라디안 차이에서 시작합니다. 절제된 시점 변화가 두 상태의 분리를 드러내면서 그림자 궤적이 기준 상태에서 벗어납니다.</p>
         <p class="descent-static-copy">옅은 기준 상태는 불과 8×10⁻⁴ 라디안 떨어진 곳에서 시작합니다. 정적 궤적은 애니메이션이 실행된다고 암시하지 않으면서 두 초기 조건을 보존합니다.</p>
         <div class="descent-equation"><span>δ(t)</span><strong>≈ δ₀e<sup>λ₁t</sup></strong></div>
       </div>
