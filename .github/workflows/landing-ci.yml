@@ -32,6 +32,22 @@ jobs:
       - run: npm run build:ko
       - run: git diff --exit-code -- assets/scene.bundle.js ko.html
       - run: npm run smoke:ci
+      - name: Confirm the validated source tree is clean
+        shell: bash
+        run: test -z "$(git status --porcelain)"
+      - name: Prepare the exact site that passed the browser gate
+        run: npm run prepare:site
+      - name: Record the validated source commit
+        shell: bash
+        run: git rev-parse HEAD > validated-source-sha.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: landing-validated-site
+          path: |
+            _site
+            validated-source-sha.txt
+          if-no-files-found: error
+          retention-days: 2
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

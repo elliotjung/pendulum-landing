@@ -151,8 +151,8 @@
     <!-- Small-screen section menu. Pure details/summary so it works with CSP
          and without JavaScript; main.js only adds close-on-navigate sugar. -->
     <details class="nav-menu" id="nav-menu">
-      <summary aria-label="섹션 메뉴"><span class="nav-menu-bars" aria-hidden="true"><i></i><i></i><i></i></span></summary>
-      <div class="nav-menu-panel">
+      <summary aria-label="섹션 메뉴" aria-controls="nav-menu-panel" aria-expanded="false"><span class="nav-menu-bars" aria-hidden="true"><i></i><i></i><i></i></span></summary>
+      <div class="nav-menu-panel" id="nav-menu-panel">
         <a href="#console">탐색</a>
         <a href="#capabilities">방법</a>
         <a href="#validation">검증 근거</a>
@@ -334,17 +334,17 @@
     <div class="preview-copy reveal">
       <span class="kicker">라이브 워크벤치</span>
       <h2 data-rise="">티저 목업이 아닌, 실제 랩 화면.</h2>
-      <p>첫 클릭에 준비된 실험 상태가 열립니다: 입문자용 나비 프리셋, 학생용 랴푸노프 판독, 혹은 리뷰어 증거가 곁에 있는 연구 워크벤치.</p>
+      <p>첫 클릭에 준비된 경로가 열립니다: 입문자용 나비 프리셋, 학생용 이론-근거 안내, 혹은 리뷰어 증거가 곁에 있는 연구 워크벤치.</p>
       <div class="recipe-grid" role="group" aria-label="30초 실험 레시피">
         <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;preset=butterfly&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="recipe-beginner">
           <span>입문자</span>
           <strong>나비 운동</strong>
           <em>깔끔한 스타터 프리셋으로 랩 열기.</em>
         </a>
-        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=ko&amp;preset=chaotic&amp;tab=lyap" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-student-lyapunov">
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=ko&amp;preset=chaotic&amp;tab=theory" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-student-theory">
           <span>학생</span>
-          <strong>랴푸노프 판독</strong>
-          <em>카오스 속도 진단으로 바로 이동.</em>
+          <strong>이론에서 근거까지</strong>
+          <em>가정, 방정식, 코드와 검증을 차례로 따라가기.</em>
         </a>
         <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=reproduce&amp;audience=research&amp;lang=ko&amp;preset=periodic&amp;tab=research" data-app-link="" data-cta-goal="reproduce" data-cta-persona="research" data-utm-content="recipe-research-reproduce">
           <span>연구</span>

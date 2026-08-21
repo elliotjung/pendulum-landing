@@ -118,14 +118,14 @@
     // ---- live preview --------------------------------------------------------
     'Live Workbench': '라이브 워크벤치',
     'Real lab screens, not a teaser mockup.': '티저 목업이 아닌, 실제 랩 화면.',
-    'The first click can open a ready-made experiment state: a beginner-safe butterfly preset, a student Lyapunov reading, or the research workbench with reviewer evidence close at hand.':
-      '첫 클릭에 준비된 실험 상태가 열립니다: 입문자용 나비 프리셋, 학생용 랴푸노프 판독, 혹은 리뷰어 증거가 곁에 있는 연구 워크벤치.',
+    'The first click can open a ready-made path: a beginner-safe butterfly preset, a student theory-to-evidence guide, or the research workbench with reviewer evidence close at hand.':
+      '첫 클릭에 준비된 경로가 열립니다: 입문자용 나비 프리셋, 학생용 이론-근거 안내, 혹은 리뷰어 증거가 곁에 있는 연구 워크벤치.',
     'Beginner': '입문자',
     'Butterfly Motion': '나비 운동',
     'Open Lab with the clean starter preset.': '깔끔한 스타터 프리셋으로 랩 열기.',
     'Student': '학생',
-    'Lyapunov Reading': '랴푸노프 판독',
-    'Jump straight to chaos-rate diagnostics.': '카오스 속도 진단으로 바로 이동.',
+    'Theory to Evidence': '이론에서 근거까지',
+    'Follow assumptions, equations, code, and checks.': '가정, 방정식, 코드와 검증을 차례로 따라가기.',
     'Research': '연구',
     'Reviewer Evidence': '리뷰어 증거',
     'Open the persisted research workbench.': '저장된 연구 워크벤치 열기.',

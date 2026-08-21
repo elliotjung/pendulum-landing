@@ -67,6 +67,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run audit
       - name: Validate the simulator tag and immutable commit coordinate
         shell: bash
         run: |
@@ -138,14 +139,14 @@ jobs:
       # dictionary) and the count baked into the og-card pixels follow the
       # dispatched evidence, so a release can never ship stale numbers.
       - run: npm run sync:copy
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run assets:og-card
       - run: npm run build:ko
       - name: Static, accessibility, and browser gate
         env:
           PENDULUM_EXPECTED_SOURCE_COMMIT: ${{ env.EXPECTED_SOURCE_COMMIT }}
         run: npm run check
-      - run: npm run smoke
+      - run: npm run smoke:ci
       - run: npm run lighthouse:lhci
       - name: Commit synchronized release evidence
         shell: bash
@@ -179,3 +180,19 @@ jobs:
             git tag -a "$RELEASE_TAG" -m "Pendulum Lab coordinated release $RELEASE_TAG"
             git push origin "$RELEASE_TAG"
           fi
+      - name: Confirm the validated source tree is clean
+        shell: bash
+        run: test -z "$(git status --porcelain)"
+      - name: Prepare the exact site that passed the producer gate
+        run: npm run prepare:site
+      - name: Record the validated source commit
+        shell: bash
+        run: git rev-parse HEAD > validated-source-sha.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: landing-validated-site
+          path: |
+            _site
+            validated-source-sha.txt
+          if-no-files-found: error
+          retention-days: 2

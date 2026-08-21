@@ -657,20 +657,92 @@
   if (progress) progress.style.transform = 'scaleX(0)';
   if (scrim) scrim.style.opacity = '0';
 
-  // ---- Small-screen menu: close after navigating (works without JS too) ----
+  // ---- Small-screen menu: symmetric surface lifecycle ----------------------
   const navMenu = $('#nav-menu');
   if (navMenu) {
+    const navMenuQuery = window.matchMedia('(max-width: 980px)');
+    const summary = navMenu.querySelector('summary');
+    const panel = navMenu.querySelector('.nav-menu-panel');
+    let menuState = navMenu.open ? 'open' : 'closed';
+    let menuGeneration = 0;
+    let menuTimer = 0;
+
+    function finishMenuClose(generation) {
+      if (generation !== menuGeneration || menuState !== 'closing') return;
+      window.clearTimeout(menuTimer);
+      menuTimer = 0;
+      navMenu.open = false;
+      navMenu.classList.remove('is-opening', 'is-open', 'is-closing');
+      menuState = 'closed';
+    }
+
+    function openMenu() {
+      if (menuState === 'open' || menuState === 'opening') return;
+      menuGeneration += 1;
+      window.clearTimeout(menuTimer);
+      navMenu.open = true;
+      navMenu.classList.remove('is-closing', 'is-open');
+      navMenu.classList.add('is-opening');
+      menuState = 'opening';
+      summary?.setAttribute('aria-expanded', 'true');
+      if (reducedMotionQuery.matches) {
+        navMenu.classList.remove('is-opening');
+        navMenu.classList.add('is-open');
+        menuState = 'open';
+        return;
+      }
+      const generation = menuGeneration;
+      requestAnimationFrame(() => {
+        if (generation !== menuGeneration || menuState !== 'opening') return;
+        navMenu.classList.remove('is-opening');
+        navMenu.classList.add('is-open');
+        menuState = 'open';
+      });
+    }
+
+    function closeMenu({ restoreFocus = false } = {}) {
+      if (menuState === 'closed' || menuState === 'closing') {
+        if (restoreFocus) summary?.focus();
+        return;
+      }
+      const generation = ++menuGeneration;
+      window.clearTimeout(menuTimer);
+      summary?.setAttribute('aria-expanded', 'false');
+      navMenu.classList.remove('is-opening', 'is-open');
+      navMenu.classList.add('is-closing');
+      menuState = 'closing';
+      if (restoreFocus) summary?.focus();
+      if (reducedMotionQuery.matches || !(panel instanceof HTMLElement)) {
+        finishMenuClose(generation);
+        return;
+      }
+      panel.addEventListener('transitionend', (event) => {
+        if (event.target === panel && event.propertyName === 'opacity') finishMenuClose(generation);
+      }, { once: true });
+      // A backgrounded tab may skip transitionend. Keep the lifecycle bounded.
+      menuTimer = window.setTimeout(() => finishMenuClose(generation), 280);
+    }
+
+    summary?.setAttribute('aria-expanded', String(navMenu.open));
+    summary?.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (menuState === 'open' || menuState === 'opening') closeMenu();
+      else openMenu();
+    });
     navMenu.querySelectorAll('a').forEach((link) => {
-      link.addEventListener('click', () => { navMenu.open = false; });
+      link.addEventListener('click', () => closeMenu());
     });
     document.addEventListener('click', (event) => {
-      if (navMenu.open && event.target instanceof Node && !navMenu.contains(event.target)) navMenu.open = false;
+      if (navMenu.open && event.target instanceof Node && !navMenu.contains(event.target)) closeMenu();
     });
     window.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && navMenu.open) {
-        navMenu.open = false;
-        navMenu.querySelector('summary')?.focus();
+        event.preventDefault();
+        closeMenu({ restoreFocus: true });
       }
+    });
+    navMenuQuery.addEventListener?.('change', (event) => {
+      if (!event.matches && navMenu.open) closeMenu();
     });
   }
 

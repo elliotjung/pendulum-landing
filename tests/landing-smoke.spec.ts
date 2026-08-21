@@ -1149,6 +1149,52 @@ test.describe('ko-locale first visit', () => {
   });
 });
 
+test('mobile section menu animates symmetrically and survives rapid reversal', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const menu = page.locator('#nav-menu');
+  const summary = menu.locator('summary');
+  const panel = menu.locator('.nav-menu-panel');
+
+  await expect(summary).toHaveAttribute('aria-controls', 'nav-menu-panel');
+  await expect(summary).toHaveAttribute('aria-expanded', 'false');
+  await summary.click();
+  await expect(menu).toHaveAttribute('open', '');
+  await expect(menu).toHaveClass(/is-open/);
+  await expect(summary).toHaveAttribute('aria-expanded', 'true');
+  await expect(panel).toBeVisible();
+
+  await summary.evaluate((element) => {
+    element.click();
+    element.click();
+    element.click();
+  });
+  await expect(menu).not.toHaveAttribute('open', '');
+  await expect(summary).toHaveAttribute('aria-expanded', 'false');
+  await expect(menu).not.toHaveClass(/is-(?:opening|open|closing)/);
+
+  await summary.click();
+  await expect(menu).toHaveClass(/is-open/);
+  await page.keyboard.press('Escape');
+  await expect(menu).not.toHaveAttribute('open', '');
+  await expect(summary).toBeFocused();
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await summary.click();
+  await expect(menu).toHaveClass(/is-open/);
+  await summary.click();
+  await expect(menu).not.toHaveAttribute('open', '');
+
+  await page.setViewportSize({ width: 800, height: 844 });
+  await summary.click();
+  await expect(menu).toHaveAttribute('open', '');
+  await page.setViewportSize({ width: 1024, height: 844 });
+  await expect(menu).not.toHaveAttribute('open', '');
+  await expect(summary).toHaveAttribute('aria-expanded', 'false');
+  await page.setViewportSize({ width: 800, height: 844 });
+  await expect(menu).not.toHaveAttribute('open', '');
+});
+
 test('shared demo kernel matches main rhsDouble fixtures', async ({ page }) => {
   await page.goto('/');
   const rows = await page.evaluate(async () => {

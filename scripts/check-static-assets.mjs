@@ -254,8 +254,8 @@ async function checkWorkflowTimeoutContracts() {
     {
       file: '.github/workflows/pages.yml',
       job: 'quality-gate',
-      timeout: 120,
-      required: ['npm run smoke:ci', 'npm run lighthouse:lhci']
+      timeout: 10,
+      required: ['actions/download-artifact@', 'validated-source-sha.txt', 'actions/upload-pages-artifact@']
     },
     {
       file: '.github/workflows/cloudflare-pages.yml',
@@ -264,10 +264,16 @@ async function checkWorkflowTimeoutContracts() {
       required: ['--project=chromium --project=mobile-chrome', 'npm run lighthouse:lhci']
     },
     {
+      file: '.github/workflows/evidence-sync.yml',
+      job: 'sync',
+      timeout: 90,
+      required: ['npm run smoke:ci', 'npm run lighthouse:lhci']
+    },
+    {
       file: '.github/workflows/cross-repo-release.yml',
       job: 'gate-and-tag',
       timeout: 90,
-      required: ['npm run smoke', 'npm run lighthouse:lhci']
+      required: ['npm run smoke:ci', 'npm run lighthouse:lhci']
     }
   ];
 
@@ -310,24 +316,44 @@ async function checkPagesDeploymentContract() {
   }
 
   const qualityBlock = source.slice(qualityStart, deployStart);
-  for (const token of ['timeout-minutes: 120', 'npm run smoke:ci', 'npm run lighthouse:lhci', 'actions/upload-pages-artifact@']) {
+  for (const token of [
+    'timeout-minutes: 10',
+    'actions/download-artifact@',
+    'name: landing-validated-site',
+    'run-id: ${{ github.event.workflow_run.id }}',
+    'github-token: ${{ github.token }}',
+    'validated-source-sha.txt',
+    'gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha',
+    'actions/upload-pages-artifact@',
+    'path: validated-handoff/_site'
+  ]) {
     if (!qualityBlock.includes(token)) failures.push(`${workflowPath}: quality-gate must include ${token}`);
   }
-  const orderedTokens = ['npm run smoke:ci', 'npm run lighthouse:lhci', 'actions/upload-pages-artifact@'];
+  const orderedTokens = ['actions/download-artifact@', 'Verify exact artifact provenance', 'actions/upload-pages-artifact@'];
   const positions = orderedTokens.map((token) => qualityBlock.indexOf(token));
   if (positions.some((position) => position < 0) || positions.some((position, index) => index > 0 && position <= positions[index - 1])) {
-    failures.push(`${workflowPath}: smoke and Lighthouse gates must finish before the Pages artifact is uploaded`);
+    failures.push(`${workflowPath}: artifact download and provenance verification must finish before the Pages upload`);
+  }
+  for (const forbidden of ['npm run smoke', 'npm run lighthouse', 'actions/checkout@']) {
+    if (qualityBlock.includes(forbidden)) {
+      failures.push(`${workflowPath}: quality-gate must reuse its producer artifact instead of rerunning ${forbidden}`);
+    }
   }
 
   for (const token of [
     'workflow_run:',
-    'workflows: ["Evidence Sync", "Cross-repository release"]',
+    'workflows: ["Landing CI", "Evidence Sync", "Cross-repository release"]',
     'types: [completed]',
     "github.event.workflow_run.conclusion == 'success'",
     "github.event.workflow_run.head_branch == 'main'",
-    "ref: ${{ github.event_name == 'workflow_run' && 'main' || github.sha }}"
+    'github.event.workflow_run.head_repository.full_name == github.repository',
+    "github.event.workflow_run.name == 'Landing CI'",
+    "github.event.workflow_run.event == 'push'",
+    "github.event.workflow_run.name == 'Evidence Sync'",
+    "github.event.workflow_run.event == 'schedule'",
+    "github.event.workflow_run.name == 'Cross-repository release'"
   ]) {
-    if (!source.includes(token)) failures.push(`${workflowPath}: missing safe generated-commit redeploy contract ${token}`);
+    if (!source.includes(token)) failures.push(`${workflowPath}: missing trusted producer handoff contract ${token}`);
   }
 
   const deployBlock = source.slice(deployStart);
@@ -629,10 +655,13 @@ async function checkSitemap(evidenceSummary) {
 }
 
 async function checkPublishArtifactContract() {
-  const [prepare, packageJson, pages, cloudflare, wrangler, gitignore, cloudflareDocs] = await Promise.all([
+  const [prepare, packageJson, pages, landingCi, evidenceSync, crossRepoRelease, cloudflare, wrangler, gitignore, cloudflareDocs] = await Promise.all([
     readFile(join(root, 'scripts', 'prepare-site.mjs'), 'utf8'),
     readFile(join(root, 'package.json'), 'utf8'),
     readFile(join(root, '.github', 'workflows', 'pages.yml'), 'utf8'),
+    readFile(join(root, '.github', 'workflows', 'landing-ci.yml'), 'utf8'),
+    readFile(join(root, '.github', 'workflows', 'evidence-sync.yml'), 'utf8'),
+    readFile(join(root, '.github', 'workflows', 'cross-repo-release.yml'), 'utf8'),
     readFile(join(root, '.github', 'workflows', 'cloudflare-pages.yml'), 'utf8'),
     readFile(join(root, 'wrangler.toml'), 'utf8'),
     readFile(join(root, '.gitignore'), 'utf8'),
@@ -657,11 +686,24 @@ async function checkPublishArtifactContract() {
   if (!packageJson.includes('"prepare:site": "node scripts/prepare-site.mjs"')) {
     failures.push('package.json: missing deterministic publish-staging command');
   }
-  if (!pages.includes("github.ref == 'refs/heads/main'")) {
-    failures.push('pages workflow: manual dispatch must be restricted to main');
+  const producers = [
+    ['Landing CI', landingCi],
+    ['Evidence Sync', evidenceSync],
+    ['Cross-repository release', crossRepoRelease]
+  ];
+  for (const [name, producer] of producers) {
+    for (const token of [
+      'test -z "$(git status --porcelain)"',
+      'run: npm run prepare:site',
+      'git rev-parse HEAD > validated-source-sha.txt',
+      'name: landing-validated-site',
+      'validated-source-sha.txt'
+    ]) {
+      if (!producer.includes(token)) failures.push(`${name}: publish handoff must include ${token}`);
+    }
   }
-  if (!pages.includes('run: npm run prepare:site') || pages.includes('rsync -a --delete assets/ _site/assets/')) {
-    failures.push('pages workflow: must stage its artifact through the shared publish allowlist');
+  if (!pages.includes('path: validated-handoff/_site') || pages.includes('run: npm run prepare:site')) {
+    failures.push('pages workflow: must deploy only the allowlisted artifact prepared by its validated producer');
   }
   if (!cloudflare.includes('run: npm run prepare:site -- --headers')) {
     failures.push('cloudflare workflow: must stage its artifact through the shared publish allowlist with headers');
