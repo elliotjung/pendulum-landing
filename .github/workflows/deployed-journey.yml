@@ -1,0 +1,52 @@
+name: Deployed cross-repository journey
+
+on:
+  workflow_run:
+    workflows: ["Deploy landing to GitHub Pages"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: landing-deployed-journey-main
+  cancel-in-progress: true
+
+jobs:
+  journey:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PENDULUM_LIVE_LANDING_EN_URL: https://elliotjung.github.io/pendulum-landing/?lang=en
+      PENDULUM_LIVE_LANDING_KO_URL: https://elliotjung.github.io/pendulum-landing/ko.html?lang=ko
+      PENDULUM_LIVE_LAB_URL: https://elliotjung.github.io/pendulum-lab/
+      PENDULUM_JOURNEY_ARTIFACT: reports/deployment/deployed-cross-repo-journey.json
+      PENDULUM_EXPECTED_LANDING_COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+      PENDULUM_JOURNEY_POLL_TIMEOUT_MS: 240000
+      PENDULUM_JOURNEY_POLL_INTERVAL_MS: 5000
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Probe deployed Landing to Lab journey
+        run: npm run test:journey:deployed
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: deployed-cross-repo-journey
+          path: |
+            reports/deployment/deployed-cross-repo-journey.json
+            test-results
+          if-no-files-found: warn

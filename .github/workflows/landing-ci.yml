@@ -52,7 +52,9 @@ jobs:
         if: always()
         with:
           name: landing-playwright-report
-          path: reports/playwright
+          path: |
+            reports/playwright
+            test-results
           if-no-files-found: ignore
 
   lighthouse:

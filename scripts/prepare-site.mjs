@@ -30,6 +30,7 @@ const publicEntries = [
   'sitemap.xml',
   'assets'
 ];
+const sourceOnlyAssets = new Set(['assets/og-card-base.png']);
 if (includeHeaders) publicEntries.push('_headers');
 
 for (const entry of publicEntries) {
@@ -45,10 +46,20 @@ for (const entry of publicEntries) {
 await rm(site, { recursive: true, force: true });
 await mkdir(site, { recursive: true });
 for (const entry of publicEntries) {
-  await cp(join(root, entry), join(site, entry), { recursive: entry === 'assets' });
+  if (entry !== 'assets') {
+    await cp(join(root, entry), join(site, entry));
+    continue;
+  }
+  await cp(join(root, entry), join(site, entry), {
+    recursive: true,
+    filter(source) {
+      const relativeSource = relative(root, source).replaceAll('\\', '/');
+      return !sourceOnlyAssets.has(relativeSource);
+    }
+  });
 }
 
-const forbidden = ['package.json', 'package-lock.json', 'scripts', 'tests', '_headers'];
+const forbidden = ['package.json', 'package-lock.json', 'scripts', 'tests', '_headers', ...sourceOnlyAssets];
 for (const entry of forbidden) {
   if (includeHeaders && entry === '_headers') continue;
   try {

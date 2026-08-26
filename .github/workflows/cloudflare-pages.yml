@@ -48,7 +48,7 @@ jobs:
       - run: npm run build:ko
       - run: git diff --exit-code -- assets/scene.bundle.js ko.html
       - run: npm run check
-      - run: npx playwright test tests/landing-smoke.spec.ts --project=chromium --project=mobile-chrome
+      - run: npx playwright test tests/landing-smoke.spec.ts tests/hero-runtime.spec.ts --project=chromium --project=mobile-chrome --workers=1 --reporter=list
       - run: npm run lighthouse:lhci
       - name: Prepare static mirror artifact
         run: npm run prepare:site -- --headers
@@ -64,10 +64,53 @@ jobs:
           CLOUDFLARE_MIRROR_URL: ${{ vars.CLOUDFLARE_MIRROR_URL }}
         shell: bash
         run: |
-          headers="$(curl --fail --silent --show-error --retry 5 --retry-all-errors \
-            --connect-timeout 10 --max-time 60 \
-            --dump-header - --output /dev/null "$CLOUDFLARE_MIRROR_URL")"
-          printf '%s\n' "$headers" | grep -Eiq '^cross-origin-opener-policy:[[:space:]]*same-origin'
-          printf '%s\n' "$headers" | grep -Eiq '^cross-origin-embedder-policy:[[:space:]]*require-corp'
-          printf '%s\n' "$headers" | grep -Eiq '^x-content-type-options:[[:space:]]*nosniff'
-          printf '## Cloudflare mirror: verified\n\n%s returned the required COOP, COEP, and nosniff headers.\n' "$CLOUDFLARE_MIRROR_URL" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p reports/deployment
+          mirror_ko_url="$(node -e "const u=new URL('ko.html?lang=ko', process.argv[1]); if(u.protocol!=='https:') throw new Error('CLOUDFLARE_MIRROR_URL must use HTTPS'); process.stdout.write(u.href)" "$CLOUDFLARE_MIRROR_URL")"
+          contract_passed=false
+          for attempt in $(seq 1 12); do
+            echo "live mirror contract attempt ${attempt}/12"
+            if ! curl --fail --silent --show-error --retry 5 --retry-all-errors --location \
+              --proto '=https' --proto-redir '=https' \
+              --connect-timeout 10 --max-time 60 \
+              --dump-header reports/deployment/cloudflare-en-headers.txt \
+              --output reports/deployment/cloudflare-en.html \
+              "$CLOUDFLARE_MIRROR_URL"; then
+              echo "EN mirror fetch failed on attempt ${attempt}; retrying the bounded poll" >&2
+              sleep 10
+              continue
+            fi
+            if ! curl --fail --silent --show-error --retry 5 --retry-all-errors --location \
+              --proto '=https' --proto-redir '=https' \
+              --connect-timeout 10 --max-time 60 \
+              --dump-header reports/deployment/cloudflare-ko-headers.txt \
+              --output reports/deployment/cloudflare-ko.html \
+              "$mirror_ko_url"; then
+              echo "KO mirror fetch failed on attempt ${attempt}; retrying the bounded poll" >&2
+              sleep 10
+              continue
+            fi
+            if node scripts/check-deployment-headers.mjs \
+              reports/deployment/cloudflare-header-contract.json \
+              "$CLOUDFLARE_MIRROR_URL" \
+              reports/deployment/cloudflare-en-headers.txt \
+              reports/deployment/cloudflare-en.html \
+              reports/deployment/cloudflare-ko-headers.txt \
+              reports/deployment/cloudflare-ko.html; then
+              contract_passed=true
+              break
+            fi
+            sleep 10
+          done
+          if [ "$contract_passed" != true ]; then
+            echo "Cloudflare mirror did not converge to the exact EN/KO artifact and header contract" >&2
+            exit 1
+          fi
+          printf '## Cloudflare mirror: verified\n\n%s returned the full hardened header contract.\n' "$CLOUDFLARE_MIRROR_URL" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: cloudflare-header-contract
+          path: |
+            reports/deployment
+            test-results
+          if-no-files-found: warn

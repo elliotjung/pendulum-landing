@@ -35,7 +35,7 @@
      anything paints. ko.html is built by scripts/build-ko-page.mjs, so Korean
      visitors get a plain static page (no runtime translation cost). The CSP
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YJ20yxvjGolaMfS/AsWUnwoZxxAFv28eUacHvp7QwNA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YJ20yxvjGolaMfS/AsWUnwoZxxAFv28eUacHvp7QwNA='; style-src 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
 <script id="lang-boot">(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="en"){localStorage.setItem("pendulum-landing/lang","en");return}var s=null;try{s=localStorage.getItem("pendulum-landing/lang")}catch(e){}var ko=(navigator.languages||[navigator.language||""]).some(function(t){return String(t).toLowerCase().indexOf("ko")===0});if(q.get("lang")==="ko"||s==="ko"||(!s&&ko)){var p=q.toString();location.replace("ko.html"+(p?"?"+p:"")+location.hash)}}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E" />
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
@@ -53,10 +53,12 @@
       "@id": "https://elliotjung.github.io/pendulum-landing/#webpage",
       "url": "https://elliotjung.github.io/pendulum-landing/",
       "name": "Pendulum Lab — Order, Undone by Chaos",
-      "description": "Explore nonlinear pendulum dynamics in a browser lab with 1,457 verified tests, SciPy cross-validation, Lyapunov analysis, WebGPU, and reproducible exports.",
+      "description": "Explore nonlinear pendulum dynamics in a browser lab with 1,459 verified tests, SciPy cross-validation, Lyapunov analysis, WebGPU, and reproducible exports.",
       "inLanguage": "en",
-      "dateModified": "2026-08-20",
-      "mainEntity": { "@id": "https://elliotjung.github.io/pendulum-landing/#software" }
+      "dateModified": "2026-08-19",
+      "mainEntity": {
+        "@id": "https://elliotjung.github.io/pendulum-landing/#software"
+      }
     },
     {
       "@type": "SoftwareSourceCode",
@@ -66,23 +68,83 @@
       "programmingLanguage": "TypeScript",
       "runtimePlatform": "Web browser",
       "license": "https://opensource.org/license/mit",
-      "author": { "@type": "Person", "name": "Elliot Jung" },
-      "dateModified": "2026-08-20",
+      "author": {
+        "@type": "Person",
+        "name": "Elliot Jung"
+      },
+      "dateModified": "2026-08-19",
       "applicationCategory": "EducationalApplication",
-      "inLanguage": ["en", "ko"],
+      "inLanguage": [
+        "en",
+        "ko"
+      ],
       "isAccessibleForFree": true,
-      "keywords": ["double pendulum", "nonlinear dynamics", "chaos", "Lyapunov exponent", "numerical integration"],
+      "keywords": [
+        "double pendulum",
+        "nonlinear dynamics",
+        "chaos",
+        "Lyapunov exponent",
+        "numerical integration"
+      ],
+      "additionalProperty": [
+        {
+          "@type": "PropertyValue",
+          "propertyID": "tests.unit",
+          "name": "Unit-test evidence",
+          "value": "validated"
+        },
+        {
+          "@type": "PropertyValue",
+          "propertyID": "validation.scipy.regular",
+          "name": "SciPy regular-orbit evidence",
+          "value": "validated"
+        },
+        {
+          "@type": "PropertyValue",
+          "propertyID": "testing.mutation",
+          "name": "Mutation-testing evidence",
+          "value": "measured"
+        },
+        {
+          "@type": "PropertyValue",
+          "propertyID": "benchmark.energy.methods",
+          "name": "Energy-profile evidence",
+          "value": "measured"
+        },
+        {
+          "@type": "PropertyValue",
+          "propertyID": "gpu.vendor-matrix",
+          "name": "Physical GPU evidence",
+          "value": "measured"
+        },
+        {
+          "@type": "PropertyValue",
+          "propertyID": "publication.release",
+          "name": "Publication evidence",
+          "value": "informational"
+        }
+      ],
       "description": "A browser-native nonlinear pendulum dynamics workbench with reproducible validation evidence.",
-      "mainEntityOfPage": { "@id": "https://elliotjung.github.io/pendulum-landing/#webpage" }
+      "mainEntityOfPage": {
+        "@id": "https://elliotjung.github.io/pendulum-landing/#webpage"
+      }
     },
     {
       "@type": "ScholarlyArticle",
       "headline": "Measuring the gap between the Melnikov threshold and the period-doubling cascade in the damped driven pendulum",
       "isPartOf": "Pendulum Lab",
-      "author": { "@type": "Person", "name": "Elliot Jung" },
+      "author": {
+        "@type": "Person",
+        "name": "Elliot Jung"
+      },
       "url": "https://elliotjung.github.io/pendulum-lab/paper/",
       "inLanguage": "en",
-      "about": ["nonlinear dynamics", "Melnikov theory", "period-doubling", "chaos"]
+      "about": [
+        "nonlinear dynamics",
+        "Melnikov theory",
+        "period-doubling",
+        "chaos"
+      ]
     }
   ]
 }
@@ -193,7 +255,7 @@
 
 <!-- ======================== SCROLL-DRIVEN 3D DESCENT ======================== -->
 <section class="orbit-descent" id="orbit-descent" aria-labelledby="orbit-descent-title">
-  <div class="orbit-descent-sticky" aria-hidden="true">
+  <div class="orbit-descent-sticky" role="group" aria-label="Live 3D phase and camera readout">
     <div class="orbit-descent-meter">
       <span>PHASE DESCENT</span>
       <b data-descent-phase>01 · RELEASE</b>
@@ -202,8 +264,9 @@
     <div class="orbit-descent-coordinates">
       <span>θ₁ / θ₂</span>
       <strong data-descent-coordinate>2.34 / 2.72</strong>
-      <span>VIEW / DEPTH</span>
-      <strong data-descent-view>000° / z 0.00</strong>
+      <span>VIEW / ELEVATION / DEPTH</span>
+      <strong data-descent-view>000° / e +00° / z 0.00</strong>
+      <button type="button" class="hero-view-reset" data-hero-view-reset hidden>Reset 3D view</button>
     </div>
   </div>
 
@@ -595,7 +658,7 @@
     </div>
 
     <div class="valid-grid">
-      <div class="val-board reveal" data-wipe>
+      <div class="val-board reveal" data-wipe tabindex="0" role="region" aria-label="Scrollable validation evidence table">
         <div class="vb-head">
           <span>Release evidence · synchronized and reproducible</span>
           <span class="pass"><i></i> <span data-evidence="energy.profileLabel">14 methods profiled</span></span>
@@ -609,14 +672,14 @@
             <tr>
               <th scope="row" class="name">Best energy profile</th>
               <td><strong data-evidence="energy.bestMethod">DOP853 8(5,3)</strong><small data-evidence="energy.bestDrift">1.612e-14 max relative drift</small></td>
-              <td data-evidence="energy.profileLabel">14 methods profiled</td>
-              <td><span class="evidence-status measured">measured</span></td>
+              <td><span data-evidence="energy.profileLabel">14 methods profiled</span><small class="evidence-caveat" data-claim-caveat="benchmark.energy.methods" data-evidence="claim.benchmark.energy.methods.caveat">Compare each method against its documented order and structure-preservation behavior.</small></td>
+              <td><span class="evidence-status measured" data-claim-status="benchmark.energy.methods" data-evidence="claim.benchmark.energy.methods.level">measured</span></td>
             </tr>
             <tr>
               <th scope="row" class="name">SciPy DOP853 agreement</th>
               <td class="drift" data-evidence="validation.scipyAgreement">~6e-14</td>
-              <td>regular reference cases</td>
-              <td><span class="evidence-status passed">passed</span></td>
+              <td>regular reference cases<small class="evidence-caveat" data-claim-caveat="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.caveat">Chaotic trajectories use time-amplified tolerances and are not claimed bitwise-identical.</small></td>
+              <td><span class="evidence-status validated" data-claim-status="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.level">validated</span></td>
             </tr>
             <tr>
               <th scope="row" class="name">Period-doubling anchor</th>
@@ -627,30 +690,30 @@
             <tr>
               <th scope="row" class="name">Physical GPU matrix</th>
               <td class="drift" data-evidence="gpu.vendorLabel">1 / 3 vendors</td>
-              <td data-evidence="gpu.missingLabel">NVIDIA + AMD pending</td>
-              <td><span class="evidence-status partial">partial</span></td>
+              <td><span data-evidence="gpu.missingLabel">NVIDIA + AMD pending</span><small class="evidence-caveat" data-claim-caveat="gpu.vendor-matrix" data-evidence="claim.gpu.vendor-matrix.caveat">The matrix is intentionally incomplete until missing physical vendor runners upload evidence. Software adapters do not satisfy this contract.</small></td>
+              <td><span class="evidence-status measured" data-claim-status="gpu.vendor-matrix" data-evidence="claim.gpu.vendor-matrix.level">measured</span></td>
             </tr>
             <tr>
               <th scope="row" class="name">Public release chain</th>
               <td data-evidence="publication.availableLabel">GitHub release + Pages live</td>
-              <td data-evidence="publication.missingLabel">npm + Zenodo pending</td>
-              <td><span class="evidence-status partial" data-evidence="publication.statusLabel">partial</span></td>
+              <td><span data-evidence="publication.missingLabel">npm + Zenodo pending</span><small class="evidence-caveat" data-claim-caveat="publication.release" data-evidence="claim.publication.release.caveat">npm registry does not resolve this exact package version. No matching public Zenodo DOI record resolves for Pendulum Lab.</small></td>
+              <td><span class="evidence-status informational" data-claim-status="publication.release" data-evidence="claim.publication.release.level">informational</span></td>
             </tr>
           </tbody>
         </table>
-        <p class="evidence-freshness" data-evidence-freshness role="status">Evidence current · valid through 2 Sept 2026</p>
+        <p class="evidence-freshness" data-evidence-freshness role="status">Evidence current · 2 validated · 3 measured · 1 informational · 0 withheld · valid through 2 Sept 2026</p>
       </div>
 
       <div class="val-side">
         <div class="val-stat reveal">
           <div class="big" data-count="1459" data-decimals="0" data-evidence-count="tests.passed"></div>
-          <div class="cap">Unit tests · all green</div>
-          <p>Plus Chromium, Firefox, WebKit and mobile end-to-end suites, with a machine-readable Stryker aggregate of <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span>.</p>
+          <div class="cap">Unit tests · <span data-claim-status="tests.unit" data-evidence="claim.tests.unit.level">validated</span></div>
+          <p><span data-claim-caveat="tests.unit" data-evidence="claim.tests.unit.caveat">See the evidence ledger for scope and limitations.</span> Plus Chromium, Firefox, WebKit and mobile end-to-end suites, with a machine-readable Stryker aggregate of <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span> (<span data-claim-status="testing.mutation" data-evidence="claim.testing.mutation.level">measured</span>). <span data-claim-caveat="testing.mutation" data-evidence="claim.testing.mutation.caveat">Below the 70% quality target; the 65% regression floor is enforced.</span></p>
         </div>
         <div class="val-stat reveal">
           <div class="big" data-count="6" data-decimals="0" data-prefix="~" data-suffix="e-14" data-evidence="validation.scipyAgreement"></div>
-          <div class="cap">Agreement vs SciPy DOP853</div>
-          <p>Regular orbits agree to ~6e-14 over 20 s; chaotic orbits to the e^{λ₁t}-amplified tolerance floor.</p>
+          <div class="cap">Agreement vs SciPy DOP853 · <span data-claim-status="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.level">validated</span></div>
+          <p>Regular orbits agree to ~6e-14 over 20 s; chaotic orbits to the e^{λ₁t}-amplified tolerance floor. <span data-claim-caveat="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.caveat">Chaotic trajectories use time-amplified tolerances and are not claimed bitwise-identical.</span></p>
         </div>
         <div class="val-stat reveal">
           <div class="big" data-count="1.0664" data-decimals="4" data-evidence-count="validation.periodDoublingComputed"></div>

@@ -14,7 +14,7 @@
     "uuid": "11.1.1"
   },
   "scripts": {
-    "check": "node scripts/check-static-assets.mjs && node scripts/test-lhci-windows-recovery.cjs && node scripts/bundle-hero.mjs --check",
+    "check": "node scripts/check-hero-physics.mjs && node scripts/check-static-assets.mjs && node scripts/test-lhci-windows-recovery.cjs && node scripts/bundle-hero.mjs --check",
     "audit": "npm audit --audit-level=high",
     "build:ko": "node scripts/build-ko-page.mjs",
     "assets:icons": "node scripts/generate-icons.mjs",
@@ -29,8 +29,9 @@
     "lighthouse": "node scripts/run-lighthouse.mjs",
     "lighthouse:lhci": "node scripts/run-lhci.mjs",
     "test": "playwright test",
-    "smoke": "playwright test tests/landing-smoke.spec.ts --project=chromium",
-    "smoke:ci": "playwright test tests/landing-smoke.spec.ts --project=chromium --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=mobile-chrome --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=firefox --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=webkit --workers=1 --reporter=list"
+    "smoke": "playwright test tests/landing-smoke.spec.ts tests/hero-runtime.spec.ts --project=chromium",
+    "smoke:ci": "playwright test tests/landing-smoke.spec.ts tests/hero-runtime.spec.ts --project=chromium --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=mobile-chrome --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=firefox --workers=1 --reporter=list && playwright test tests/landing-smoke.spec.ts --project=webkit --workers=1 --reporter=list",
+    "test:journey:deployed": "playwright test tests/deployed-cross-repo-journey.spec.ts --config=playwright.deployed.config.js"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",

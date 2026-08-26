@@ -464,7 +464,9 @@ test('scrolling through phase descent orbits the camera around spatial pendulum 
   expect(Math.abs((final?.linkAzimuths?.[0] ?? 0) - (final?.linkAzimuths?.[1] ?? 0))).toBeGreaterThan(0.02);
   expect(final?.y ?? 0).toBeLessThan((initial?.y ?? 0) - 0.2);
   await expect(page.locator('[data-descent-coordinate]')).not.toHaveText('2.34 / 2.72');
-  await expect(page.locator('[data-descent-view]')).toHaveText(/^\d{3}° \/ z -?\d+\.\d{2}$/);
+  await expect(page.locator('[data-descent-view]')).toHaveText(
+    /^\d{3}° \/ e [+-]\d{2}° \/ z -?\d+\.\d{2}$/,
+  );
 });
 
 test('prewarm preference changes stay static and restart the same scene module', async ({ page }) => {
@@ -673,6 +675,10 @@ test('expired or malformed evidence is fail-closed and visibly labelled', async 
     summary.tests.total = 9999;
     summary.tests.passed = 9999;
     summary.provenance.expiresAt = '2000-01-01T00:00:00.000Z';
+    if (summary.claimEvidence) {
+      summary.claimEvidence.evidenceExpiresAt = summary.provenance.expiresAt;
+      for (const claim of summary.claimEvidence.claims ?? []) claim.validUntil = summary.provenance.expiresAt;
+    }
     await route.fulfill({ response, json: summary });
   });
   await page.goto('/');
@@ -681,14 +687,99 @@ test('expired or malformed evidence is fail-closed and visibly labelled', async 
   await expect(page.locator('[data-evidence="tests.formatted"]')).toHaveText(staticCount);
 
   await page.unroute('**/assets/evidence-summary.json');
-  await page.route('**/assets/evidence-summary.json', (route) => route.fulfill({
-    contentType: 'application/json',
-    body: JSON.stringify({ schemaVersion: 'unexpected/v99', tests: { total: 9999, passed: 9999 } })
-  }));
+  await page.route('**/assets/evidence-summary.json', async (route) => {
+    const response = await route.fetch();
+    const summary = await response.json();
+    summary.claimEvidence = { schemaVersion: 'pendulum-claim-evidence-surface/v1', loadState: 'loaded', claims: [] };
+    await route.fulfill({ response, json: summary });
+  });
   await page.reload();
   await expect(page.locator('body')).toHaveClass(/evidence-invalid/);
   await expect(page.locator('[data-evidence-freshness]')).toContainText('Evidence unavailable');
-  await expect(page.locator('[data-evidence="tests.formatted"]')).toHaveText(staticCount);
+  await expect(page.locator('body')).toHaveAttribute('data-claim-evidence', 'unavailable');
+  await expect(page.locator('[data-evidence="tests.formatted"]')).toHaveText('withheld');
+  const withheldStatuses = await page.locator('[data-claim-status]').allTextContents();
+  expect(withheldStatuses.length).toBeGreaterThanOrEqual(6);
+  expect(new Set(withheldStatuses)).toEqual(new Set(['withheld']));
+});
+
+test('canonical claim evidence independently withholds only the affected quantified claim', async ({ page }) => {
+  const committed = JSON.parse(
+    await readFile(new URL('../assets/evidence-summary.json', import.meta.url), 'utf8')
+  );
+  const claimIds = [
+    'tests.unit',
+    'validation.scipy.regular',
+    'testing.mutation',
+    'benchmark.energy.methods',
+    'gpu.vendor-matrix',
+    'publication.release'
+  ];
+  const levels: Record<string, string> = {
+    'tests.unit': 'validated',
+    'validation.scipy.regular': 'validated',
+    'testing.mutation': 'measured',
+    'benchmark.energy.methods': 'withheld',
+    'gpu.vendor-matrix': 'measured',
+    'publication.release': 'informational'
+  };
+  const expiresAt = '2099-01-01T00:00:00.000Z';
+  const counts = { withheld: 0, informational: 0, measured: 0, validated: 0, 'publication-ready': 0 };
+  for (const level of Object.values(levels)) counts[level as keyof typeof counts] += 1;
+  const rawClaims = new Map(committed.claims.map((claim: { id: string }) => [claim.id, claim]));
+
+  await page.route('**/assets/evidence-summary.json', async (route) => {
+    const response = await route.fetch();
+    const summary = await response.json();
+    summary.provenance.expiresAt = expiresAt;
+    summary.tests = { ...summary.tests, total: 777, passed: 777, failed: 0, success: true };
+    summary.energy = {
+      ...summary.energy,
+      profiledMethods: 999,
+      bestMethod: 'must-not-render',
+      bestMaxRelativeDrift: 0.123
+    };
+    summary.claimEvidence = {
+      schemaVersion: 'pendulum-claim-evidence-surface/v1',
+      loadState: 'loaded',
+      evidenceSourceCommit: summary.provenance.sourceCommit,
+      evidenceExpiresAt: expiresAt,
+      counts,
+      claims: claimIds.map((id) => ({
+        id,
+        effectiveVisibleLevel: levels[id],
+        validUntil: expiresAt,
+        displayValue: levels[id] === 'withheld'
+          ? null
+          : String((rawClaims.get(id) as { displayValue?: string } | undefined)?.displayValue ?? ''),
+        caveats: [`${id} fixture caveat`]
+      }))
+    };
+    await route.fulfill({ response, json: summary });
+  });
+
+  await page.goto('/');
+  await expect(page.locator('body')).toHaveAttribute('data-claim-evidence', 'canonical');
+  await expect(page.locator('[data-claim-status="tests.unit"]')).toHaveText('validated');
+  await expect(page.locator('[data-evidence="tests.formatted"]')).toHaveText('777');
+  await expect(page.locator('[data-claim-status="benchmark.energy.methods"]')).toHaveText('withheld');
+  for (const key of ['energy.profileLabel', 'energy.bestMethod']) {
+    const values = await page.locator(`[data-evidence="${key}"]`).allTextContents();
+    expect(values.length, key).toBeGreaterThan(0);
+    expect(new Set(values), key).toEqual(new Set(['withheld']));
+  }
+  const structuredClaims = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) => {
+    const graph = scripts.flatMap((script) => JSON.parse(script.textContent || '{}')['@graph'] || []);
+    const source = graph.find((entry) => entry['@type'] === 'SoftwareSourceCode');
+    return Object.fromEntries((source?.additionalProperty || []).map((property) => [property.propertyID, property.value]));
+  });
+  expect(structuredClaims).toMatchObject({
+    'tests.unit': 'validated',
+    'benchmark.energy.methods': 'withheld',
+    'publication.release': 'informational'
+  });
+  await expect(page.locator('[data-claim-status="publication.release"]')).toHaveText('informational');
+  await expect(page.locator('[data-evidence-freshness]')).toContainText('1 withheld');
 });
 
 test('mobile launch CTA stays inside the viewport', async ({ page }) => {
@@ -949,6 +1040,12 @@ for (const route of ['/', '/ko.html?lang=ko']) {
 }
 
 test('discovery metadata and Lab launch contracts stay canonical across EN and KO', async ({ page }) => {
+  const evidence = JSON.parse(await readFile(new URL('../assets/evidence-summary.json', import.meta.url), 'utf8')) as {
+    generatedAt: string;
+    tests: { total: number };
+  };
+  const evidenceDay = evidence.generatedAt.slice(0, 10);
+  expect(evidenceDay).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   const variants = [
     {
       file: new URL('../index.html', import.meta.url),
@@ -1030,16 +1127,20 @@ test('discovery metadata and Lab launch contracts stay canonical across EN and K
 
     const structuredData = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent || '{}')));
     const graph = structuredData.flatMap((entry) => entry['@graph'] || []);
-    expect(graph.some((entry) => (
-      entry['@type'] === 'SoftwareSourceCode' && entry.dateModified === '2026-08-20'
-    ))).toBe(true);
-    expect(graph.some((entry) => (
+    const datedEntries = graph.filter((entry) => Object.hasOwn(entry, 'dateModified'));
+    expect(datedEntries.length).toBeGreaterThanOrEqual(2);
+    expect([...new Set(datedEntries.map((entry) => entry.dateModified))]).toEqual([evidenceDay]);
+    const webPage = graph.find((entry) => (
       entry['@type'] === 'WebPage'
       && entry['@id'] === `${variant.canonical}#webpage`
       && entry.url === variant.canonical
       && entry.inLanguage === variant.lang
-      && entry.dateModified === '2026-08-20'
-    ))).toBe(true);
+      && entry.dateModified === evidenceDay
+    ));
+    expect(webPage).toBeTruthy();
+    const jsonCount = String(webPage.description).match(/([\d,]+) (?:verified |unit )?tests/)?.[1]
+      ?? String(webPage.description).match(/([\d,]+)개 단위 테스트/)?.[1];
+    expect(Number.parseInt(jsonCount?.replaceAll(',', '') ?? '', 10)).toBe(evidence.tests.total);
   }
 });
 

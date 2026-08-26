@@ -7,6 +7,20 @@
 // fixed. Camera orbit is presentation-only and never feeds back into physics.
 // ============================================================================
 import * as THREE from 'three';
+import {
+  HERO_FIXED_STEP,
+  HERO_INITIAL_CONDITIONS,
+  HERO_P1 as P1,
+  HERO_P2 as P2,
+  HERO_SHADOW_INITIAL_CONDITIONS,
+  HERO_V1 as V1,
+  HERO_V2 as V2,
+  createHeroNumericalTracker,
+  createHeroSpatialState,
+  createHeroSpatialWork,
+  heroSpatialDiagnostics,
+  stepHeroSpatialState,
+} from './hero-physics-kernel.js';
 
 const CYAN = new THREE.Color('#72d6e5');
 const VIOLET = new THREE.Color('#8b7cf6');
@@ -26,6 +40,7 @@ const lowMemory = typeof navigator.deviceMemory === 'number' && navigator.device
 
 if (!canvas) throw new Error('hero canvas is missing');
 canvas.setAttribute('aria-hidden', 'true');
+canvas.tabIndex = -1;
 
 let renderer;
 let scene;
@@ -63,13 +78,9 @@ let renderSamples = 0;
 let slowWindows = 0;
 const coordinateReadout = document.querySelector('[data-descent-coordinate]');
 const viewReadout = document.querySelector('[data-descent-view]');
+const viewReset = document.querySelector('[data-hero-view-reset]');
 
 const params = Object.freeze({ m1: 1, m2: 1, l1: 1.14, l2: 1.02, g: 9.81 });
-const SPATIAL_STATE_SIZE = 12;
-const P1 = 0;
-const P2 = 3;
-const V1 = 6;
-const V2 = 9;
 const anchor = new THREE.Vector3(0, 1.55, 0);
 const yAxis = new THREE.Vector3(0, 1, 0);
 const direction = new THREE.Vector3();
@@ -93,15 +104,16 @@ const nearbyPoints = {
   theta1: 0,
   theta2: 0,
 };
-const state = createSpatialState({ theta1: 2.34, theta2: 2.72, phi1: 0.22, phi2: -0.38, phiDot1: 0.42, phiDot2: -0.31 });
-const shadowState = createSpatialState({ theta1: 2.3408, theta2: 2.72, phi1: 0.22, phi2: -0.38, phiDot1: 0.42, phiDot2: -0.31 });
-const work = createSpatialWork();
-const shadowWork = createSpatialWork();
-const constraintSolution = new Float64Array(2);
+const state = createHeroSpatialState(HERO_INITIAL_CONDITIONS, params);
+const shadowState = createHeroSpatialState(HERO_SHADOW_INITIAL_CONDITIONS, params);
+const work = createHeroSpatialWork();
+const shadowWork = createHeroSpatialWork();
+const numericalTracker = createHeroNumericalTracker(state, params);
 const pointer = { x: 0, y: 0, targetX: 0, targetY: 0 };
 let dragging = false;
 let dragStart = 0;
 let manualRotation = 0;
+let manualElevation = 0;
 let dragVelocity = 0;
 let lastPaint = 0;
 let regionObserver = null;
@@ -114,214 +126,13 @@ let contextLost = false;
 let initialized = false;
 let lifecycleListenersBound = false;
 let interactionBound = false;
+let canvasInteractive = false;
 let interactionController = null;
 let visibilityBound = false;
 let disposed = false;
 
 function publishHeroState(nextState) {
   window.dispatchEvent(new CustomEvent('pendulum:hero-state', { detail: { state: nextState } }));
-}
-
-function deterministicRandom(seed = 0x51f15e) {
-  return () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 0x100000000;
-  };
-}
-
-function writeSphericalLink(target, positionOffset, velocityOffset, {
-  theta,
-  phi,
-  thetaDot = 0,
-  phiDot = 0,
-  length,
-}) {
-  const sinTheta = Math.sin(theta);
-  const cosTheta = Math.cos(theta);
-  const sinPhi = Math.sin(phi);
-  const cosPhi = Math.cos(phi);
-  target[positionOffset] = length * sinTheta * cosPhi;
-  target[positionOffset + 1] = -length * cosTheta;
-  target[positionOffset + 2] = length * sinTheta * sinPhi;
-  target[velocityOffset] = length * (cosTheta * cosPhi * thetaDot - sinTheta * sinPhi * phiDot);
-  target[velocityOffset + 1] = length * sinTheta * thetaDot;
-  target[velocityOffset + 2] = length * (cosTheta * sinPhi * thetaDot + sinTheta * cosPhi * phiDot);
-}
-
-function createSpatialState({
-  theta1,
-  theta2,
-  phi1,
-  phi2,
-  thetaDot1 = 0,
-  thetaDot2 = 0,
-  phiDot1 = 0,
-  phiDot2 = 0,
-}) {
-  const next = new Float64Array(SPATIAL_STATE_SIZE);
-  writeSphericalLink(next, P1, V1, {
-    theta: theta1,
-    phi: phi1,
-    thetaDot: thetaDot1,
-    phiDot: phiDot1,
-    length: params.l1,
-  });
-  const second = new Float64Array(6);
-  writeSphericalLink(second, 0, 3, {
-    theta: theta2,
-    phi: phi2,
-    thetaDot: thetaDot2,
-    phiDot: phiDot2,
-    length: params.l2,
-  });
-  for (let axis = 0; axis < 3; axis += 1) {
-    next[P2 + axis] = next[P1 + axis] + second[axis];
-    next[V2 + axis] = next[V1 + axis] + second[3 + axis];
-  }
-  return next;
-}
-
-function createSpatialWork() {
-  return {
-    k1: new Float64Array(SPATIAL_STATE_SIZE),
-    k2: new Float64Array(SPATIAL_STATE_SIZE),
-    k3: new Float64Array(SPATIAL_STATE_SIZE),
-    k4: new Float64Array(SPATIAL_STATE_SIZE),
-    temp: new Float64Array(SPATIAL_STATE_SIZE),
-  };
-}
-
-function solveConstraintPair(a11, a12, a22, b1, b2) {
-  const determinant = Math.max(a11 * a22 - a12 * a12, 1e-12);
-  constraintSolution[0] = (b1 * a22 - b2 * a12) / determinant;
-  constraintSolution[1] = (a11 * b2 - a12 * b1) / determinant;
-}
-
-function spatialDerivative(source, out) {
-  const p1x = source[P1];
-  const p1y = source[P1 + 1];
-  const p1z = source[P1 + 2];
-  const dx = source[P2] - p1x;
-  const dy = source[P2 + 1] - p1y;
-  const dz = source[P2 + 2] - p1z;
-  const v1x = source[V1];
-  const v1y = source[V1 + 1];
-  const v1z = source[V1 + 2];
-  const dvx = source[V2] - v1x;
-  const dvy = source[V2 + 1] - v1y;
-  const dvz = source[V2 + 2] - v1z;
-  const inverseM1 = 1 / params.m1;
-  const inverseM2 = 1 / params.m2;
-  const p1Squared = p1x * p1x + p1y * p1y + p1z * p1z;
-  const dSquared = dx * dx + dy * dy + dz * dz;
-  const coupling = p1x * dx + p1y * dy + p1z * dz;
-  const a11 = p1Squared * inverseM1;
-  const a12 = -coupling * inverseM1;
-  const a22 = dSquared * (inverseM1 + inverseM2);
-  const speed1Squared = v1x * v1x + v1y * v1y + v1z * v1z;
-  const relativeSpeedSquared = dvx * dvx + dvy * dvy + dvz * dvz;
-  solveConstraintPair(
-    a11,
-    a12,
-    a22,
-    -speed1Squared + params.g * p1y,
-    -relativeSpeedSquared,
-  );
-  const lambda1 = constraintSolution[0];
-  const lambda2 = constraintSolution[1];
-
-  out[P1] = v1x;
-  out[P1 + 1] = v1y;
-  out[P1 + 2] = v1z;
-  out[P2] = source[V2];
-  out[P2 + 1] = source[V2 + 1];
-  out[P2 + 2] = source[V2 + 2];
-  out[V1] = (p1x * lambda1 - dx * lambda2) * inverseM1;
-  out[V1 + 1] = -params.g + (p1y * lambda1 - dy * lambda2) * inverseM1;
-  out[V1 + 2] = (p1z * lambda1 - dz * lambda2) * inverseM1;
-  out[V2] = dx * lambda2 * inverseM2;
-  out[V2 + 1] = -params.g + dy * lambda2 * inverseM2;
-  out[V2 + 2] = dz * lambda2 * inverseM2;
-}
-
-function projectSpatialConstraints(source) {
-  const inverseM1 = 1 / params.m1;
-  const inverseM2 = 1 / params.m2;
-  for (let iteration = 0; iteration < 6; iteration += 1) {
-    const p1x = source[P1];
-    const p1y = source[P1 + 1];
-    const p1z = source[P1 + 2];
-    const dx = source[P2] - p1x;
-    const dy = source[P2 + 1] - p1y;
-    const dz = source[P2 + 2] - p1z;
-    const p1Squared = p1x * p1x + p1y * p1y + p1z * p1z;
-    const dSquared = dx * dx + dy * dy + dz * dz;
-    const error1 = 0.5 * (p1Squared - params.l1 * params.l1);
-    const error2 = 0.5 * (dSquared - params.l2 * params.l2);
-    if (Math.max(Math.abs(error1), Math.abs(error2)) < 1e-13) break;
-    const coupling = p1x * dx + p1y * dy + p1z * dz;
-    solveConstraintPair(
-      p1Squared * inverseM1,
-      -coupling * inverseM1,
-      dSquared * (inverseM1 + inverseM2),
-      -error1,
-      -error2,
-    );
-    const lambda1 = constraintSolution[0];
-    const lambda2 = constraintSolution[1];
-    source[P1] += (p1x * lambda1 - dx * lambda2) * inverseM1;
-    source[P1 + 1] += (p1y * lambda1 - dy * lambda2) * inverseM1;
-    source[P1 + 2] += (p1z * lambda1 - dz * lambda2) * inverseM1;
-    source[P2] += dx * lambda2 * inverseM2;
-    source[P2 + 1] += dy * lambda2 * inverseM2;
-    source[P2 + 2] += dz * lambda2 * inverseM2;
-  }
-
-  const p1x = source[P1];
-  const p1y = source[P1 + 1];
-  const p1z = source[P1 + 2];
-  const dx = source[P2] - p1x;
-  const dy = source[P2 + 1] - p1y;
-  const dz = source[P2 + 2] - p1z;
-  const v1x = source[V1];
-  const v1y = source[V1 + 1];
-  const v1z = source[V1 + 2];
-  const dvx = source[V2] - v1x;
-  const dvy = source[V2 + 1] - v1y;
-  const dvz = source[V2 + 2] - v1z;
-  const p1Squared = p1x * p1x + p1y * p1y + p1z * p1z;
-  const dSquared = dx * dx + dy * dy + dz * dz;
-  const coupling = p1x * dx + p1y * dy + p1z * dz;
-  solveConstraintPair(
-    p1Squared * inverseM1,
-    -coupling * inverseM1,
-    dSquared * (inverseM1 + inverseM2),
-    -(p1x * v1x + p1y * v1y + p1z * v1z),
-    -(dx * dvx + dy * dvy + dz * dvz),
-  );
-  const impulse1 = constraintSolution[0];
-  const impulse2 = constraintSolution[1];
-  source[V1] += (p1x * impulse1 - dx * impulse2) * inverseM1;
-  source[V1 + 1] += (p1y * impulse1 - dy * impulse2) * inverseM1;
-  source[V1 + 2] += (p1z * impulse1 - dz * impulse2) * inverseM1;
-  source[V2] += dx * impulse2 * inverseM2;
-  source[V2 + 1] += dy * impulse2 * inverseM2;
-  source[V2 + 2] += dz * impulse2 * inverseM2;
-}
-
-function rk4StepSpatial(source, dt, spatialWork) {
-  const { k1, k2, k3, k4, temp } = spatialWork;
-  spatialDerivative(source, k1);
-  for (let i = 0; i < SPATIAL_STATE_SIZE; i += 1) temp[i] = source[i] + k1[i] * dt * 0.5;
-  spatialDerivative(temp, k2);
-  for (let i = 0; i < SPATIAL_STATE_SIZE; i += 1) temp[i] = source[i] + k2[i] * dt * 0.5;
-  spatialDerivative(temp, k3);
-  for (let i = 0; i < SPATIAL_STATE_SIZE; i += 1) temp[i] = source[i] + k3[i] * dt;
-  spatialDerivative(temp, k4);
-  for (let i = 0; i < SPATIAL_STATE_SIZE; i += 1) {
-    source[i] += dt * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]) / 6;
-  }
-  projectSpatialConstraints(source);
 }
 
 // Soft round sprite shared by every additive point cloud — square GL points
@@ -520,10 +331,11 @@ function pushCurrentTrail() {
 }
 
 function stepSimulation(fixedStep) {
-  rk4StepSpatial(state, fixedStep, work);
-  rk4StepSpatial(shadowState, fixedStep, shadowWork);
+  stepHeroSpatialState(state, fixedStep, work, params);
+  stepHeroSpatialState(shadowState, fixedStep, shadowWork, params);
   simulationTime += fixedStep;
   trailTick += 1;
+  numericalTracker.observe(state, trailTick);
   if (trailTick % (compact ? 4 : 3) === 0) pushCurrentTrail();
 }
 
@@ -536,7 +348,7 @@ function syncTrails() {
 }
 
 function prewarm(generation) {
-  const fixedStep = 1 / 240;
+  const fixedStep = HERO_FIXED_STEP;
   // Land the deterministic capture on a legible, downward-opening pose while
   // retaining enough history to show the preceding chaotic loops.
   // 1,440 steps still fill the longest live trail while halving the number
@@ -683,6 +495,7 @@ function buildScene() {
     document.body.classList.add('no-webgl');
     document.body.dataset.heroFallback = 'context-lost';
     canvas.style.display = 'none';
+    setCanvasInteractive(false);
     window.__heroPainted = true;
     publishHeroState('static');
   });
@@ -767,12 +580,32 @@ function bindInteraction() {
   window.addEventListener('pointerup', finishDrag, { passive: true, signal });
   window.addEventListener('pointercancel', finishDrag, { passive: true, signal });
   window.addEventListener('blur', finishDrag, { signal });
+  canvas.addEventListener('keydown', (event) => {
+    if (!document.body.classList.contains('hero-live')) return;
+    const azimuthStep = THREE.MathUtils.degToRad(event.shiftKey ? 15 : 5);
+    const elevationStep = THREE.MathUtils.degToRad(event.shiftKey ? 10 : 4);
+    if (event.key === 'ArrowLeft') manualRotation -= azimuthStep;
+    else if (event.key === 'ArrowRight') manualRotation += azimuthStep;
+    else if (event.key === 'ArrowUp') {
+      manualElevation = THREE.MathUtils.clamp(manualElevation + elevationStep, -0.38, 0.38);
+    } else if (event.key === 'ArrowDown') {
+      manualElevation = THREE.MathUtils.clamp(manualElevation - elevationStep, -0.38, 0.38);
+    } else if (event.key === 'Home') {
+      resetView();
+    } else return;
+    event.preventDefault();
+    if (!running && initialized) renderFrame({ frozen: true });
+  }, { signal });
+  viewReset?.addEventListener('click', () => {
+    resetView();
+    if (!running && initialized) renderFrame({ frozen: true });
+  }, { signal });
   window.addEventListener('resize', scheduleResize, { passive: true, signal });
   window.visualViewport?.addEventListener('resize', scheduleResize, { passive: true, signal });
 }
 
 function advance(elapsed) {
-  const fixedStep = 1 / 240;
+  const fixedStep = HERO_FIXED_STEP;
   simulationAccumulator += Math.min(elapsed, 0.05) * 0.86;
   let safety = 0;
   while (simulationAccumulator >= fixedStep && safety < 16) {
@@ -803,7 +636,7 @@ function renderFrame({ frozen = false } = {}) {
   const orbitEase = orbitProgress * orbitProgress * (3 - 2 * orbitProgress);
   const targetCameraAzimuth = manualRotation + pointer.x * 0.12
     + orbitEase * SCROLL_ORBIT_RADIANS;
-  const targetCameraElevation = 0.025 - pointer.y * 0.08
+  const targetCameraElevation = 0.025 + manualElevation - pointer.y * 0.08
     + Math.sin(orbitEase * Math.PI) * 0.045;
   const orbitBlend = frozen ? 1 : 1 - Math.exp(-elapsed * 5.2);
   cameraOrbitAzimuth += (targetCameraAzimuth - cameraOrbitAzimuth) * orbitBlend;
@@ -844,7 +677,9 @@ function renderFrame({ frozen = false } = {}) {
     coordinateReadout.textContent = `${wrapAngle(currentPoints.theta1).toFixed(2)} / ${wrapAngle(currentPoints.theta2).toFixed(2)}`;
     if (viewReadout) {
       const bearing = ((THREE.MathUtils.radToDeg(cameraOrbitAzimuth) % 360) + 360) % 360;
-      viewReadout.textContent = `${bearing.toFixed(0).padStart(3, '0')}° / z ${currentPoints.second.z.toFixed(2)}`;
+      const elevation = THREE.MathUtils.radToDeg(cameraOrbitElevation);
+      const elevationLabel = `${elevation >= 0 ? '+' : '-'}${Math.abs(elevation).toFixed(0).padStart(2, '0')}°`;
+      viewReadout.textContent = `${bearing.toFixed(0).padStart(3, '0')}° / e ${elevationLabel} / z ${currentPoints.second.z.toFixed(2)}`;
     }
     lastTelemetryAt = now;
   }
@@ -868,6 +703,7 @@ function renderFrame({ frozen = false } = {}) {
   }
   window.__heroPainted = true;
   document.body.classList.add('hero-live');
+  setCanvasInteractive(true);
 }
 
 function loop(timestamp) {
@@ -892,6 +728,49 @@ function stop() {
   frameId = 0;
 }
 
+function setCanvasInteractive(active) {
+  if (canvasInteractive === active) return;
+  canvasInteractive = active;
+  if (viewReset instanceof HTMLButtonElement) {
+    viewReset.hidden = !active;
+    viewReset.disabled = !active;
+  }
+  if (active) {
+    canvas.removeAttribute('aria-hidden');
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute(
+      'aria-label',
+      document.documentElement.lang === 'ko'
+        ? '실시간 3D 이중 진자. 화살표 키로 시점을 회전하고 Home 키로 초기화합니다.'
+        : 'Live 3D double pendulum. Use arrow keys to orbit the view and Home to reset it.',
+    );
+    canvas.tabIndex = 0;
+    return;
+  }
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas.removeAttribute('role');
+  canvas.removeAttribute('aria-label');
+  canvas.tabIndex = -1;
+}
+
+function resetView() {
+  manualRotation = 0;
+  manualElevation = 0;
+  dragVelocity = 0;
+  pointer.x = 0;
+  pointer.y = 0;
+  pointer.targetX = 0;
+  pointer.targetY = 0;
+}
+
+function nudgeView({ azimuth = 0, elevation = 0 } = {}) {
+  if (!Number.isFinite(azimuth) || !Number.isFinite(elevation)) return false;
+  manualRotation += azimuth;
+  manualElevation = THREE.MathUtils.clamp(manualElevation + elevation, -0.38, 0.38);
+  if (!running && initialized) renderFrame({ frozen: true });
+  return true;
+}
+
 function disposeHero() {
   if (disposed) return;
   disposed = true;
@@ -905,6 +784,7 @@ function disposeHero() {
   interactionBound = false;
   dragging = false;
   canvas.classList.remove('is-dragging');
+  setCanvasInteractive(false);
   regionObserver?.disconnect();
   regionObserver = null;
 
@@ -957,6 +837,7 @@ function invalidateHeroInitialization(nextPhase = 'idle') {
 function showStaticHero() {
   canvas.style.display = 'none';
   document.body.classList.remove('hero-live');
+  setCanvasInteractive(false);
   stop();
   window.__heroPainted = true;
   lifecyclePhase = contextLost ? 'context-lost' : lifecycleUnavailable ? 'unavailable' : 'static';
@@ -1032,6 +913,11 @@ function installHeroApi() {
     pause: stop,
     resume() { syncPlayback(); },
     dispose: disposeHero,
+    resetView() {
+      resetView();
+      if (!running && initialized) renderFrame({ frozen: true });
+    },
+    nudgeView,
     setUserPaused(nextPaused) {
       userPaused = Boolean(nextPaused);
       window.__heroUserPaused = userPaused;
@@ -1042,6 +928,7 @@ function installHeroApi() {
     get running() { return running; },
     get dragging() { return dragging; },
     get quality() { return qualityTier; },
+    get numericalEnvelope() { return numericalTracker.snapshot(); },
     setScrollActive(nextActive) {
       scrollActive = Boolean(nextActive);
       if (!scrollActive) coordinateActiveLastFrame = false;
@@ -1076,6 +963,7 @@ function installHeroApi() {
       const relativeVelocityZ = state[V2 + 2] - state[V1 + 2];
       const link1Length = Math.hypot(state[P1], state[P1 + 1], state[P1 + 2]);
       const link2Length = Math.hypot(link2x, link2y, link2z);
+      const diagnostics = heroSpatialDiagnostics(state, params);
       return {
         time: simulationTime,
         bob1: { x: state[P1], y: state[P1 + 1], z: state[P1 + 2] },
@@ -1087,6 +975,7 @@ function installHeroApi() {
           state[P1] * state[V1] + state[P1 + 1] * state[V1 + 1] + state[P1 + 2] * state[V1 + 2],
           link2x * relativeVelocityX + link2y * relativeVelocityY + link2z * relativeVelocityZ,
         ],
+        energy: diagnostics.energy,
       };
     },
     get divergence() {
@@ -1110,6 +999,7 @@ function failInitialization(reason = 'renderer-initialization') {
   stop();
   regionObserver?.disconnect();
   canvas.style.display = 'none';
+  setCanvasInteractive(false);
   document.body.classList.remove('hero-live');
   document.body.classList.add('no-webgl');
   document.body.dataset.heroFallback = reason;

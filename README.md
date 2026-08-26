@@ -54,7 +54,7 @@ browser laboratory for nonlinear pendulum dynamics.
   bundle generated from the lockfile. `npm run build:hero` refreshes it and the
   static gate enforces its transfer ceiling.
 - `assets/app-preview.png`, responsive WebP variants, and
-  `assets/app-walkthrough.gif` are captured from the simulator with
+  `assets/walkthrough-30s.gif` are captured from the simulator with
   `npm run assets:simulator-preview` while its local server is running.
 - `tests/landing-smoke.spec.ts` - Playwright smoke test for hero/console paint,
   mini-lab controls, deterministic capture mode, serious/critical axe findings,
@@ -79,9 +79,9 @@ browser laboratory for nonlinear pendulum dynamics.
   and Lighthouse audit.
 - `.github/workflows/node-compatibility.yml` - browser-free quick check on every
   supported Node line (22, 24, and 26).
-- `.github/workflows/evidence-sync.yml` - pulls the evidence summary when the
-  simulation repo dispatches `evidence-updated`, re-runs the full gate, and
-  auto-commits the sync (see ADR 0001 in the sim repo's `docs/adr/`).
+- `.github/workflows/evidence-sync.yml` - materializes the exact evidence and
+  demo-kernel bytes from a successful, live-observed Lab Pages handoff, verifies
+  every dispatched hash, re-runs the full gate, and auto-commits the sync.
 
 The deployable pages are static, but two generated assets have mandatory build
 checks: `assets/scene.bundle.js` from `assets/scene.js`, and `ko.html` from the
@@ -91,7 +91,10 @@ routing behavior.
 
 `404.html` supplies the GitHub Pages recovery route. `_headers`,
 `wrangler.toml`, and `docs/cloudflare-pages.md` define the optional Cloudflare
-Pages mirror and its COOP/COEP experiment boundary.
+Pages mirror and its fail-closed response-header contract. GitHub Pages does
+not process `_headers`; the deployed journey records its headers as evidence,
+while the optional mirror is the enforcement target for CSP, framing, HSTS,
+COOP, and COEP.
 
 ## Development
 
@@ -161,11 +164,12 @@ build -> evidence sync -> landing check/smoke -> tag/release.
 
 - Keep generated dependency and Playwright output folders out of git via
   `.gitignore`.
-- Evidence sync is automated: the sim repo dispatches `evidence-updated` on
-  evidence changes and `.github/workflows/evidence-sync.yml` pulls, re-verifies,
-  and commits. The manual path (`npm run evidence:summary` in the main repo,
-  then `node scripts/sync-kernel-manifest.mjs` here) remains as local
-  convenience; CI can compare the two by setting `PENDULUM_LAB_EVIDENCE_PATH`.
+- Evidence sync is automated after successful Lab Mainline and Pages runs. The
+  Lab dispatch contains the exact deployed evidence/kernel bytes, hashes, and
+  producer run ids; this repository has no committed-summary or branch-tip
+  fallback. To recover a missed event, manually rerun Lab `Evidence Dispatch`
+  with the successful Pages run id. Local comparison remains available through
+  `PENDULUM_LAB_EVIDENCE_PATH`, but cannot publish or claim a coordinated sync.
 - After fresh evidence changes, run `npm run sync:changelog`, `npm run
   sync:copy`, `npm run assets:og-card`, and `npm run build:ko` (the static gate
   lists the exact command when something is stale; the cross-repo release

@@ -39,7 +39,7 @@ const html = await readFile(join(root, 'index.html'), 'utf8');
 const evidence = JSON.parse(await readFile(join(root, 'assets', 'evidence-summary.json'), 'utf8'));
 const changelog = JSON.parse(await readFile(join(root, 'assets', 'changelog-highlights.json'), 'utf8'));
 const koreanEvidence = koreanEvidenceFallbacks(evidence);
-const koreanFreshness = evidenceFreshnessText(evidence.provenance?.expiresAt, true);
+const koreanFreshness = evidenceFreshnessText(evidence.provenance?.expiresAt, true, evidence);
 if (!koreanFreshness) {
   console.error('build-ko-page: evidence summary has no usable provenance.expiresAt');
   process.exit(1);

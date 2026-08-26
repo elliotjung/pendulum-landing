@@ -75,7 +75,8 @@
     'Drag to orbit · move to parallax': '드래그로 궤도 회전 · 마우스로 시차 효과',
     // ---- scroll-driven 3D descent -----------------------------------------
     'PHASE DESCENT': '위상공간 하강',
-    'VIEW / DEPTH': '시점 / 깊이',
+    'VIEW / ELEVATION / DEPTH': '시점 / 고도 / 깊이',
+    'Reset 3D view': '3D 시점 초기화',
     '01 · RELEASE': '01 · 놓기',
     '01 · Release': '01 · 놓기',
     '02 · Divergence': '02 · 발산',
@@ -357,6 +358,8 @@
     ['a.nav-launch', 'aria-label', 'Pendulum Lab 시뮬레이션 열기'],
     ['#nav-menu summary', 'aria-label', '섹션 메뉴'],
     ['.hero-foot .scroll-cue', 'aria-label', '스크롤로 움직이는 발산 이야기 탐색'],
+    ['.orbit-descent-sticky', 'aria-label', '실시간 3D 위상 및 카메라 정보'],
+    ['.val-board', 'aria-label', '가로로 스크롤할 수 있는 검증 근거 표'],
     ['.console-readouts', 'aria-label', '실시간 콘솔 판독'],
     ['.orbit-controls', 'aria-label', '미니 실험실 조절기'],
     ['#orbit-theta', 'aria-valuetext', '2.18 라디안'],

@@ -202,11 +202,13 @@ async function replacePair(kernelBytes, manifestBytes, evidenceCoordinate, dispa
   }
 }
 
-async function materializeDispatchedPair() {
+async function materializeDispatchedPair({ requireReleaseTag }) {
   const evidenceCoordinate = await readEvidence();
-  const releaseTag = requiredEnvironment('RELEASE_TAG');
-  if (releaseTag !== `v${evidenceCoordinate.packageVersion}`) {
-    throw new Error('RELEASE_TAG does not match evidence provenance.packageVersion');
+  if (requireReleaseTag) {
+    const releaseTag = requiredEnvironment('RELEASE_TAG');
+    if (releaseTag !== `v${evidenceCoordinate.packageVersion}`) {
+      throw new Error('RELEASE_TAG does not match evidence provenance.packageVersion');
+    }
   }
   const expectedSourceCommit = requiredEnvironment('EXPECTED_SOURCE_COMMIT');
   requireLowerHex('EXPECTED_SOURCE_COMMIT', expectedSourceCommit, 40);
@@ -239,10 +241,17 @@ async function verifyCurrentPair() {
 
 try {
   const modes = process.argv.slice(2);
-  if (modes.length !== 1 || !['--materialize-dispatched', '--verify-current'].includes(modes[0])) {
-    throw new Error('usage: node scripts/sync-kernel-manifest.mjs --materialize-dispatched|--verify-current');
+  if (
+    modes.length !== 1
+    || !['--materialize-dispatched', '--materialize-handoff', '--verify-current'].includes(modes[0])
+  ) {
+    throw new Error(
+      'usage: node scripts/sync-kernel-manifest.mjs '
+        + '--materialize-dispatched|--materialize-handoff|--verify-current',
+    );
   }
-  if (modes[0] === '--materialize-dispatched') await materializeDispatchedPair();
+  if (modes[0] === '--materialize-dispatched') await materializeDispatchedPair({ requireReleaseTag: true });
+  else if (modes[0] === '--materialize-handoff') await materializeDispatchedPair({ requireReleaseTag: false });
   else await verifyCurrentPair();
 } catch (error) {
   console.error(`sync-kernel-manifest: ${error instanceof Error ? error.message : String(error)}`);
