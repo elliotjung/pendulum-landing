@@ -29,6 +29,28 @@ const env = {
     : {})
 };
 
+// GitHub-hosted runners consistently pay a one-time Chrome/Lighthouse startup
+// penalty on the first document (and sometimes the first locale). Calibrate the
+// runtime with the existing independent three-run median gate before LHCI's
+// stricter pessimistic gate. This keeps every measured LHCI run accountable
+// without lowering any release threshold to accommodate host cold-start noise.
+if (process.env.CI === 'true' && process.env.PENDULUM_LHCI_SKIP_CALIBRATION !== '1') {
+  console.log('[lhci] Calibrating the cold CI runtime before the pessimistic release gate...');
+  const calibration = spawn(process.execPath, [join(root, 'scripts', 'run-lighthouse.mjs')], {
+    cwd: root,
+    env: { ...env, LIGHTHOUSE_PORT: '4176' },
+    stdio: 'inherit',
+    windowsHide: true
+  });
+  const calibrationResult = await waitForChild(calibration);
+  if (calibrationResult.signal || calibrationResult.code !== 0) {
+    const reason = calibrationResult.signal
+      ? `signal ${calibrationResult.signal}`
+      : `exit code ${calibrationResult.code ?? 1}`;
+    throw new Error(`Lighthouse CI calibration failed with ${reason}.`);
+  }
+}
+
 const child = spawn(process.execPath, [lhciCli, 'autorun', ...process.argv.slice(2)], {
   cwd: root,
   env,
@@ -36,10 +58,7 @@ const child = spawn(process.execPath, [lhciCli, 'autorun', ...process.argv.slice
   windowsHide: true
 });
 
-const result = await new Promise((resolve, reject) => {
-  child.once('error', reject);
-  child.once('exit', (code, signal) => resolve({ code, signal }));
-});
+const result = await waitForChild(child);
 
 let cleanupFailed = false;
 if (isWindows) {
@@ -71,6 +90,13 @@ async function resetRuntimeTemp({ recreate = true } = {}) {
     throw new Error(`${runtimeTemp} still exists after recursive cleanup`);
   }
   if (recreate) await mkdir(runtimeTemp, { recursive: true });
+}
+
+function waitForChild(child) {
+  return new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.once('exit', (code, signal) => resolve({ code, signal }));
+  });
 }
 
 async function exists(target) {

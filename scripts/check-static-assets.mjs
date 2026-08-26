@@ -937,6 +937,14 @@ async function checkLighthouseLanguageMatrix() {
   if (!runner.includes("{ id: 'en'") || !runner.includes("{ id: 'ko'")) {
     failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must retain distinct EN/KO summaries');
   }
+  const lhciRunner = await readFile(join(root, 'scripts', 'run-lhci.mjs'), 'utf8');
+  if (
+    !lhciRunner.includes("process.env.CI === 'true'")
+    || !lhciRunner.includes("join(root, 'scripts', 'run-lighthouse.mjs')")
+    || !lhciRunner.includes("LIGHTHOUSE_PORT: '4176'")
+  ) {
+    failures.push('scripts/run-lhci.mjs: CI must calibrate both locales before the pessimistic LHCI gate');
+  }
 }
 
 async function checkDemoKernelContracts() {
