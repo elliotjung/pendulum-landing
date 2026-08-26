@@ -1,8 +1,8 @@
 {
   "schemaVersion": "pendulum-evidence-summary/v1",
-  "generatedAt": "2026-08-19T23:51:41.953Z",
+  "generatedAt": "2026-08-26T02:30:53.828Z",
   "sourceReports": {
-    "vitestResults": "reports/vitest-results.json",
+    "vitestResults": "reports/vitest-public-results.json",
     "reviewerKitManifest": "reports/reviewer-kit-manifest.json",
     "publicationStatus": "reports/publication-status.json",
     "literatureAnchors": "reports/literature-anchors.json",
@@ -11,28 +11,38 @@
     "mutationAggregate": "reports/mutation-aggregate.json",
     "energyBenchmark": "reports/energy-benchmark.json"
   },
+  "sourceReportSha256": {
+    "reports/vitest-public-results.json": "695cac558344331112dde5a049b68b9b3a07b92f09596b71fcd721e2a4670818",
+    "reports/reviewer-kit-manifest.json": "42074596fe2d85fd7d83195068976891e9b2a7159defaf607eaceed7e76dd492",
+    "reports/publication-status.json": "fda279eaf78aeee9089c0c7854bbdb41258e755b3c2f0036f9a61b550c808c5b",
+    "reports/literature-anchors.json": "ad9f3d71b09e27dbc1dd3a81fdcb8b3233a3b7bbf888e8174e9a4652920aa957",
+    "reports/cross-validation.json": "0c6098f9af933bb22a65e885dcc95abbbc932e768c5231386a2d2da0e20b18b0",
+    "reports/gpu-adapter-matrix.json": "2dfaeed3242cc10195a98f20156906d71ce1074db71f7eb2db5ff2a8d9318ba6",
+    "reports/mutation-aggregate.json": "df55d143213c022db1bb8058a24d2d198fa228c81e660acfb31c9c913acee9fb",
+    "reports/energy-benchmark.json": "fbc290cf11a023024bdeabe5d089e84078e67e5e09aac5064b8b811f18c77351"
+  },
   "provenance": {
-    "sourceCommit": "e569156565857216198fe8161615a04bf8f13183",
+    "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
     "packageVersion": "10.36.0",
     "lockfileSha256": "c19b38e230056a32b42bc9189720031accb0c214ccee7fa7c590578936ba0d33",
     "dirtyWorktree": false,
     "expiresAfterDays": 14,
-    "expiresAt": "2026-09-02T23:51:41.953Z"
+    "expiresAt": "2026-09-09T02:30:53.828Z"
   },
   "tests": {
-    "total": 1459,
-    "passed": 1459,
+    "total": 1597,
+    "passed": 1597,
     "failed": 0,
-    "suites": 620,
-    "files": 202,
+    "suites": 662,
+    "files": 219,
     "success": true,
-    "generatedAt": "2026-08-19T23:49:45.628Z",
-    "passLabel": "1459 / 1459 pass"
+    "generatedAt": "2026-08-26T02:20:19.005Z",
+    "passLabel": "1597 / 1597 pass"
   },
   "validation": {
     "scipyAgreement": {
-      "regularMaxDivergence": 5.651035195342047e-14,
-      "display": "~6e-14"
+      "regularMaxDivergence": 5.3512749786932545e-14,
+      "display": "~5e-14"
     },
     "periodDoubling": {
       "computed": 1.0663715404102452,
@@ -61,7 +71,7 @@
     "noCoverage": 293
   },
   "energy": {
-    "profiledMethods": 14,
+    "profiledMethods": 16,
     "stepsPerMethod": 100000,
     "bestMethod": "DOP853 8(5,3)",
     "bestMaxRelativeDrift": 1.6121085048732585e-14
@@ -86,36 +96,40 @@
     "caveat": "The matrix is intentionally incomplete until missing physical vendor runners upload evidence. Software adapters do not satisfy this contract."
   },
   "publication": {
-    "status": "partial",
+    "status": "failed",
     "npmPublished": false,
     "zenodoPublished": false,
     "zenodoDoi": null,
-    "githubReleaseUrl": "https://github.com/elliotjung/pendulum-lab/releases/tag/v10.35.0",
+    "githubReleaseUrl": null,
     "pagesUrl": "https://elliotjung.github.io/pendulum-lab/reviewer.html",
     "caveats": [
-      "npm registry does not resolve this exact package version.",
-      "No matching public Zenodo DOI record resolves for Pendulum Lab."
+      "npm registry does not resolve metadata for this exact package name and version.",
+      "No public Pendulum Lab Zenodo DOI record has metadata.version matching this exact package version.",
+      "GitHub release v10.36.0 and its resolved source commit are not both publicly verifiable.",
+      "Published Pages manifest/evidence does not bind to the exact release source commit and package version."
     ]
   },
   "claims": [
     {
       "id": "tests.unit",
-      "displayValue": "1459 / 1459 pass",
+      "displayValue": "1597 / 1597 pass",
       "status": "passed",
       "uncertainty": null,
-      "sourceReport": "reports/vitest-results.json",
-      "sourceCommit": "e569156565857216198fe8161615a04bf8f13183",
+      "sourceReport": "reports/vitest-public-results.json",
+      "evidenceGeneratedAt": "2026-08-26T02:20:19.005Z",
+      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
       "caveat": null,
       "reproduce": "npm run verify",
       "publicUrl": null
     },
     {
       "id": "validation.scipy.regular",
-      "displayValue": "~6e-14",
+      "displayValue": "~5e-14",
       "status": "passed",
       "uncertainty": "Maximum observed divergence for regular reference cases",
       "sourceReport": "reports/cross-validation.json",
-      "sourceCommit": "e569156565857216198fe8161615a04bf8f13183",
+      "evidenceGeneratedAt": "2026-08-26T02:20:17.135Z",
+      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
       "caveat": "Chaotic trajectories use time-amplified tolerances and are not claimed bitwise-identical.",
       "reproduce": "npm run validate:cross",
       "publicUrl": null
@@ -126,18 +140,20 @@
       "status": "low",
       "uncertainty": null,
       "sourceReport": "reports/mutation-aggregate.json",
-      "sourceCommit": "e569156565857216198fe8161615a04bf8f13183",
+      "evidenceGeneratedAt": "2026-07-03T16:45:41.502Z",
+      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
       "caveat": "Below the 70% quality target; the 65% regression floor is enforced.",
       "reproduce": "npm run mutation:aggregate -- reports/mutation-shards --out-dir reports --break 65 --low 70 --high 85",
       "publicUrl": null
     },
     {
       "id": "benchmark.energy.methods",
-      "displayValue": "14 methods profiled",
+      "displayValue": "16 methods profiled",
       "status": "measured",
       "uncertainty": "Method-specific drift; no universal pass envelope",
       "sourceReport": "reports/energy-benchmark.json",
-      "sourceCommit": "e569156565857216198fe8161615a04bf8f13183",
+      "evidenceGeneratedAt": "2026-08-26T02:22:54.500Z",
+      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
       "caveat": "Compare each method against its documented order and structure-preservation behavior.",
       "reproduce": "npm run benchmark:energy",
       "publicUrl": null
@@ -148,18 +164,20 @@
       "status": "partial",
       "uncertainty": null,
       "sourceReport": "reports/gpu-adapter-matrix.json",
-      "sourceCommit": "e569156565857216198fe8161615a04bf8f13183",
+      "evidenceGeneratedAt": "2026-07-10T09:29:21.172Z",
+      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
       "caveat": "The matrix is intentionally incomplete until missing physical vendor runners upload evidence. Software adapters do not satisfy this contract.",
       "reproduce": "npm run benchmark:gpu-matrix",
       "publicUrl": null
     },
     {
       "id": "publication.release",
-      "displayValue": "partial",
-      "status": "partial",
+      "displayValue": "failed",
+      "status": "failed",
       "uncertainty": null,
       "sourceReport": "reports/publication-status.json",
-      "sourceCommit": "e569156565857216198fe8161615a04bf8f13183",
+      "evidenceGeneratedAt": "2026-08-26T02:30:23.117Z",
+      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
       "caveat": "npm registry does not resolve this exact package version. No matching public Zenodo DOI record resolves for Pendulum Lab.",
       "reproduce": "npm run release:status",
       "publicUrl": "https://elliotjung.github.io/pendulum-lab/reviewer.html"
@@ -190,9 +208,209 @@
     {
       "id": "release-attestation",
       "label": "release attestation verification",
-      "status": "complete",
+      "status": "blocked-external",
       "command": "npm run release:verify-attestations",
-      "note": "GitHub release exists; attestation verification remains the release gate."
+      "note": "Requires a published GitHub release."
     }
-  ]
+  ],
+  "claimEvidence": {
+    "schemaVersion": "pendulum-claim-evidence-surface/v1",
+    "evaluatedAt": "2026-08-26T02:30:53.828Z",
+    "loadState": "loaded",
+    "evidenceGeneratedAt": "2026-08-26T02:30:53.828Z",
+    "evidenceSourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
+    "evidenceExpiresAt": "2026-09-09T02:30:53.828Z",
+    "counts": {
+      "withheld": 1,
+      "informational": 2,
+      "measured": 1,
+      "validated": 2,
+      "publication-ready": 0
+    },
+    "claims": [
+      {
+        "id": "tests.unit",
+        "statement": "Vitest pass totals recorded for the exact source commit and dependency lock named by the evidence summary.",
+        "maturity": "validated",
+        "defaultVisibleLevel": "validated",
+        "effectiveVisibleLevel": "validated",
+        "validity": "current",
+        "validFrom": "2026-08-26T02:20:19.005Z",
+        "validUntil": "2026-09-09T02:20:19.005Z",
+        "displayValue": "1597 / 1597 pass",
+        "evidenceStatus": "passed",
+        "sourceArtifact": "reports/vitest-public-results.json",
+        "sourceArtifactSha256": "695cac558344331112dde5a049b68b9b3a07b92f09596b71fcd721e2a4670818",
+        "reproduce": "npm run verify",
+        "limitationIds": [
+          "L18"
+        ],
+        "caveats": [
+          "Windows headless WebKit audio instability is environment evidence; user-facing audio needs a fallback and an explicit browser matrix."
+        ],
+        "downgradeReasons": []
+      },
+      {
+        "id": "validation.scipy.regular",
+        "statement": "Maximum trajectory divergence observed only across the regular SciPy reference cases in the cross-validation report.",
+        "maturity": "validated",
+        "defaultVisibleLevel": "validated",
+        "effectiveVisibleLevel": "validated",
+        "validity": "current",
+        "validFrom": "2026-08-26T02:20:17.135Z",
+        "validUntil": "2026-09-09T02:20:17.135Z",
+        "displayValue": "~5e-14",
+        "evidenceStatus": "passed",
+        "sourceArtifact": "reports/cross-validation.json",
+        "sourceArtifactSha256": "0c6098f9af933bb22a65e885dcc95abbbc932e768c5231386a2d2da0e20b18b0",
+        "reproduce": "npm run validate:cross",
+        "limitationIds": [
+          "L15",
+          "L16",
+          "L17"
+        ],
+        "caveats": [
+          "Chaotic trajectories use time-amplified tolerances and are not claimed bitwise-identical.",
+          "The flagship study centers one frequency, uses a restricted scan and warm-started attractor branch, may miss coexisting basins, and uses first-order Melnikov theory.",
+          "The independent Python check uses coarser steps and finite-difference monodromy, supporting tolerance-level reproduction rather than bitwise equality.",
+          "MATLAB validation is optional and unpinned; any release claim using it must pin release, toolbox, script, and checksum manifests."
+        ],
+        "downgradeReasons": []
+      },
+      {
+        "id": "testing.mutation",
+        "statement": "Aggregate mutation score for the committed mutation shards under the repository's 65 percent regression floor.",
+        "maturity": "research",
+        "defaultVisibleLevel": "validated",
+        "effectiveVisibleLevel": "informational",
+        "validity": "expired",
+        "validFrom": "2026-07-03T16:45:41.502Z",
+        "validUntil": "2026-07-17T16:45:41.502Z",
+        "displayValue": "65.32%",
+        "evidenceStatus": "low",
+        "sourceArtifact": "reports/mutation-aggregate.json",
+        "sourceArtifactSha256": "df55d143213c022db1bb8058a24d2d198fa228c81e660acfb31c9c913acee9fb",
+        "reproduce": "npm run mutation:aggregate -- reports/mutation-shards --out-dir reports --break 65 --low 70 --high 85",
+        "limitationIds": [],
+        "caveats": [
+          "Expired or undated mutation evidence cannot retain a validated public level.",
+          "A mutation score below the quality target remains a measurement, not a validated quality claim.",
+          "Below the 70% quality target; the 65% regression floor is enforced."
+        ],
+        "downgradeReasons": [
+          {
+            "input": "evidence-freshness",
+            "value": "expired",
+            "to": "informational",
+            "reason": "Expired or undated mutation evidence cannot retain a validated public level."
+          },
+          {
+            "input": "mutation-status",
+            "value": "low",
+            "to": "measured",
+            "reason": "A mutation score below the quality target remains a measurement, not a validated quality claim."
+          }
+        ]
+      },
+      {
+        "id": "benchmark.energy.methods",
+        "statement": "Count of integrator methods profiled by the committed energy benchmark at its recorded horizon and step policy.",
+        "maturity": "research",
+        "defaultVisibleLevel": "measured",
+        "effectiveVisibleLevel": "measured",
+        "validity": "current",
+        "validFrom": "2026-08-26T02:22:54.500Z",
+        "validUntil": "2026-09-09T02:22:54.500Z",
+        "displayValue": "16 methods profiled",
+        "evidenceStatus": "measured",
+        "sourceArtifact": "reports/energy-benchmark.json",
+        "sourceArtifactSha256": "fbc290cf11a023024bdeabe5d089e84078e67e5e09aac5064b8b811f18c77351",
+        "reproduce": "npm run benchmark:energy",
+        "limitationIds": [],
+        "caveats": [
+          "Compare each method against its documented order and structure-preservation behavior."
+        ],
+        "downgradeReasons": []
+      },
+      {
+        "id": "gpu.vendor-matrix",
+        "statement": "Physical GPU vendors with accepted evidence rows under the committed adapter-matrix promotion contract.",
+        "maturity": "experimental",
+        "defaultVisibleLevel": "validated",
+        "effectiveVisibleLevel": "informational",
+        "validity": "expired",
+        "validFrom": "2026-07-10T09:29:21.172Z",
+        "validUntil": "2026-07-24T09:29:21.172Z",
+        "displayValue": "1 / 3 vendors",
+        "evidenceStatus": "partial",
+        "sourceArtifact": "reports/gpu-adapter-matrix.json",
+        "sourceArtifactSha256": "2dfaeed3242cc10195a98f20156906d71ce1074db71f7eb2db5ff2a8d9318ba6",
+        "reproduce": "npm run benchmark:gpu-matrix",
+        "limitationIds": [
+          "L01",
+          "L02",
+          "L03",
+          "L04"
+        ],
+        "caveats": [
+          "Expired or undated driver evidence cannot retain a validated hardware level.",
+          "Partial vendor coverage is a measured subset and cannot imply complete GPU certification.",
+          "The matrix is intentionally incomplete until missing physical vendor runners upload evidence. Software adapters do not satisfy this contract.",
+          "Physical GPU evidence currently covers Intel only; NVIDIA or AMD behavior and complete vendor certification must not be inferred.",
+          "The N-chain GPU path is planar N at most eight and hybrid; nonlinear trajectories and Jacobian tapes remain CPU f64, so it is not a full-GPU trajectory implementation.",
+          "The AssemblyScript f64 SIMD N-chain path remains an unpromoted candidate until parity and speedup evidence satisfy its promotion gate.",
+          "SharedArrayBuffer side-plot claims require Cloudflare mirror COOP and COEP headers plus a positive crossOriginIsolated deployment probe."
+        ],
+        "downgradeReasons": [
+          {
+            "input": "evidence-freshness",
+            "value": "expired",
+            "to": "informational",
+            "reason": "Expired or undated driver evidence cannot retain a validated hardware level."
+          },
+          {
+            "input": "gpu-status",
+            "value": "partial",
+            "to": "measured",
+            "reason": "Partial vendor coverage is a measured subset and cannot imply complete GPU certification."
+          }
+        ]
+      },
+      {
+        "id": "publication.release",
+        "statement": "Public availability status of the exact package version, GitHub release, reviewer Pages site, and Zenodo record.",
+        "maturity": "research",
+        "defaultVisibleLevel": "publication-ready",
+        "effectiveVisibleLevel": "withheld",
+        "validity": "current",
+        "validFrom": "2026-08-26T02:30:23.117Z",
+        "validUntil": "2026-09-09T02:30:23.117Z",
+        "displayValue": null,
+        "evidenceStatus": "failed",
+        "sourceArtifact": "reports/publication-status.json",
+        "sourceArtifactSha256": "fda279eaf78aeee9089c0c7854bbdb41258e755b3c2f0036f9a61b550c808c5b",
+        "reproduce": "npm run release:status",
+        "limitationIds": [
+          "L04",
+          "L17",
+          "L18"
+        ],
+        "caveats": [
+          "Failed or unavailable endpoint evidence cannot support a publication claim.",
+          "npm registry does not resolve this exact package version. No matching public Zenodo DOI record resolves for Pendulum Lab.",
+          "SharedArrayBuffer side-plot claims require Cloudflare mirror COOP and COEP headers plus a positive crossOriginIsolated deployment probe.",
+          "MATLAB validation is optional and unpinned; any release claim using it must pin release, toolbox, script, and checksum manifests.",
+          "Windows headless WebKit audio instability is environment evidence; user-facing audio needs a fallback and an explicit browser matrix."
+        ],
+        "downgradeReasons": [
+          {
+            "input": "publication-status",
+            "value": "failed",
+            "to": "withheld",
+            "reason": "Failed or unavailable endpoint evidence cannot support a publication claim."
+          }
+        ]
+      }
+    ]
+  }
 }
