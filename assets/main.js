@@ -20,6 +20,10 @@
   const reducedDataQuery = window.matchMedia('(prefers-reduced-data: reduce)');
   const compactQuery = window.matchMedia('(max-width: 720px)');
   const queryFlag = (name) => /^(?:1|true|yes)$/i.test(new URLSearchParams(window.location.search).get(name) || '');
+  const localFixtureHost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
+  if (localFixtureHost && new URLSearchParams(window.location.search).get('lhFixture') === 'bundle-long-task') {
+    void import('./lighthouse-regression-fixture.js');
+  }
   let reduced = reducedMotionQuery.matches;
   let reducedData = reducedDataQuery.matches || navigator.connection?.saveData === true;
   let compactViewport = compactQuery.matches;
@@ -77,6 +81,7 @@
   }
   refreshLanguageHref();
   window.addEventListener('hashchange', refreshLanguageHref, { passive: true });
+  window.addEventListener('pendulum:experiment-state', refreshLanguageHref);
 
   // ---- Shared evidence summary --------------------------------------------
   const EVIDENCE_CLAIM_IDS = [

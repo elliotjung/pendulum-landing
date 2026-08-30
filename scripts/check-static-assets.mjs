@@ -937,13 +937,44 @@ async function checkLighthouseLanguageMatrix() {
   if (!runner.includes("{ id: 'en'") || !runner.includes("{ id: 'ko'")) {
     failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must retain distinct EN/KO summaries');
   }
+  for (const token of [
+    "'cold-single'",
+    "'warm-median'",
+    "'warm-pessimistic'",
+    "args.push('--disable-storage-reset')",
+    'longTaskAttribution',
+    'runnerFingerprint',
+    "process.argv.includes('--regression-fixture')",
+    'lighthouse-regression-fixture-summary.json'
+  ]) {
+    if (!runner.includes(token)) failures.push(`scripts/run-lighthouse.mjs: missing cold/warm SLO contract ${token}`);
+  }
   const lhciRunner = await readFile(join(root, 'scripts', 'run-lhci.mjs'), 'utf8');
   if (
     !lhciRunner.includes("process.env.CI === 'true'")
     || !lhciRunner.includes("join(root, 'scripts', 'run-lighthouse.mjs')")
-    || !lhciRunner.includes("LIGHTHOUSE_PORT: '4176'")
+    || !lhciRunner.includes("runPreGate(['--regression-fixture'], '4175'")
+    || !lhciRunner.includes("runPreGate([], '4176'")
   ) {
-    failures.push('scripts/run-lhci.mjs: CI must calibrate both locales before the pessimistic LHCI gate');
+    failures.push('scripts/run-lhci.mjs: CI must self-test the actual bundle and measure both locales before the pessimistic LHCI gate');
+  }
+  const [mainSource, fixtureSource, packageJson] = await Promise.all([
+    readFile(join(root, 'assets', 'main.js'), 'utf8'),
+    readFile(join(root, 'assets', 'lighthouse-regression-fixture.js'), 'utf8'),
+    readFile(join(root, 'package.json'), 'utf8')
+  ]);
+  if (
+    !mainSource.includes("['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)") ||
+    !mainSource.includes("get('lhFixture') === 'bundle-long-task'") ||
+    !mainSource.includes("import('./lighthouse-regression-fixture.js')")
+  ) {
+    failures.push('assets/main.js: the actual-bundle Lighthouse fixture must remain explicit and loopback-only');
+  }
+  if (!fixtureSource.includes('performance.now() - startedAt < 900')) {
+    failures.push('assets/lighthouse-regression-fixture.js: deterministic long-task fixture is missing');
+  }
+  if (!packageJson.includes('"lighthouse:fixture": "node scripts/run-lighthouse.mjs --regression-fixture"')) {
+    failures.push('package.json: Lighthouse regression fixture command is missing');
   }
 }
 
@@ -1173,9 +1204,18 @@ async function checkHeroRuntimeContracts() {
     'data-orbit-caption="separation"',
     "listen(controls.separation, 'input', handleSeparationInput)",
     'separationCaption',
-    'pushTrail();\n    draw();\n    updateReadouts();'
+    'pushTrail();\n    draw();\n    updateReadouts();',
+    "const experimentContract = Object.freeze({ method: 'rk4', dt: 0.001 });",
+    'const fixedStep = experimentContract.dt;',
+    'const maximumPhysicsSteps = Math.ceil(maximumFrameElapsed / fixedStep);',
+    'rk4StepDouble(s, runtimeParams, experimentContract.dt, work);',
+    'method: experimentContract.method',
+    'dt: canonicalNumber(experimentContract.dt)'
   ]) {
     if (!orbitConsole.includes(token)) failures.push(`assets/orbit-console.js: missing live initial-separation contract ${token}`);
+  }
+  if (orbitConsole.includes('const fixedStep = 1 / 150;')) {
+    failures.push('assets/orbit-console.js: visible simulation dt must match the exact Lab handoff');
   }
   for (const removedAsset of ['animation-vendor.bundle.js', 'reactbits.js']) {
     if (enhancements.includes(removedAsset) || html.includes(removedAsset)) {
@@ -1280,8 +1320,11 @@ async function checkHeroRuntimeContracts() {
     'late-watchdog-recovery=1',
     '__orbitConsoleLifecycle',
     '[data-orbit-control="separation"]',
-    '4.5e-3 rad',
-    'initialSeparation: 0.0045',
+    '[data-orbit-number="separation"]',
+    "experimentSchema: 'pendulum-sensitive-dependence/v1'",
+    "deltaTheta: '0.0001'",
+    "angleUnit: 'deg'",
+    "initialThetaTwo: 2.0943951023931953",
     '__orbitConsolePainted',
     "Object.defineProperty(event, 'persisted'",
     'pendingWork: false'
@@ -1395,11 +1438,12 @@ async function checkDeploymentHeaderContracts() {
 }
 
 async function checkDeployedJourneyContract() {
-  const [packageJson, config, spec, workflow] = await Promise.all([
+  const [packageJson, config, spec, workflow, pagesWorkflow] = await Promise.all([
     readFile(join(root, 'package.json'), 'utf8'),
     readFile(join(root, 'playwright.deployed.config.js'), 'utf8').catch(() => ''),
     readFile(join(root, 'tests', 'deployed-cross-repo-journey.spec.ts'), 'utf8').catch(() => ''),
-    readFile(join(root, '.github', 'workflows', 'deployed-journey.yml'), 'utf8').catch(() => '')
+    readFile(join(root, '.github', 'workflows', 'deployed-journey.yml'), 'utf8').catch(() => ''),
+    readFile(join(root, '.github', 'workflows', 'pages.yml'), 'utf8').catch(() => '')
   ]);
   if (!packageJson.includes('"test:journey:deployed"')) failures.push('package.json: missing deployed journey command');
   if (config.includes('webServer') || !config.includes("name: 'chromium'")) {
@@ -1421,10 +1465,17 @@ async function checkDeployedJourneyContract() {
     'assets/demo-kernel-manifest.json',
     'assets/pendulum-demo-kernel.js',
     'PENDULUM_EXPECTED_LANDING_COMMIT',
-    'waitForDeploymentSnapshot',
+    'PENDULUM_EXPECTED_LAB_SOURCE_COMMIT',
+    'PENDULUM_EXPECTED_EVIDENCE_SHA256',
+    'strictEvidenceCoordinate',
+    'waitForLandingDeployment',
+    'verifyExpectedEvidenceCoordinate',
+    "'strict-lab-evidence'",
     'liveKernelSha256',
     'liveEnSha256',
-    'landingEvidenceSha256 === labEvidenceSha256',
+    'landing.landingEvidence.sha256 === expectedEvidenceSha256',
+    'lastSynchronizedAt',
+    'currentEtag',
     'pendulum-claim-evidence-surface/v1',
     'sourceArtifactSha256',
     'data-claim-status',
@@ -1438,6 +1489,9 @@ async function checkDeployedJourneyContract() {
     'workflows: ["Deploy landing to GitHub Pages"]',
     "github.event.workflow_run.conclusion == 'success'",
     'PENDULUM_EXPECTED_LANDING_COMMIT',
+    'PENDULUM_EXPECTED_LAB_SOURCE_COMMIT',
+    'PENDULUM_EXPECTED_EVIDENCE_SHA256',
+    'deployed-journey-coordinate',
     'PENDULUM_JOURNEY_POLL_TIMEOUT_MS',
     'npm run test:journey:deployed',
     'actions/upload-artifact@',
@@ -1445,6 +1499,14 @@ async function checkDeployedJourneyContract() {
     'deployed-cross-repo-journey'
   ]) {
     if (!workflow.includes(token)) failures.push(`deployed journey workflow: missing post-deploy contract ${token}`);
+  }
+  for (const token of [
+    'deployed-journey-coordinate/v1',
+    "strict?'strict-coordinate':'landing-ui'",
+    'github.event.workflow_run.name',
+    'actions/upload-artifact@'
+  ]) {
+    if (!pagesWorkflow.includes(token)) failures.push(`pages workflow: missing journey mode contract ${token}`);
   }
 }
 

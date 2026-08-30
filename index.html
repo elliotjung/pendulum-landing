@@ -220,9 +220,10 @@
           Release two nearly identical pendulums. Watch certainty split into two
           universes — then measure exactly how fast prediction disappears.
         </p>
+        <p class="product-statement">An interactive laboratory for understanding and measuring nonlinear dynamics.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;preset=butterfly&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="hero-explore">Open Lab <span class="arrow">→</span></a>
-          <a class="btn ghost" href="#console">Run the Experiment</a>
+          <a class="btn primary" href="#orbit-descent">Start with the same state <span class="arrow">↓</span></a>
+          <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;preset=butterfly&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="hero-open">Open full Lab</a>
         </div>
         <p class="hero-trust-line">
           <strong data-evidence="tests.formatted">1,597</strong> tests
@@ -246,10 +247,14 @@
   </div>
 </header>
 
-<!-- ============================== MARQUEE ============================== -->
-<div class="signal-strip" aria-hidden="true">
+<!-- ============================== CONCEPT PATH ============================== -->
+<div class="signal-strip" aria-label="Experiment path">
   <div class="signal-strip-track">
-    <span class="dot">◆</span> Runge–Kutta 4 <span class="dot">◆</span> Dormand–Prince 5(4) <span class="dot">◆</span> Gragg–Bulirsch–Stoer <span class="dot">◆</span> Lyapunov Spectrum <span class="dot">◆</span> Covariant Lyapunov Vectors <span class="dot">◆</span> Poincaré Sections <span class="dot">◆</span> Kaplan–Yorke Dimension <span class="dot">◆</span> Melnikov Threshold <span class="dot">◆</span> Floquet Continuation <span class="dot">◆</span> Koopman–DMD <span class="dot">◆</span> HAVOK <span class="dot">◆</span> SINDy <span class="dot">◆</span> FTLE Ridges <span class="dot">◆</span> Basin Entropy <span class="dot">◆</span>
+    <span><b>1</b> same start</span><i aria-hidden="true">→</i>
+    <span><b>2</b> tiny difference</span><i aria-hidden="true">→</i>
+    <span><b>3</b> divergence</span><i aria-hidden="true">→</i>
+    <span><b>4</b> measure it</span><i aria-hidden="true">→</i>
+    <span><b>5</b> open full Lab</span>
   </div>
 </div>
 
@@ -273,42 +278,46 @@
   <div class="orbit-descent-track">
     <article class="descent-beat is-current" data-orbit-beat="0">
       <div class="descent-card">
-        <span class="descent-index">01 · Release</span>
-        <span class="kicker">Scroll-Driven Chaos</span>
-        <h2 id="orbit-descent-title">Fall through phase space.</h2>
-        <p class="descent-live-copy">Scroll and the camera follows a measured arc around a live double-spherical pendulum whose links sweep separate azimuths through real depth. This is not a video loop: both 3D positions and velocities advance in a constrained 240 Hz RK4 solve while the viewpoint remains independent of the physics.</p>
-        <p class="descent-static-copy">A deterministic phase portrait remains available when motion, data, or graphics preferences keep the live renderer off. The adjustable trajectory console below lets you explore related initial conditions by hand.</p>
-        <span class="descent-signal descent-live-copy"><i></i> Live equations · spatial links · orbit camera</span>
-        <span class="descent-signal descent-static-copy"><i></i> Static evidence view · motion preference respected</span>
+        <span class="descent-index">01 · Same start</span>
+        <span class="kicker">One question, five steps</span>
+        <h2 id="orbit-descent-title">Begin with one reference.</h2>
+        <p class="descent-live-copy">First, follow a single release. The reference is the state we will keep unchanged while we ask what one tiny difference can do.</p>
+        <p class="descent-static-copy">The still image preserves the same reference path when motion or graphics preferences keep the live renderer off.</p>
+        <span class="descent-signal descent-live-copy"><i></i> Reference trajectory · cyan · unchanged</span>
+        <span class="descent-signal descent-static-copy"><i></i> Reference trajectory · static view</span>
       </div>
     </article>
 
     <article class="descent-beat descent-beat-right" data-orbit-beat="1">
       <div class="descent-card">
-        <span class="descent-index">02 · Divergence</span>
-        <h3>One state becomes two futures.</h3>
-        <p class="descent-live-copy">The pale shadow begins only 8×10⁻⁴ radians away. Its trajectory peels from the primary state as the measured viewpoint shift reveals their separation.</p>
-        <p class="descent-static-copy">The pale reference state begins only 8×10⁻⁴ radians away. The static traces preserve the two initial conditions without implying that animation is running.</p>
-        <div class="descent-equation"><span>δ(t)</span><strong>≈ δ₀e<sup>λ₁t</sup></strong></div>
+        <span class="descent-index">02 · Tiny difference</span>
+        <h3>Change only one number.</h3>
+        <p class="descent-live-copy">The violet trajectory copies the reference, then adds Δθ₁ = 8×10⁻⁴ rad to its first angle. Everything else stays identical.</p>
+        <p class="descent-static-copy">The static traces preserve the reference and the one-variable perturbation without implying that animation is running.</p>
+        <div class="descent-equation"><span>reference</span><strong>θ₁</strong><span>perturbed</span><strong>θ₁ + Δθ₁</strong></div>
       </div>
     </article>
 
     <article class="descent-beat" data-orbit-beat="2">
       <div class="descent-card">
-        <span class="descent-index">03 · Memory</span>
-        <h3>The path becomes the instrument.</h3>
-        <p class="descent-live-copy">Cyan and violet histories remain suspended in depth. Every turn exposes structure that a flat trace hides: folds, near returns, and the first visible loss of predictability.</p>
-        <p class="descent-static-copy">Cyan and violet histories preserve folds, near returns, and the first visible loss of predictability in a motion-free reference image.</p>
-        <div class="descent-tags"><span>fixed-step</span><span>deterministic</span><span>replayable</span></div>
+        <span class="descent-index">03 · Divergence</span>
+        <h3>Watch the futures stop agreeing.</h3>
+        <p class="descent-live-copy">At first the two paths overlap. Then the same deterministic rules carry them apart. Cyan always means reference; violet always means perturbed.</p>
+        <p class="descent-static-copy">Cyan marks the reference and violet marks the perturbed path; their growing distance is visible without relying on motion alone.</p>
+        <div class="descent-tags"><span>reference: cyan</span><span>perturbed: violet</span><span>one variable changed</span></div>
       </div>
     </article>
 
     <article class="descent-beat descent-beat-right" data-orbit-beat="3">
       <div class="descent-card">
         <span class="descent-index">04 · Measure</span>
-        <h3>Then turn the spectacle into evidence.</h3>
-        <p>The descent resolves into the hands-on trajectory console below. Tune the primary angle, damping, and initial separation — then carry the primary state into the full laboratory.</p>
-        <a class="btn primary sm" href="#console">Take control <span class="arrow">↓</span></a>
+        <h3>Turn the visible split into a number.</h3>
+        <p>The console below reports the wrapped angular difference |Δθ₁(t)| for a planar double pendulum. Enter its exact reference state and perturbation, then continue that exact planar experiment in the full Lab without retyping it.</p>
+        <details class="story-technical">
+          <summary>What is the 3D view calculating?</summary>
+          <p>The hero uses a constrained double-spherical model at 240 Hz. The hands-on console below integrates a planar double pendulum with RK4 at dt=0.001 and samples its trail at 150 Hz, matching the experiment continued in the full Lab.</p>
+        </details>
+        <a class="btn primary sm" href="#console">Measure the split <span class="arrow">↓</span></a>
       </div>
     </article>
   </div>
@@ -318,39 +327,90 @@
 <section class="band console-band" id="console">
   <div class="wrap console-grid">
     <div class="console-copy reveal">
-      <span class="kicker">Trajectory Console</span>
-      <h2 data-rise>Chaos you can feel before the app even opens.</h2>
-      <p>A lightweight canvas instrument draws two nearly identical double-pendulum releases in real time. The cyan and violet traces begin together, then peel apart as sensitivity takes over.</p>
+      <span class="kicker">04 · Measure it</span>
+      <h2 data-rise>One reference. One declared perturbation.</h2>
+      <p>Enter exact values or use the sliders for quick exploration. The reference and perturbed states are named, not left for colour alone to explain.</p>
+      <dl class="experiment-recipe" aria-label="Sensitive dependence experiment recipe">
+        <div><dt>Goal</dt><dd>See how a tiny change grows.</dd></div>
+        <div><dt>Exact start</dt><dd>θ=(2.18, 2.64) rad · ω=(0, 0) rad/s · γ=0.06.</dd></div>
+        <div><dt>Method</dt><dd>RK4 · dt=0.001.</dd></div>
+        <div><dt>Change</dt><dd>Only θ₁ by Δθ₁=1e-3 rad · symmetric · seed 20260826 · n=12.</dd></div>
+        <div><dt>Expected</dt><dd>The paths begin together, then |Δθ₁(t)| grows; trail shape alone is not the result.</dd></div>
+        <div><dt>Measure</dt><dd>|Δθ₁(t)| here, then finite-time λ₁ with the Lab's phase-state norm.</dd></div>
+        <div><dt>Theory</dt><dd><a href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=en&amp;tab=theory#theory-chaos-lyapunov" data-app-link data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-theory">Assumptions and evidence</a></dd></div>
+      </dl>
+      <div class="trajectory-legend" role="list" aria-label="Trajectory meanings">
+        <span role="listitem"><i class="reference-swatch" aria-hidden="true"></i><b>Reference</b> unchanged initial state</span>
+        <span role="listitem"><i class="perturbed-swatch" aria-hidden="true"></i><b>Perturbed</b> reference + Δθ₁</span>
+      </div>
       <div class="console-readouts" role="group" aria-label="Live console readouts">
-        <div class="console-readout"><span>separation</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
-        <div class="console-readout"><span>drift</span><strong data-orbit-readout="drift">0.00 px</strong></div>
+        <div class="console-readout"><span>|Δθ₁(t)|</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
+        <div class="console-readout"><span>screen gap</span><strong data-orbit-readout="drift">0.00 px</strong></div>
         <div class="console-readout"><span>trace</span><strong data-orbit-readout="trace">warming</strong></div>
         <div class="console-readout"><span>mode</span><strong data-orbit-readout="mode">live</strong></div>
       </div>
       <div class="orbit-controls" role="group" aria-label="Mini lab controls">
+        <div class="orbit-unit-row">
+          <label for="orbit-angle-unit">Angle display</label>
+          <select id="orbit-angle-unit" data-orbit-unit aria-describedby="orbit-unit-note">
+            <option value="rad">Radians</option>
+            <option value="deg">Degrees</option>
+          </select>
+          <small id="orbit-unit-note">The Lab URL always carries canonical radians.</small>
+        </div>
         <div class="orbit-control-meta">
-          <label for="orbit-theta">initial angle θ₁</label>
+          <label for="orbit-theta">reference angle θ₁</label>
           <output id="orbit-theta-output" for="orbit-theta" data-orbit-output="theta">2.18 rad</output>
         </div>
-        <input id="orbit-theta" data-orbit-control="theta" type="range" min="0.40" max="3.00" step="0.01" value="2.18" aria-describedby="orbit-theta-output" aria-valuetext="2.18 radians" />
+        <div class="orbit-input-row">
+          <input id="orbit-theta" data-orbit-control="theta" type="range" min="-3.141592653589793" max="3.141592653589793" step="any" data-orbit-keyboard-step="0.01" value="2.18" aria-describedby="orbit-theta-output" aria-valuetext="2.18 radians" />
+          <label class="sr-only" for="orbit-theta-number">Enter reference angle θ₁</label>
+          <input id="orbit-theta-number" class="orbit-number" data-orbit-number="theta" type="number" min="-3.141592653589793" max="3.141592653589793" step="any" value="2.18" inputmode="decimal" aria-describedby="orbit-theta-output orbit-unit-note" />
+          <span data-orbit-unit-label aria-hidden="true">rad</span>
+        </div>
         <div class="orbit-control-meta">
-          <label for="orbit-separation">initial separation δθ₁</label>
+          <label for="orbit-theta-two">reference angle θ₂</label>
+          <output id="orbit-theta-two-output" for="orbit-theta-two" data-orbit-output="thetaTwo">2.64 rad</output>
+        </div>
+        <div class="orbit-input-row">
+          <input id="orbit-theta-two" data-orbit-control="thetaTwo" type="range" min="-3.141592653589793" max="3.141592653589793" step="any" data-orbit-keyboard-step="0.01" value="2.64" aria-describedby="orbit-theta-two-output" aria-valuetext="2.64 radians" />
+          <label class="sr-only" for="orbit-theta-two-number">Enter reference angle θ₂</label>
+          <input id="orbit-theta-two-number" class="orbit-number" data-orbit-number="thetaTwo" type="number" min="-3.141592653589793" max="3.141592653589793" step="any" value="2.64" inputmode="decimal" aria-describedby="orbit-theta-two-output orbit-unit-note" />
+          <span data-orbit-unit-label aria-hidden="true">rad</span>
+        </div>
+        <div class="orbit-control-meta">
+          <label for="orbit-separation">perturbation Δθ₁ <small>applied to θ₁ only</small></label>
           <output id="orbit-separation-output" for="orbit-separation" data-orbit-output="separation">1.0e-3 rad</output>
         </div>
-        <input id="orbit-separation" data-orbit-control="separation" type="range" min="0.0001" max="0.0200" step="0.0001" value="0.0010" aria-describedby="orbit-separation-output" aria-valuetext="1.0e-3 radians" />
+        <div class="orbit-input-row">
+          <input id="orbit-separation" data-orbit-control="separation" type="range" min="0.0001" max="0.0100" step="any" data-orbit-keyboard-step="0.0001" value="0.0010" aria-describedby="orbit-separation-output" aria-valuetext="1.0e-3 radians" />
+          <label class="sr-only" for="orbit-separation-number">Enter perturbation Δθ₁</label>
+          <input id="orbit-separation-number" class="orbit-number" data-orbit-number="separation" type="number" min="0.0000001" max="0.01" step="any" value="0.001" inputmode="decimal" aria-describedby="orbit-separation-output orbit-unit-note" />
+          <span data-orbit-unit-label aria-hidden="true">rad</span>
+        </div>
         <div class="orbit-control-meta">
           <label for="orbit-damping">damping γ</label>
           <output id="orbit-damping-output" for="orbit-damping" data-orbit-output="damping">0.06</output>
         </div>
-        <input id="orbit-damping" data-orbit-control="damping" type="range" min="0" max="0.80" step="0.01" value="0.06" aria-describedby="orbit-damping-output" aria-valuetext="0.06 damping" />
+        <div class="orbit-input-row">
+          <input id="orbit-damping" data-orbit-control="damping" type="range" min="0" max="0.80" step="any" data-orbit-keyboard-step="0.01" value="0.06" aria-describedby="orbit-damping-output" aria-valuetext="0.06 damping" />
+          <label class="sr-only" for="orbit-damping-number">Enter damping γ</label>
+          <input id="orbit-damping-number" class="orbit-number" data-orbit-number="damping" type="number" min="0" max="10" step="any" value="0.06" inputmode="decimal" aria-describedby="orbit-damping-output" />
+        </div>
         <div class="orbit-button-row">
           <button class="orbit-reset" type="button" data-orbit-reset aria-controls="orbit-console">Reset trace</button>
           <button class="orbit-reset" type="button" data-orbit-toggle aria-pressed="false" aria-controls="orbit-console">Pause motion</button>
         </div>
       </div>
+      <div class="exact-state" aria-live="polite">
+        <span>Exact experiment state</span>
+        <p><b>Reference</b><code data-orbit-state="reference">θ₁ 2.18 rad · θ₂ 2.64 rad · ω₁ 0 · ω₂ 0</code></p>
+        <p><b>Perturbed</b><code data-orbit-state="perturbed">θ₁ 2.181 rad · θ₂ 2.64 rad · ω₁ 0 · ω₂ 0</code></p>
+        <small data-orbit-state-status>Full-precision radians and Δθ₁ will continue into the Lab.</small>
+      </div>
       <div class="console-actions">
-        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06" data-app-link data-orbit-launch data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="orbit-primary">Open primary state <span class="arrow">→</span></a>
-        <a class="btn ghost sm" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">Reviewer Ledger</a>
+        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab&amp;experiment=sensitive-dependence&amp;experimentSchema=pendulum-sensitive-dependence%2Fv1&amp;workflowStep=measure&amp;trajectoryStage=perturbed&amp;angleUnit=rad&amp;perturbationVar=th1&amp;perturbationPattern=symmetric&amp;perturbationSeed=20260826&amp;deltaTheta=0.001&amp;ensembleCount=12&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06&amp;method=rk4&amp;dt=0.001" data-app-link data-orbit-launch data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="orbit-primary">Continue this exact experiment <span class="arrow">→</span></a>
+        <a class="btn ghost sm" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=en&amp;tab=lyap&amp;experiment=sensitive-dependence&amp;experimentSchema=pendulum-sensitive-dependence%2Fv1&amp;workflowStep=measure&amp;trajectoryStage=perturbed&amp;angleUnit=rad&amp;perturbationVar=th1&amp;perturbationPattern=symmetric&amp;perturbationSeed=20260826&amp;deltaTheta=0.001&amp;ensembleCount=12&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06&amp;method=rk4&amp;dt=0.001" data-app-link data-orbit-next data-cta-goal="classroom" data-cta-persona="student" data-utm-content="orbit-measure">Next: measure λ₁</a>
       </div>
     </div>
 
@@ -364,7 +424,7 @@
         Two simulated double pendulums begin 0.001 radians apart. Their cyan and violet trajectories separate over time.
       </canvas>
       <figcaption id="orbit-console-caption">
-        <span data-orbit-caption-label>dual release</span>
+        <span data-orbit-caption-label>reference + one perturbation</span>
         <span data-orbit-caption="separation">1.0e-3 rad apart</span>
       </figcaption>
     </figure>
@@ -375,24 +435,34 @@
 <section class="band preview-band" id="preview">
   <div class="wrap preview-grid">
     <div class="preview-copy reveal">
-      <span class="kicker">Live Workbench</span>
-      <h2 data-rise="">Real lab screens, not a teaser mockup.</h2>
-      <p>The first click can open a ready-made path: a beginner-safe butterfly preset, a student theory-to-evidence guide, or the research workbench with reviewer evidence close at hand.</p>
-      <div class="recipe-grid" role="group" aria-label="30-second experiment recipes">
+      <span class="kicker">Choose your next depth</span>
+      <h2 data-rise="">Start from your question, not the feature list.</h2>
+      <p>Each entry opens the smallest useful workspace for that goal. You can reveal more controls later without restarting the experiment.</p>
+      <div class="recipe-grid" role="group" aria-label="Entry points by goal">
         <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;preset=butterfly&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="recipe-beginner">
-          <span>Beginner</span>
-          <strong>Butterfly Motion</strong>
-          <em>Open Lab with the clean starter preset.</em>
+          <span>Curious beginner</span>
+          <strong>Watch one clear motion</strong>
+          <em>Open a clean preset with only the essential controls.</em>
         </a>
         <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=en&amp;preset=chaotic&amp;tab=theory" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-student-theory">
           <span>Student</span>
-          <strong>Theory to Evidence</strong>
-          <em>Follow assumptions, equations, code, and checks.</em>
+          <strong>Understand the equations</strong>
+          <em>Follow assumptions, motion, equations, and checks in order.</em>
+        </a>
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=en&amp;preset=periodic&amp;tab=compare" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-numerics">
+          <span>Numerical methods</span>
+          <strong>Compare solver behaviour</strong>
+          <em>Start with energy drift and a convergence question.</em>
         </a>
         <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=reproduce&amp;audience=research&amp;lang=en&amp;preset=periodic&amp;tab=research" data-app-link="" data-cta-goal="reproduce" data-cta-persona="research" data-utm-content="recipe-research-reproduce">
-          <span>Research</span>
-          <strong>Reviewer Evidence</strong>
-          <em>Open the persisted research workbench.</em>
+          <span>Research / review</span>
+          <strong>Inspect a scientific claim</strong>
+          <em>Open the workbench with provenance and caveats nearby.</em>
+        </a>
+        <a class="recipe-card" href="https://github.com/elliotjung/pendulum-lab/blob/master/CONTRIBUTING.md">
+          <span>Developer</span>
+          <strong>Contribute code</strong>
+          <em>Go straight to setup, architecture, tests, and review rules.</em>
         </a>
       </div>
     </div>
@@ -464,60 +534,50 @@
 <section class="band" id="capabilities">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="kicker">Platform</span>
-      <h2 data-rise="">Everything a chaos study demands — measured, tested, proven.</h2>
-      <p>Five disciplines — numerics, physics, chaos diagnostics, visualization, reproducibility — each unit-tested against closed-form, energy, and independent reference criteria.</p>
+      <span class="kicker">Four capabilities</span>
+      <h2 data-rise="">From motion to a result someone else can check.</h2>
+      <p>The Lab is organised around four jobs. Method names stay one level deeper until you need them.</p>
     </div>
 
     <div class="cap-grid" data-stagger="">
       <article class="cap-card">
         <span class="idx">01</span>
         <span class="glyph"><svg viewBox="0 0 24 24"><path d="M3 17c3-8 6-8 9 0s6 8 9 0"></path><circle cx="3" cy="17" r="1.4"></circle><circle cx="21" cy="17" r="1.4"></circle></svg></span>
-        <h3>Fifteen primary integrators</h3>
-        <p>Euler through RK4, embedded RKF45, Dormand-Prince 5(4), DOP853 8(5,3), Gauss-Legendre 4/6, Yoshida-4, Gragg-Bulirsch-Stoer, and L-stable TR-BDF2 — each measured at its theoretical order, plus a full-Newton implicit midpoint with condition-number diagnostics.</p>
-        <div class="tags"><span class="tag">RK4</span><span class="tag">DOP853</span><span class="tag">GBS</span><span class="tag">TR-BDF2</span></div>
+        <h3>Simulation</h3>
+        <p>Choose a pendulum system, set exact initial conditions, and watch its state evolve. Presets give beginners a safe start; direct controls remain available for deliberate experiments.</p>
+        <div class="tags"><span class="tag">systems</span><span class="tag">initial state</span><span class="tag">live motion</span></div>
       </article>
 
       <article class="cap-card">
         <span class="idx">02</span>
         <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 20 L9 6 L13 16 L17 9 L20 14"></path></svg></span>
-        <h3>Chaos diagnostics</h3>
-        <p>Maximal &amp; full-spectrum Lyapunov exponents, covariant Lyapunov vectors, Kaplan-Yorke dimension, SALI / FLI, Poincaré sections, the 0–1 test, RQA, basin entropy, and automated bifurcation sweeps — with method-specific diagnostics and uncertainty where defined.</p>
-        <div class="tags"><span class="tag">λ-spectrum</span><span class="tag">CLV</span><span class="tag">0–1 test</span><span class="tag">RQA</span></div>
+        <h3>Chaos &amp; Analysis</h3>
+        <p>Move from “the paths look different” to quantities that describe divergence, recurrence, stability, and phase-space structure—with uncertainty where the method defines it.</p>
+        <div class="tags"><span class="tag">divergence</span><span class="tag">structure</span><span class="tag">uncertainty</span></div>
       </article>
 
       <article class="cap-card">
         <span class="idx">03</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="2"></circle><circle cx="12" cy="18" r="2.6"></circle><path d="M12 8 L12 15.4"></path></svg></span>
-        <h3>Physical systems</h3>
-        <p>Double, triple, and generalized N-pendulum, driven and damped-driven oscillators, Kapitza and magnetic pendulums, elastic springs, coupled-pendulum lattices, plus a true 3D spherical &amp; rope pendulum with conserved E and Lz readouts.</p>
-        <div class="tags"><span class="tag">N-pendulum</span><span class="tag">driven</span><span class="tag">lattice</span><span class="tag">3D Lab</span></div>
+        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 L20 7 V13 C20 17 16 20 12 21 C8 20 4 17 4 13 V7 Z"></path><path d="M9 12 l2 2 l4 -4"></path></svg></span>
+        <h3>Numerical Trust</h3>
+        <p>Compare resolution, convergence, residuals, conservation, and independent references before treating a computed pattern as a scientific conclusion.</p>
+        <div class="tags"><span class="tag">convergence</span><span class="tag">residuals</span><span class="tag">reference checks</span></div>
       </article>
 
       <article class="cap-card">
         <span class="idx">04</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2"></rect><path d="M3.5 14 L9 9 L13 13 L20.5 6"></path></svg></span>
-        <h3>Honest visualization</h3>
-        <p>Pure-canvas, colorblind-safe Okabe-Ito renderers; phase portraits, Poincaré maps, FTLE ridges, and a publication figure pipeline with deterministic SVG and visual-regression fingerprints across desktop and mobile baselines.</p>
-        <div class="tags"><span class="tag">phase 3D</span><span class="tag">FTLE</span><span class="tag">figures</span></div>
-      </article>
-
-      <article class="cap-card">
-        <span class="idx">05</span>
         <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 L20 7 V13 C20 17 16 20 12 21 C8 20 4 17 4 13 V7 Z"></path><path d="M9 12 l2 2 l4 -4"></path></svg></span>
-        <h3>Total reproducibility</h3>
-        <p>Hash-stamped run manifests with deterministic replay metadata, real ZIP research bundles with per-file SHA-256 integrity checks (plus CRC32 for ZIP compatibility), an IndexedDB long-term store, and evidence provenance tied to a source commit.</p>
-        <div class="tags"><span class="tag">manifests</span><span class="tag">SHA-256</span><span class="tag">provenance</span></div>
-      </article>
-
-      <article class="cap-card">
-        <span class="idx">06</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z"></path></svg></span>
-        <h3>CPU-oracle-gated WebGPU scale</h3>
-        <p>Heavy chaos jobs run in a typed Web Worker with a priority queue, checkpoint / resume, and graceful fallback — and the WebGPU ensemble, full-spectrum, CLV, and FTLE kernels are promoted only after passing a same-run CPU f64 oracle comparison.</p>
-        <div class="tags"><span class="tag">worker V2</span><span class="tag">WebGPU</span><span class="tag">CPU oracle</span></div>
+        <h3>Reproducibility</h3>
+        <p>Carry exact setup data in a link, save manifests and research bundles, and keep each public result tied to source evidence and explicit caveats.</p>
+        <div class="tags"><span class="tag">shareable state</span><span class="tag">manifests</span><span class="tag">provenance</span></div>
       </article>
     </div>
+
+    <details class="methods-disclosure reveal">
+      <summary>Explore all methods</summary>
+      <p>The advanced workspace includes fifteen primary integrators, Lyapunov spectra and vectors, Poincaré sections, recurrence analysis, FTLE, basin entropy, continuation, data-driven models, and CPU-oracle-gated GPU paths. Each method explains what it measures and where it can fail.</p>
+      <div class="tags" aria-label="Selected advanced methods"><span class="tag">DOP853</span><span class="tag">GBS</span><span class="tag">Lyapunov</span><span class="tag">Poincaré</span><span class="tag">CLV</span><span class="tag">RQA</span><span class="tag">FTLE</span><span class="tag">SINDy</span><span class="tag">HAVOK</span></div>
+    </details>
   </div>
 </section>
 
@@ -565,12 +625,23 @@
   </div>
 </section>
 
-<!-- ============================== FRONTIER ============================== -->
-<section class="band" id="frontier">
+<!-- ============================== SECONDARY STORIES ============================== -->
+<section class="band secondary-intro" id="advanced" aria-labelledby="advanced-title">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="kicker">Research Frontier</span>
-      <h2 data-rise>Beyond simulation: a self-validating dynamics library.</h2>
+      <span class="kicker">Optional deeper paths</span>
+      <h2 id="advanced-title" data-rise>Research library and engineering context.</h2>
+      <p>The interactive laboratory is the primary product. These sections document the broader research library and the separate engineering portfolio connection for readers who need them.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== FRONTIER ============================== -->
+<section class="band secondary-band" id="frontier" aria-labelledby="frontier-title">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">Secondary · Research Frontier</span>
+      <h2 id="frontier-title" data-rise>Beyond simulation: a self-validating dynamics library.</h2>
       <p>The headless core ships as a typed library with a CLI for batch studies. Every frontier module carries its own falsifiable test contract — closed-form anchors, convergence orders, or cross-method agreement.</p>
     </div>
 
@@ -617,11 +688,11 @@
 </section>
 
 <!-- ============================== TCAD MAPPING ============================== -->
-<section class="band tcad-band" id="tcad">
+<section class="band tcad-band secondary-band" id="tcad" aria-labelledby="tcad-title">
   <div class="wrap tcad-grid">
     <div class="sec-head reveal">
-      <span class="kicker">Why this maps to TCAD</span>
-      <h2 data-rise>A chaos lab built with device-simulation discipline.</h2>
+      <span class="kicker">Secondary · Engineering portfolio</span>
+      <h2 id="tcad-title" data-rise>Why this work maps to TCAD.</h2>
       <p>Pendulum dynamics and semiconductor devices solve different equations, but trustworthy simulation demands the same engineering habits: expose solver assumptions, quantify discretization error, and validate against an independent reference.</p>
     </div>
     <div class="tcad-cards" data-stagger>

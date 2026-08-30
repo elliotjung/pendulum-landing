@@ -109,6 +109,52 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
   await expect(page.locator('[data-evidence="mutation.scoreLabel"]').first()).toContainText('65.32%');
 });
 
+test('first-session narrative leads with one experiment and demotes advanced paths', async ({ page }) => {
+  await page.goto('/?lang=en');
+  await expect(page.locator('.product-statement')).toHaveText(
+    'An interactive laboratory for understanding and measuring nonlinear dynamics.'
+  );
+  await expect(page.locator('.signal-strip-track span')).toHaveText([
+    '1 same start',
+    '2 tiny difference',
+    '3 divergence',
+    '4 measure it',
+    '5 open full Lab'
+  ]);
+  await expect(page.locator('[data-orbit-beat] .descent-index')).toHaveText([
+    '01 · Same start',
+    '02 · Tiny difference',
+    '03 · Divergence',
+    '04 · Measure'
+  ]);
+  await expect(page.locator('.trajectory-legend [role="listitem"]')).toHaveText([
+    /Reference.*unchanged initial state/,
+    /Perturbed.*reference \+ Δθ₁/
+  ]);
+  await expect(page.locator('.recipe-grid .recipe-card')).toHaveCount(5);
+  await expect(page.locator('.recipe-grid .recipe-card > span')).toHaveText([
+    'Curious beginner',
+    'Student',
+    'Numerical methods',
+    'Research / review',
+    'Developer'
+  ]);
+  await expect(page.locator('#capabilities .cap-card')).toHaveCount(4);
+  await expect(page.locator('#capabilities .cap-card h3')).toHaveText([
+    'Simulation',
+    'Chaos & Analysis',
+    'Numerical Trust',
+    'Reproducibility'
+  ]);
+  await expect(page.locator('.methods-disclosure')).not.toHaveAttribute('open', '');
+  expect(await page.locator('.signal-strip').innerText()).not.toMatch(/DOP853|Poincaré|Floquet|TCAD/);
+  const sectionOrder = await page.locator('#advanced, #frontier, #tcad').evaluateAll((sections) => sections.map((section) => section.id));
+  expect(sectionOrder).toEqual(['advanced', 'frontier', 'tcad']);
+  await expect(page.locator('#advanced')).toContainText('Optional deeper paths');
+  await expect(page.locator('#frontier .kicker')).toContainText('Secondary');
+  await expect(page.locator('#tcad .kicker')).toContainText('Secondary');
+});
+
 test('default load paints instantly and defers the heavy 3D bundle until intent', async ({ page }) => {
   test.setTimeout(180_000);
   expect(await rawHttpStatus('/malformed-%ZZ-path')).toBe(400);
@@ -850,6 +896,18 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await page.goto('/');
   await page.waitForTimeout(500);
   expect(enhancementRequests).toEqual([]);
+  const theta = page.locator('[data-orbit-control="theta"]');
+  const thetaTwo = page.locator('[data-orbit-control="thetaTwo"]');
+  const separation = page.locator('[data-orbit-control="separation"]');
+  const damping = page.locator('[data-orbit-control="damping"]');
+  await expect(page.locator('.console-readout').filter({ has: page.locator('[data-orbit-readout="separation"]') }).locator('span')).toHaveText('|Δθ₁(t)|');
+  await expect(page.locator('.console-readout').filter({ has: page.locator('[data-orbit-readout="drift"]') }).locator('span')).toHaveText('screen gap');
+  await expect(theta).toHaveValue('2.18');
+  await expect(thetaTwo).toHaveValue('2.64');
+  await expect(theta).toHaveAttribute('step', 'any');
+  await expect(thetaTwo).toHaveAttribute('step', 'any');
+  await expect(separation).toHaveAttribute('step', 'any');
+  await expect(damping).toHaveAttribute('step', 'any');
   await page.evaluate(() => {
     const runtime = window as unknown as {
       __orbitReplayOrder?: string[];
@@ -870,8 +928,24 @@ test('mini lab controls reset the trajectory and update the app state link', asy
       button?.removeEventListener('click', listener);
     });
   });
-  await page.locator('#console').scrollIntoViewIfNeeded();
+  const landingUrlBeforeBlockedLaunch = page.url();
+  const directTheta = page.locator('[data-orbit-number="theta"]');
+  await directTheta.fill('2.1250000000000004');
   await orbitModuleRequested;
+  await thetaTwo.evaluate((input) => {
+    const range = input as HTMLInputElement;
+    range.value = '2.65123456789';
+    range.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  const launch = page.locator('[data-orbit-launch]');
+  const next = page.locator('[data-orbit-next]');
+  await expect(launch).toHaveAttribute('aria-disabled', 'true');
+  await expect(launch).toHaveAttribute('aria-busy', 'true');
+  await expect(next).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.locator('[data-orbit-state-status]')).toHaveText('Preparing the exact setup for the Lab link…');
+  await launch.dispatchEvent('click');
+  expect(page.url()).toBe(landingUrlBeforeBlockedLaunch);
+  await page.locator('#console').scrollIntoViewIfNeeded();
   const queuedToggle = page.locator('[data-orbit-toggle]');
   await queuedToggle.dispatchEvent('click');
   await queuedToggle.dispatchEvent('click');
@@ -881,6 +955,16 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await page.waitForFunction(() => Boolean((window as unknown as {
     __landingEnhancements?: { orbitReady: boolean };
   }).__landingEnhancements?.orbitReady), null, { timeout: 20_000 });
+  await expect(launch).not.toHaveAttribute('aria-disabled', 'true');
+  await expect(launch).not.toHaveAttribute('aria-busy', 'true');
+  await expect(next).not.toHaveAttribute('aria-disabled', 'true');
+  expect(new URL(await launch.getAttribute('href') ?? '').searchParams.get('th1')).toBe('2.1250000000000004');
+  expect(new URL(await launch.getAttribute('href') ?? '').searchParams.get('th2')).toBe('2.65123456789');
+  // Range controls serialize the same IEEE-754 value differently across
+  // engines; the direct field and href below are the canonical contract.
+  expect(Number(await theta.inputValue())).toBeCloseTo(2.1250000000000004, 14);
+  await expect(directTheta).toHaveValue('2.1250000000000004');
+  await expect(thetaTwo).toHaveValue('2.65123456789');
   await page.waitForFunction(() => Boolean((window as unknown as {
     __orbitConsolePainted?: boolean;
   }).__orbitConsolePainted), null, { timeout: 5_000 });
@@ -896,27 +980,91 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await expect(queuedToggle).toHaveAttribute('aria-pressed', 'false');
   await page.unroute('**/assets/orbit-console.js');
   await expect(page.locator('#console .console-copy')).toHaveClass(/is-visible/);
-  const theta = page.locator('[data-orbit-control="theta"]');
-  const separation = page.locator('[data-orbit-control="separation"]');
-  const damping = page.locator('[data-orbit-control="damping"]');
-  await theta.evaluate((input: HTMLInputElement) => { input.value = '2.40'; input.dispatchEvent(new Event('input', { bubbles: true })); });
-  await separation.evaluate((input: HTMLInputElement) => { input.value = '0.0045'; input.dispatchEvent(new Event('input', { bubbles: true })); });
-  await damping.evaluate((input: HTMLInputElement) => { input.value = '0.30'; input.dispatchEvent(new Event('input', { bubbles: true })); });
-  await expect(page.locator('[data-orbit-output="theta"]')).toHaveText('2.40 rad');
-  await expect(page.locator('[data-orbit-output="separation"]')).toHaveText('4.5e-3 rad');
-  await expect(page.locator('[data-orbit-output="damping"]')).toHaveText('0.30');
-  await expect(theta).toHaveAttribute('aria-valuetext', '2.40 radians');
-  await expect(separation).toHaveAttribute('aria-valuetext', '4.5e-3 radians');
-  await expect(damping).toHaveAttribute('aria-valuetext', '0.30 damping');
-  await expect(page.locator('[data-orbit-caption="separation"]')).toHaveText('4.5e-3 rad apart');
-  const href = await page.locator('[data-orbit-launch]').getAttribute('href');
-  expect(href).toContain('th1=2.40');
-  expect(href).toContain('gamma=0.30');
+  const angleUnit = page.locator('[data-orbit-unit]');
+  await expect(theta).toHaveAttribute('data-orbit-keyboard-step', '0.01');
+  await theta.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(theta).toHaveValue('2.135');
+  await expect(directTheta).toHaveValue('2.135');
+  await page.locator('[data-orbit-number="theta"]').fill('2.0943951023931953');
+  await angleUnit.selectOption('deg');
+  await expect(theta).toHaveAttribute('step', 'any');
+  await expect(theta).toHaveAttribute('data-orbit-keyboard-step', '0.1');
+  await expect(separation).toHaveAttribute('data-orbit-keyboard-step', '0.001');
+  await page.locator('[data-orbit-number="thetaTwo"]').fill('120');
+  await page.locator('[data-orbit-number="separation"]').fill('0.005729577951308232');
+  await page.locator('[data-orbit-number="damping"]').fill('0.3');
+  await expect(page.locator('[data-orbit-output="theta"]')).toHaveText('120 deg');
+  await expect(page.locator('[data-orbit-output="thetaTwo"]')).toHaveText('120 deg');
+  await expect(page.locator('[data-orbit-output="separation"]')).toHaveText('5.729578e-3 deg');
+  await expect(page.locator('[data-orbit-output="damping"]')).toHaveText('0.3');
+  await expect(theta).toHaveAttribute('aria-valuetext', '120 degrees');
+  await expect(thetaTwo).toHaveAttribute('aria-valuetext', '120 degrees');
+  await expect(separation).toHaveAttribute('aria-valuetext', '5.729578e-3 degrees');
+  await expect(damping).toHaveAttribute('aria-valuetext', '0.3 damping');
+  await expect(page.locator('[data-orbit-caption="separation"]')).toHaveText('5.729578e-3 deg apart');
+  await expect(page.locator('[data-orbit-number="separation"]')).toHaveValue('0.005729577951308232');
+  await expect(page.locator('[data-orbit-state="reference"]')).toContainText('θ₁ 120 deg (2.0943951023931953 rad)');
+  await expect(page.locator('[data-orbit-state="perturbed"]')).toContainText('θ₁ 120.005729577951 deg (2.0944951023931955 rad)');
+
+  const launchUrl = new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '');
+  const nextUrl = new URL(await page.locator('[data-orbit-next]').getAttribute('href') ?? '');
+  const expectedHandoff = {
+    experiment: 'sensitive-dependence',
+    experimentSchema: 'pendulum-sensitive-dependence/v1',
+    workflowStep: 'measure',
+    trajectoryStage: 'perturbed',
+    angleUnit: 'deg',
+    perturbationVar: 'th1',
+    perturbationPattern: 'symmetric',
+    perturbationSeed: '20260826',
+    deltaTheta: '0.0001',
+    ensembleCount: '12',
+    th1: '2.0943951023931953',
+    th2: '2.0943951023931953',
+    iw1: '0',
+    iw2: '0',
+    gamma: '0.3',
+    method: 'rk4',
+    dt: '0.001'
+  };
+  for (const [name, value] of Object.entries(expectedHandoff)) {
+    expect(launchUrl.searchParams.get(name), `primary handoff ${name}`).toBe(value);
+    expect(nextUrl.searchParams.get(name), `next-step handoff ${name}`).toBe(value);
+    if (!['iw1', 'iw2'].includes(name)) {
+      expect(new URL(page.url()).searchParams.get(name), `Landing continuity ${name}`).toBe(value);
+    }
+  }
+  expect(launchUrl.searchParams.get('audience')).toBe('beginner');
+  expect(nextUrl.searchParams.get('audience')).toBe('student');
+  const languageUrl = new URL(await page.locator('#lang-toggle').getAttribute('href') ?? '', page.url());
+  expect(languageUrl.searchParams.get('deltaTheta')).toBe('0.0001');
+  expect(languageUrl.searchParams.get('th2')).toBe('2.0943951023931953');
   await page.locator('[data-orbit-reset]').dispatchEvent('click');
   const state = await page.evaluate(() => (window as unknown as {
-    __orbitConsoleState?: { initialTheta: number; initialSeparation: number; damping: number };
+    __orbitConsoleState?: {
+      angleUnit: string;
+      initialTheta: number;
+      initialThetaTwo: number;
+      initialSeparation: number;
+      damping: number;
+      method: string;
+      dt: number;
+      reference: number[];
+      perturbed: number[];
+    };
   }).__orbitConsoleState);
-  expect(state).toEqual({ initialTheta: 2.4, initialSeparation: 0.0045, damping: 0.3 });
+  expect(state).toMatchObject({
+    angleUnit: 'deg',
+    initialTheta: 2.0943951023931953,
+    initialThetaTwo: 2.0943951023931953,
+    initialSeparation: 0.0001,
+    damping: 0.3,
+    method: 'rk4',
+    dt: 0.001,
+    reference: [2.0943951023931953, 2.0943951023931953, 0, 0],
+    perturbed: [2.0944951023931955, 2.0943951023931953, 0, 0]
+  });
   const toggle = page.locator('[data-orbit-toggle]');
   await toggle.dispatchEvent('click');
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
@@ -991,6 +1139,8 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await expect(page.locator('#orbit-console')).toBeHidden();
   await expect(page.locator('.orbit-controls')).toBeHidden();
   await expect(page.locator('[data-orbit-control="theta"]')).toBeDisabled();
+  await expect(page.locator('[data-orbit-number="theta"]')).toBeDisabled();
+  await expect(page.locator('[data-orbit-unit]')).toBeDisabled();
   await expect(page.locator('[data-orbit-reset]')).toHaveAttribute('aria-disabled', 'true');
   await expect(page.locator('[data-orbit-readout="mode"]')).toHaveText('unavailable');
   expect(enhancementRequests.filter((path) => path.endsWith('/orbit-console.js'))).toHaveLength(2);
@@ -1000,6 +1150,90 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   expect(enhancementRequests.filter((path) => path.endsWith('/orbit-console.js'))).toHaveLength(2);
 
 
+});
+
+test('exact experiment URLs restore without precision loss in EN and KO', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const exact = new URLSearchParams({
+    experiment: 'sensitive-dependence',
+    experimentSchema: 'pendulum-sensitive-dependence/v1',
+    workflowStep: 'measure',
+    trajectoryStage: 'perturbed',
+    angleUnit: 'deg',
+    perturbationVar: 'th1',
+    deltaTheta: '0.0001',
+    th1: '2.0943951023931953',
+    th2: '2.0943951023931953',
+    gamma: '0.3'
+  });
+
+  for (const route of ['/?lang=en', '/ko.html?lang=ko']) {
+    await page.goto(`${route}&${exact}`);
+    await page.locator('#console').scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => Boolean((window as unknown as {
+      __landingEnhancements?: { orbitReady: boolean };
+    }).__landingEnhancements?.orbitReady));
+    await expect(page.locator('[data-orbit-unit]')).toHaveValue('deg');
+    await expect(page.locator('[data-orbit-number="theta"]')).toHaveValue('120');
+    await expect(page.locator('[data-orbit-number="thetaTwo"]')).toHaveValue('120');
+    await expect(page.locator('[data-orbit-number="separation"]')).toHaveValue('0.005729577951308232');
+    const launchUrl = new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '');
+    for (const [name, value] of exact) {
+      expect(launchUrl.searchParams.get(name), `${route} restored ${name}`).toBe(value);
+    }
+    await expect(page.locator('[data-orbit-state="reference"]')).toContainText('θ₁ 120 deg (2.0943951023931953 rad)');
+    await expect(page.locator('[data-orbit-state="perturbed"]')).toContainText('θ₁ 120.005729577951 deg (2.0944951023931955 rad)');
+  }
+});
+
+test('direct angle entry shares the Lab inclusive ±pi boundary', async ({ page }) => {
+  await page.goto('/?lang=en');
+  await page.locator('#console').scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => Boolean((window as unknown as {
+    __landingEnhancements?: { orbitReady: boolean };
+  }).__landingEnhancements?.orbitReady));
+  const theta = page.locator('[data-orbit-number="theta"]');
+  const damping = page.locator('[data-orbit-number="damping"]');
+  const unit = page.locator('[data-orbit-unit]');
+  const originalLaunch = new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '');
+  await theta.fill('');
+  await expect(theta).toHaveAttribute('aria-invalid', 'true');
+  expect(new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '').searchParams.get('th1')).toBe(
+    originalLaunch.searchParams.get('th1')
+  );
+  await theta.fill(originalLaunch.searchParams.get('th1') ?? '2.18');
+  await damping.fill('');
+  await expect(damping).toHaveAttribute('aria-invalid', 'true');
+  const clearedLaunch = new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '');
+  expect(clearedLaunch.searchParams.get('gamma')).toBe(originalLaunch.searchParams.get('gamma'));
+  await theta.fill('3.141592653589793');
+  await damping.fill('0.06');
+  await expect(theta).not.toHaveAttribute('aria-invalid', 'true');
+  expect(new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '').searchParams.get('th1')).toBe('3.141592653589793');
+  await theta.fill('3.141592653589794');
+  await expect(theta).toHaveAttribute('aria-invalid', 'true');
+  expect(new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '').searchParams.get('th1')).toBe('3.141592653589793');
+
+  await unit.selectOption('deg');
+  await expect(theta).toHaveAttribute('min', '-180');
+  await expect(theta).toHaveAttribute('max', '180');
+  await theta.fill('-180');
+  await expect(theta).not.toHaveAttribute('aria-invalid', 'true');
+  expect(new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '').searchParams.get('th1')).toBe('-3.141592653589793');
+  await theta.fill('-180.0000000001');
+  await expect(theta).toHaveAttribute('aria-invalid', 'true');
+  expect(new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '').searchParams.get('th1')).toBe('-3.141592653589793');
+
+  await unit.selectOption('rad');
+  const separation = page.locator('[data-orbit-number="separation"]');
+  await separation.fill('0.0000001');
+  await expect(separation).not.toHaveAttribute('aria-invalid', 'true');
+  expect(new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '').searchParams.get('deltaTheta')).toBe('1e-7');
+  await separation.fill('0.000000099999');
+  await expect(separation).toHaveAttribute('aria-invalid', 'true');
+  await separation.fill('0.0100000001');
+  await expect(separation).toHaveAttribute('aria-invalid', 'true');
+  expect(new URL(await page.locator('[data-orbit-launch]').getAttribute('href') ?? '').searchParams.get('deltaTheta')).toBe('1e-7');
 });
 
 test('capture mode freezes motion and produces a repeatable hero frame', async ({ page }, testInfo) => {

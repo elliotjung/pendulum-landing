@@ -1,7 +1,7 @@
 import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
-// Animated double-pendulum trajectory console for the landing page.
-// Decorative only: it runs a small local RK4 integration and never calls the app.
+// Interactive double-pendulum trajectory instrument for the landing page. It
+// runs locally and transfers its exact initial state to the full application.
 (function () {
   'use strict';
 
@@ -15,20 +15,23 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   let reduced = reducedMotionQuery.matches || captureMode;
   const korean = document.documentElement.lang === 'ko';
+  const radiansToDegrees = 180 / Math.PI;
+  const minimumHandoffSeparation = 1e-7;
+  const maximumHandoffSeparation = 1e-2;
   const labels = korean ? {
     warming: '준비 중', paused: '일시정지', static: '정적', live: '실시간', standby: '대기',
     pause: '움직임 일시정지', resume: '움직임 재개', reduced: '동작 줄임', points: '점',
-    thetaValue: (value) => `${value} 라디안`,
-    separationValue: (value) => `${value} 라디안`,
-    separationCaption: (value) => `${value} 라디안 간격`,
-    dampingValue: (value) => `감쇠 계수 ${value}`
+    angleValue: (value, unit) => `${value} ${unit === 'deg' ? '도' : '라디안'}`,
+    separationCaption: (value, unit) => `${value} ${unit === 'deg' ? '도' : '라디안'} 간격`,
+    dampingValue: (value) => `감쇠 계수 ${value}`,
+    exactStatus: '전체 정밀도 라디안 값과 Δθ₁이 랩으로 그대로 이어집니다.'
   } : {
     warming: 'warming', paused: 'paused', static: 'static', live: 'live', standby: 'standby',
     pause: 'Pause motion', resume: 'Resume motion', reduced: 'Motion reduced', points: 'pts',
-    thetaValue: (value) => `${value} radians`,
-    separationValue: (value) => `${value} radians`,
-    separationCaption: (value) => `${value} rad apart`,
-    dampingValue: (value) => `${value} damping`
+    angleValue: (value, unit) => `${value} ${unit === 'deg' ? 'degrees' : 'radians'}`,
+    separationCaption: (value, unit) => `${value} ${unit === 'deg' ? 'deg' : 'rad'} apart`,
+    dampingValue: (value) => `${value} damping`,
+    exactStatus: 'Full-precision radians and Δθ₁ will continue into the Lab.'
   };
   const lowPower = window.matchMedia('(max-width: 720px), (pointer: coarse)').matches
     || navigator.connection?.saveData === true
@@ -36,7 +39,13 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     || (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4);
   const targetFps = lowPower ? 30 : 60;
   const frameInterval = 1000 / targetFps;
-  const fixedStep = 1 / 150;
+  const experimentContract = Object.freeze({ method: 'rk4', dt: 0.001 });
+  const fixedStep = experimentContract.dt;
+  const maximumFrameElapsed = 0.08;
+  const maximumPhysicsSteps = Math.ceil(maximumFrameElapsed / fixedStep);
+  // Integration follows the exact Lab handoff dt. Trail sampling remains a
+  // presentation concern so the denser solver steps do not crowd the canvas.
+  const trailSampleInterval = 1 / 150;
   const trailStride = lowPower ? 3 : 2;
   const readouts = {
     separation: document.querySelector('[data-orbit-readout="separation"]'),
@@ -46,15 +55,27 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   };
   const controls = {
     theta: document.querySelector('[data-orbit-control="theta"]'),
+    thetaTwo: document.querySelector('[data-orbit-control="thetaTwo"]'),
     separation: document.querySelector('[data-orbit-control="separation"]'),
     damping: document.querySelector('[data-orbit-control="damping"]'),
+    thetaNumber: document.querySelector('[data-orbit-number="theta"]'),
+    thetaTwoNumber: document.querySelector('[data-orbit-number="thetaTwo"]'),
+    separationNumber: document.querySelector('[data-orbit-number="separation"]'),
+    dampingNumber: document.querySelector('[data-orbit-number="damping"]'),
+    angleUnit: document.querySelector('[data-orbit-unit]'),
+    unitLabels: document.querySelectorAll('[data-orbit-unit-label]'),
     thetaOutput: document.querySelector('[data-orbit-output="theta"]'),
+    thetaTwoOutput: document.querySelector('[data-orbit-output="thetaTwo"]'),
     separationOutput: document.querySelector('[data-orbit-output="separation"]'),
     dampingOutput: document.querySelector('[data-orbit-output="damping"]'),
     separationCaption: document.querySelector('[data-orbit-caption="separation"]'),
+    referenceState: document.querySelector('[data-orbit-state="reference"]'),
+    perturbedState: document.querySelector('[data-orbit-state="perturbed"]'),
+    stateStatus: document.querySelector('[data-orbit-state-status]'),
     reset: document.querySelector('[data-orbit-reset]'),
     toggle: document.querySelector('[data-orbit-toggle]'),
-    launch: document.querySelector('[data-orbit-launch]')
+    launch: document.querySelector('[data-orbit-launch]'),
+    next: document.querySelector('[data-orbit-next]')
   };
 
   let width = 920;
@@ -68,6 +89,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   let lastTick = 0;
   let lastDraw = 0;
   let physicsAccumulator = 0;
+  let trailSampleAccumulator = 0;
   let warming = false;
   let resetGeneration = 0;
   let resetRaf = 0;
@@ -85,14 +107,53 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   // A user can move a control while this below-the-fold module is still
   // downloading. Seed from the live form values so that first intent is never
   // overwritten by the deferred initializer.
-  const initialThetaValue = Number.parseFloat(controls.theta?.value || '');
-  const initialSeparationValue = Number.parseFloat(controls.separation?.value || '');
-  const dampingValue = Number.parseFloat(controls.damping?.value || '');
-  let initialTheta = Number.isFinite(initialThetaValue) ? initialThetaValue : 2.18;
-  let initialSeparation = Number.isFinite(initialSeparationValue)
-    ? Math.max(0.0001, Math.min(0.02, initialSeparationValue))
-    : 0.001;
-  let damping = Number.isFinite(dampingValue) ? Math.max(0, dampingValue) : 0.06;
+  const initialQuery = new URLSearchParams(window.location.search);
+  const finiteQuery = (name, fallback, minimum, maximum) => {
+    const raw = initialQuery.get(name);
+    if (raw === null || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(raw)) return fallback;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= minimum && value <= maximum ? value : fallback;
+  };
+  const exactFormValue = (numberInput, rangeInput, fallback, minimum, maximum) => {
+    const raw = numberInput instanceof HTMLInputElement
+      ? numberInput.value
+      : rangeInput instanceof HTMLInputElement
+        ? rangeInput.value
+        : '';
+    const value = Number.parseFloat(raw);
+    return Number.isFinite(value) && value >= minimum && value <= maximum ? value : fallback;
+  };
+  let angleUnit = initialQuery.get('angleUnit') === 'deg' ? 'deg' : 'rad';
+  let initialTheta = finiteQuery(
+    'th1',
+    exactFormValue(controls.thetaNumber, controls.theta, 2.18, -Math.PI, Math.PI),
+    -Math.PI,
+    Math.PI
+  );
+  let initialThetaTwo = finiteQuery(
+    'th2',
+    exactFormValue(controls.thetaTwoNumber, controls.thetaTwo, 2.64, -Math.PI, Math.PI),
+    -Math.PI,
+    Math.PI
+  );
+  let initialSeparation = finiteQuery(
+    'deltaTheta',
+    exactFormValue(
+      controls.separationNumber,
+      controls.separation,
+      0.001,
+      minimumHandoffSeparation,
+      maximumHandoffSeparation
+    ),
+    minimumHandoffSeparation,
+    maximumHandoffSeparation
+  );
+  let damping = finiteQuery(
+    'gamma',
+    exactFormValue(controls.dampingNumber, controls.damping, 0.06, 0, 10),
+    0,
+    10
+  );
   const maxTrail = lowPower ? 300 : 420;
   const trailA = makeTrail(maxTrail);
   const trailB = makeTrail(maxTrail);
@@ -134,10 +195,20 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     window.__orbitConsoleQuality = { dpr, targetFps, maxTrail, lowPower };
   }
 
-  function rk4Into(s, work, dt) {
+  function rk4Into(s, work) {
     runtimeParams.g = params.g;
     runtimeParams.damping = damping;
-    rk4StepDouble(s, runtimeParams, dt, work);
+    rk4StepDouble(s, runtimeParams, experimentContract.dt, work);
+  }
+
+  function advanceSimulation() {
+    rk4Into(primary, workA);
+    rk4Into(twin, workB);
+    trailSampleAccumulator += experimentContract.dt;
+    if (trailSampleAccumulator >= trailSampleInterval) {
+      pushTrail();
+      trailSampleAccumulator %= trailSampleInterval;
+    }
   }
 
   function pointInto(s, out) {
@@ -239,28 +310,205 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
           : visible && !document.hidden ? labels.live : labels.standby;
   }
 
-  function updateControlSurface() {
-    const thetaText = initialTheta.toFixed(2);
-    const separationText = initialSeparation.toExponential(1);
-    const dampingText = damping.toFixed(2);
-    if (controls.thetaOutput) controls.thetaOutput.textContent = `${thetaText}${korean ? ' 라디안' : ' rad'}`;
-    if (controls.separationOutput) controls.separationOutput.textContent = `${separationText}${korean ? ' 라디안' : ' rad'}`;
-    if (controls.dampingOutput) controls.dampingOutput.textContent = dampingText;
-    controls.theta?.setAttribute('aria-valuetext', labels.thetaValue(thetaText));
-    controls.separation?.setAttribute('aria-valuetext', labels.separationValue(separationText));
-    controls.damping?.setAttribute('aria-valuetext', labels.dampingValue(dampingText));
-    if (controls.separationCaption) controls.separationCaption.textContent = labels.separationCaption(separationText);
-    if (controls.launch instanceof HTMLAnchorElement) {
-      try {
-        const url = new URL(controls.launch.href);
-        url.searchParams.set('th1', initialTheta.toFixed(2));
-        url.searchParams.set('gamma', damping.toFixed(2));
-        url.searchParams.set('g', params.g.toFixed(2));
-        controls.launch.href = url.toString();
-      } catch {
-        /* keep the static fallback URL */
-      }
+  function canonicalNumber(value) {
+    return Object.is(value, -0) ? '0' : String(value);
+  }
+
+  function displayValue(radians, { scientific = false } = {}) {
+    const value = angleUnit === 'deg' ? radians * radiansToDegrees : radians;
+    if (scientific && Math.abs(value) < 0.01) return value.toExponential(6).replace(/\.?0+(?=e)/, '');
+    return Number(value.toPrecision(15)).toString();
+  }
+
+  function exactDisplayValue(radians) {
+    const value = angleUnit === 'deg' ? radians * radiansToDegrees : radians;
+    const nearestInteger = Math.round(value);
+    if (Math.abs(value - nearestInteger) <= Number.EPSILON * Math.max(1, Math.abs(value)) * 2) {
+      return canonicalNumber(nearestInteger);
     }
+    return canonicalNumber(value);
+  }
+
+  function updateAngleSlider(input, radians) {
+    if (!(input instanceof HTMLInputElement)) return;
+    const minRadians = input === controls.separation ? 0.0001 : -Math.PI;
+    const maxRadians = input === controls.separation ? maximumHandoffSeparation : Math.PI;
+    const value = Math.min(maxRadians, Math.max(minRadians, radians));
+    // A numeric `step` makes browsers coerce values onto a grid anchored at
+    // `min`. For bounds such as -π, that silently changes exact authored
+    // values before this module can read them. Keep the range unconstrained
+    // and provide an explicit step only for our keyboard handler.
+    input.step = 'any';
+    if (angleUnit === 'deg') {
+      input.min = canonicalNumber(minRadians * radiansToDegrees);
+      input.max = canonicalNumber(maxRadians * radiansToDegrees);
+      input.dataset.orbitKeyboardStep = input === controls.separation ? '0.001' : '0.1';
+      input.value = canonicalNumber(value * radiansToDegrees);
+    } else {
+      input.min = canonicalNumber(minRadians);
+      input.max = canonicalNumber(maxRadians);
+      input.dataset.orbitKeyboardStep = input === controls.separation ? '0.0001' : '0.01';
+      input.value = canonicalNumber(value);
+    }
+  }
+
+  function handleRangeKeydown(input, event) {
+    if (!(input instanceof HTMLInputElement)) return;
+    const direction = event.key === 'ArrowRight' || event.key === 'ArrowUp'
+      ? 1
+      : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
+        ? -1
+        : 0;
+    if (!direction) return;
+    const current = Number(input.value);
+    const minimum = Number(input.min);
+    const maximum = Number(input.max);
+    const authoredStep = Number(input.dataset.orbitKeyboardStep);
+    if (![current, minimum, maximum, authoredStep].every(Number.isFinite) || authoredStep <= 0) return;
+    event.preventDefault();
+    const multiplier = event.shiftKey ? 10 : event.altKey ? 0.1 : 1;
+    const next = Math.min(maximum, Math.max(
+      minimum,
+      Number((current + direction * authoredStep * multiplier).toPrecision(15))
+    ));
+    input.value = canonicalNumber(next);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function setNumberInput(input, value) {
+    if (!(input instanceof HTMLInputElement) || document.activeElement === input) return;
+    input.value = value;
+    input.removeAttribute('aria-invalid');
+  }
+
+  function updateDirectAngleBounds(input) {
+    if (!(input instanceof HTMLInputElement)) return;
+    input.min = angleUnit === 'deg' ? '-180' : canonicalNumber(-Math.PI);
+    input.max = angleUnit === 'deg' ? '180' : canonicalNumber(Math.PI);
+  }
+
+  function updateDirectSeparationBounds(input) {
+    if (!(input instanceof HTMLInputElement)) return;
+    const factor = angleUnit === 'deg' ? radiansToDegrees : 1;
+    input.min = canonicalNumber(minimumHandoffSeparation * factor);
+    input.max = canonicalNumber(maximumHandoffSeparation * factor);
+  }
+
+  function updateExperimentLink(anchor) {
+    if (!(anchor instanceof HTMLAnchorElement)) return;
+    try {
+      const url = new URL(anchor.href);
+      const contract = {
+        experiment: 'sensitive-dependence',
+        experimentSchema: 'pendulum-sensitive-dependence/v1',
+        workflowStep: 'measure',
+        trajectoryStage: 'perturbed',
+        angleUnit,
+        perturbationVar: 'th1',
+        perturbationPattern: 'symmetric',
+        perturbationSeed: '20260826',
+        deltaTheta: canonicalNumber(initialSeparation),
+        ensembleCount: '12',
+        sysType: 'double',
+        th1: canonicalNumber(initialTheta),
+        th2: canonicalNumber(initialThetaTwo),
+        iw1: '0',
+        iw2: '0',
+        m1: '1',
+        m2: '1',
+        l1: '1',
+        l2: '1',
+        g: canonicalNumber(params.g),
+        gamma: canonicalNumber(damping),
+        method: experimentContract.method,
+        dt: canonicalNumber(experimentContract.dt)
+      };
+      Object.entries(contract).forEach(([name, value]) => url.searchParams.set(name, value));
+      anchor.href = url.toString();
+    } catch {
+      /* keep the static fallback URL */
+    }
+  }
+
+  function syncLandingExperimentUrl() {
+    try {
+      const url = new URL(window.location.href);
+      const state = {
+        experiment: 'sensitive-dependence',
+        experimentSchema: 'pendulum-sensitive-dependence/v1',
+        workflowStep: 'measure',
+        trajectoryStage: 'perturbed',
+        angleUnit,
+        perturbationVar: 'th1',
+        perturbationPattern: 'symmetric',
+        perturbationSeed: '20260826',
+        deltaTheta: canonicalNumber(initialSeparation),
+        ensembleCount: '12',
+        th1: canonicalNumber(initialTheta),
+        th2: canonicalNumber(initialThetaTwo),
+        gamma: canonicalNumber(damping),
+        method: experimentContract.method,
+        dt: canonicalNumber(experimentContract.dt)
+      };
+      Object.entries(state).forEach(([name, value]) => url.searchParams.set(name, value));
+      window.history.replaceState(window.history.state, '', url);
+      window.dispatchEvent(new CustomEvent('pendulum:experiment-state'));
+    } catch {
+      /* the state remains valid even when history is unavailable */
+    }
+  }
+
+  function updateControlSurface({ syncUrl = false } = {}) {
+    const thetaText = displayValue(initialTheta);
+    const thetaTwoText = displayValue(initialThetaTwo);
+    const separationText = displayValue(initialSeparation, { scientific: true });
+    const thetaInputText = exactDisplayValue(initialTheta);
+    const thetaTwoInputText = exactDisplayValue(initialThetaTwo);
+    const separationInputText = exactDisplayValue(initialSeparation);
+    const dampingText = canonicalNumber(damping);
+    const shortUnit = angleUnit === 'deg' ? 'deg' : 'rad';
+    const localizedUnit = korean && angleUnit === 'deg' ? '도' : korean ? ' 라디안'.trim() : shortUnit;
+    if (controls.angleUnit instanceof HTMLSelectElement) controls.angleUnit.value = angleUnit;
+    controls.unitLabels.forEach((label) => { label.textContent = localizedUnit; });
+    if (controls.thetaOutput) controls.thetaOutput.textContent = `${thetaText} ${localizedUnit}`;
+    if (controls.thetaTwoOutput) controls.thetaTwoOutput.textContent = `${thetaTwoText} ${localizedUnit}`;
+    if (controls.separationOutput) controls.separationOutput.textContent = `${separationText} ${localizedUnit}`;
+    if (controls.dampingOutput) controls.dampingOutput.textContent = dampingText;
+    updateAngleSlider(controls.theta, initialTheta);
+    updateAngleSlider(controls.thetaTwo, initialThetaTwo);
+    updateAngleSlider(controls.separation, initialSeparation);
+    updateDirectAngleBounds(controls.thetaNumber);
+    updateDirectAngleBounds(controls.thetaTwoNumber);
+    updateDirectSeparationBounds(controls.separationNumber);
+    if (controls.damping instanceof HTMLInputElement) {
+      controls.damping.step = 'any';
+      controls.damping.dataset.orbitKeyboardStep = '0.01';
+      controls.damping.value = canonicalNumber(Math.min(0.8, damping));
+    }
+    setNumberInput(controls.thetaNumber, thetaInputText);
+    setNumberInput(controls.thetaTwoNumber, thetaTwoInputText);
+    setNumberInput(controls.separationNumber, separationInputText);
+    setNumberInput(controls.dampingNumber, dampingText);
+    controls.theta?.setAttribute('aria-valuetext', labels.angleValue(thetaText, angleUnit));
+    controls.thetaTwo?.setAttribute('aria-valuetext', labels.angleValue(thetaTwoText, angleUnit));
+    controls.separation?.setAttribute('aria-valuetext', labels.angleValue(separationText, angleUnit));
+    controls.damping?.setAttribute('aria-valuetext', labels.dampingValue(dampingText));
+    if (controls.separationCaption) controls.separationCaption.textContent = labels.separationCaption(separationText, angleUnit);
+    const perturbedTheta = initialTheta + initialSeparation;
+    const omegaText = korean ? 'ω₁ 0 · ω₂ 0' : 'ω₁ 0 · ω₂ 0';
+    const exactAngle = (radians) => angleUnit === 'deg'
+      ? `${displayValue(radians)} deg (${canonicalNumber(radians)} rad)`
+      : `${canonicalNumber(radians)} rad`;
+    if (controls.referenceState) {
+      controls.referenceState.textContent = `θ₁ ${exactAngle(initialTheta)} · θ₂ ${exactAngle(initialThetaTwo)} · ${omegaText}`;
+    }
+    if (controls.perturbedState) {
+      controls.perturbedState.textContent = `θ₁ ${exactAngle(perturbedTheta)} · θ₂ ${exactAngle(initialThetaTwo)} · ${omegaText}`;
+    }
+    if (controls.stateStatus) controls.stateStatus.textContent = labels.exactStatus;
+    updateExperimentLink(controls.launch);
+    updateExperimentLink(controls.next);
+    if (syncUrl) syncLandingExperimentUrl();
   }
 
   function clearTrail(trail) {
@@ -287,23 +535,34 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     stop();
     warming = true;
     primary[0] = initialTheta;
-    primary[1] = 2.64;
+    primary[1] = initialThetaTwo;
     primary[2] = 0;
     primary[3] = 0;
     twin[0] = initialTheta + initialSeparation;
-    twin[1] = 2.64;
+    twin[1] = initialThetaTwo;
     twin[2] = 0;
     twin[3] = 0;
     clearTrail(trailA);
     clearTrail(trailB);
     frame = 0;
     physicsAccumulator = 0;
+    trailSampleAccumulator = 0;
     lastTick = 0;
     lastDraw = 0;
-    const warmupSteps = reduced ? 180 : 80;
+    const warmupSteps = Math.ceil((reduced ? 180 : 80) * trailSampleInterval / fixedStep);
     let completed = 0;
     updateControlSurface();
-    window.__orbitConsoleState = { initialTheta, initialSeparation, damping };
+    window.__orbitConsoleState = {
+      angleUnit,
+      initialTheta,
+      initialThetaTwo,
+      initialSeparation,
+      damping,
+      method: experimentContract.method,
+      dt: experimentContract.dt,
+      reference: [initialTheta, initialThetaTwo, 0, 0],
+      perturbed: [initialTheta + initialSeparation, initialThetaTwo, 0, 0]
+    };
     // Do not leave the instrument as a black rectangle while low-priority
     // warmup yields to a busy renderer. The initial physical state, grid, and
     // first trace sample are truthful immediately; richer history arrives in
@@ -319,9 +578,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
       while (completed < warmupSteps
         && (deadline.didTimeout || deadline.timeRemaining() > 1)
         && performance.now() - chunkStart < 6) {
-        rk4Into(primary, workA, fixedStep);
-        rk4Into(twin, workB, fixedStep);
-        pushTrail();
+        advanceSimulation();
         completed += 1;
       }
       if (completed < warmupSteps) {
@@ -337,8 +594,18 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   }
 
   function scheduleReset() {
-    updateControlSurface();
-    window.__orbitConsoleState = { initialTheta, initialSeparation, damping };
+    updateControlSurface({ syncUrl: true });
+    window.__orbitConsoleState = {
+      angleUnit,
+      initialTheta,
+      initialThetaTwo,
+      initialSeparation,
+      damping,
+      method: experimentContract.method,
+      dt: experimentContract.dt,
+      reference: [initialTheta, initialThetaTwo, 0, 0],
+      perturbed: [initialTheta + initialSeparation, initialThetaTwo, 0, 0]
+    };
     if (suspended) {
       resetAfterResume = true;
       return;
@@ -371,18 +638,16 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
       return;
     }
     raf = window.requestAnimationFrame(tick);
-    const elapsed = lastTick ? Math.min((timestamp - lastTick) / 1000, 0.08) : 0;
+    const elapsed = lastTick ? Math.min((timestamp - lastTick) / 1000, maximumFrameElapsed) : 0;
     lastTick = timestamp;
     physicsAccumulator += elapsed;
     let steps = 0;
-    while (physicsAccumulator >= fixedStep && steps < 12) {
-      rk4Into(primary, workA, fixedStep);
-      rk4Into(twin, workB, fixedStep);
-      pushTrail();
+    while (physicsAccumulator >= fixedStep && steps < maximumPhysicsSteps) {
+      advanceSimulation();
       physicsAccumulator -= fixedStep;
       steps += 1;
     }
-    if (steps === 12) physicsAccumulator = 0;
+    if (steps === maximumPhysicsSteps) physicsAccumulator = 0;
     if (lastDraw && timestamp - lastDraw < frameInterval) return;
     lastDraw = timestamp;
     draw();
@@ -445,19 +710,71 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
   }
 
   function handleThetaInput() {
-    initialTheta = Number.parseFloat(controls.theta.value) || 2.18;
+    const display = Number.parseFloat(controls.theta.value);
+    if (!Number.isFinite(display)) return;
+    initialTheta = angleUnit === 'deg' ? display / radiansToDegrees : display;
+    scheduleReset();
+  }
+
+  function handleThetaTwoInput() {
+    const display = Number.parseFloat(controls.thetaTwo.value);
+    if (!Number.isFinite(display)) return;
+    initialThetaTwo = angleUnit === 'deg' ? display / radiansToDegrees : display;
     scheduleReset();
   }
 
   function handleSeparationInput() {
-    const value = Number.parseFloat(controls.separation.value);
-    initialSeparation = Number.isFinite(value) ? Math.max(0.0001, Math.min(0.02, value)) : 0.001;
+    const display = Number.parseFloat(controls.separation.value);
+    if (!Number.isFinite(display)) return;
+    const radians = angleUnit === 'deg' ? display / radiansToDegrees : display;
+    initialSeparation = Math.max(minimumHandoffSeparation, Math.min(maximumHandoffSeparation, radians));
     scheduleReset();
   }
 
   function handleDampingInput() {
-    damping = Math.max(0, Number.parseFloat(controls.damping.value) || 0);
+    const value = Number.parseFloat(controls.damping.value);
+    if (!Number.isFinite(value)) return;
+    damping = Math.max(0, Math.min(10, value));
     scheduleReset();
+  }
+
+  function handleDirectInput(input, apply, { angle = false, minimum = -1e12, maximum = 1e12 } = {}) {
+    if (!(input instanceof HTMLInputElement)) return;
+    const raw = input.value.trim();
+    if (!raw) {
+      input.setAttribute('aria-invalid', 'true');
+      return;
+    }
+    const display = Number(raw);
+    const radians = angle && angleUnit === 'deg' ? display / radiansToDegrees : display;
+    if (!Number.isFinite(radians) || radians < minimum || radians > maximum) {
+      input.setAttribute('aria-invalid', 'true');
+      return;
+    }
+    input.removeAttribute('aria-invalid');
+    apply(radians);
+    scheduleReset();
+  }
+
+  function restoreDirectInputs() {
+    updateControlSurface();
+  }
+
+  function handleAngleUnitChange() {
+    if (!(controls.angleUnit instanceof HTMLSelectElement)) return;
+    angleUnit = controls.angleUnit.value === 'deg' ? 'deg' : 'rad';
+    updateControlSurface({ syncUrl: true });
+    window.__orbitConsoleState = {
+      angleUnit,
+      initialTheta,
+      initialThetaTwo,
+      initialSeparation,
+      damping,
+      method: experimentContract.method,
+      dt: experimentContract.dt,
+      reference: [initialTheta, initialThetaTwo, 0, 0],
+      perturbed: [initialTheta + initialSeparation, initialThetaTwo, 0, 0]
+    };
   }
 
   function handleVisibilityChange() {
@@ -486,8 +803,36 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     listen(canvas, 'pointerleave', () => { pointerX = 0; });
     listen(window, 'scroll', () => { canvasRect = null; }, { passive: true });
     listen(controls.theta, 'input', handleThetaInput);
+    listen(controls.thetaTwo, 'input', handleThetaTwoInput);
     listen(controls.separation, 'input', handleSeparationInput);
     listen(controls.damping, 'input', handleDampingInput);
+    for (const input of [controls.theta, controls.thetaTwo, controls.separation, controls.damping]) {
+      listen(input, 'keydown', (event) => handleRangeKeydown(input, event));
+    }
+    listen(controls.thetaNumber, 'input', () => handleDirectInput(
+      controls.thetaNumber,
+      (value) => { initialTheta = value; },
+      { angle: true, minimum: -Math.PI, maximum: Math.PI }
+    ));
+    listen(controls.thetaTwoNumber, 'input', () => handleDirectInput(
+      controls.thetaTwoNumber,
+      (value) => { initialThetaTwo = value; },
+      { angle: true, minimum: -Math.PI, maximum: Math.PI }
+    ));
+    listen(controls.separationNumber, 'input', () => handleDirectInput(
+      controls.separationNumber,
+      (value) => { initialSeparation = value; },
+      { angle: true, minimum: minimumHandoffSeparation, maximum: maximumHandoffSeparation }
+    ));
+    listen(controls.dampingNumber, 'input', () => handleDirectInput(
+      controls.dampingNumber,
+      (value) => { damping = value; },
+      { minimum: 0, maximum: 10 }
+    ));
+    for (const input of [controls.thetaNumber, controls.thetaTwoNumber, controls.separationNumber, controls.dampingNumber]) {
+      listen(input, 'change', restoreDirectInputs);
+    }
+    listen(controls.angleUnit, 'change', handleAngleUnitChange);
     listen(controls.reset, 'click', scheduleReset);
     listen(controls.toggle, 'click', () => setPaused(!paused));
     listen(window, 'resize', scheduleCanvasResize, { passive: true });

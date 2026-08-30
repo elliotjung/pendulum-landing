@@ -57,6 +57,18 @@ jobs:
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: validated-handoff/_site
+      - name: Record the deployed journey mode
+        shell: bash
+        env:
+          SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
+        run: |
+          node -e "const fs=require('node:fs'); const e=JSON.parse(fs.readFileSync('validated-handoff/_site/assets/evidence-summary.json','utf8')); const strict=['Evidence Sync','Cross-repository release'].includes(process.env.SOURCE_WORKFLOW); fs.writeFileSync('deployed-journey-coordinate.json', JSON.stringify({schemaVersion:'pendulum-deployed-journey-coordinate/v1',mode:strict?'strict-coordinate':'landing-ui',sourceWorkflow:process.env.SOURCE_WORKFLOW,sourceCommit:e.provenance.sourceCommit,evidenceSha256:require('node:crypto').createHash('sha256').update(fs.readFileSync('validated-handoff/_site/assets/evidence-summary.json')).digest('hex'),lastSynchronizedAt:e.generatedAt},null,2)+'\n')"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: deployed-journey-coordinate
+          path: deployed-journey-coordinate.json
+          if-no-files-found: error
+          retention-days: 2
 
   deploy:
     needs: quality-gate

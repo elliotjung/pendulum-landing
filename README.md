@@ -2,11 +2,31 @@
 
 Static product entryway for
 [Pendulum Lab](https://github.com/elliotjung/pendulum-lab), a validated
-browser laboratory for nonlinear pendulum dynamics.
+browser laboratory for nonlinear pendulum dynamics. Its primary product
+statement is: **An interactive laboratory for understanding and measuring
+nonlinear dynamics.**
 
 - Live app: https://elliotjung.github.io/pendulum-lab/
 - Landing page: https://elliotjung.github.io/pendulum-landing/
 - Reviewer console: https://elliotjung.github.io/pendulum-lab/reviewer.html
+
+## Start Here
+
+The first-session path is deliberately short: same start → tiny difference →
+divergence → measurement → the same exact experiment in the full Lab. The
+Landing trajectory console accepts direct numeric values as well as sliders,
+switches between radians and degrees for display, keeps canonical radians in
+the URL, enforces the Lab's inclusive `[-π, +π]` angle boundary, and names the
+reference and perturbed states explicitly.
+
+The shared first recipe is **Sensitive dependence**: planar double pendulum,
+`θ=(2.18, 2.64) rad`, `ω=(0, 0) rad/s`, `γ=0.06`, RK4 with `dt=0.001`, and a
+symmetric `Δθ₁=1e-3 rad` perturbation (`seed=20260826`, `n=12`). Those exact
+values are visible on the page and travel into the Lab URL.
+
+For implementation details, continue below. For the numerical methods and
+scientific evidence, use the Lab repository rather than treating this
+explanatory site as an authority.
 
 ## What Is In This Site
 
@@ -24,14 +44,17 @@ browser laboratory for nonlinear pendulum dynamics.
 - `assets/pendulum-demo-kernel.js` - the `pendulum-demo-kernel/v3` browser ESM
   generated from the Lab's authoritative `rhsDouble` implementation, rather
   than a separately maintained equation port. It supplies the allocation-free
-  double-pendulum equation and RK4 step used by the hero and mini console. The
+  planar double-pendulum equation and RK4 step used by the trajectory console. The
   state is `[theta1, theta2, omega1, omega2]`; force-level damping is evaluated
-  inside every RK4 stage, while the hero intentionally passes zero damping.
+  inside every RK4 stage. The cinematic 3D hero is a distinct model described
+  below and does not use this planar kernel.
 - `assets/demo-kernel-manifest.json` - SHA-256 and release-evidence provenance
   for the generated v3 kernel. The static gate verifies the file and its
   runtime export before deployment.
 - `assets/orbit-console.js` - lightweight RK4 double-pendulum canvas console
-  used in the trajectory section. It starts only near the viewport, caps
+  used in the trajectory section. It owns the precise EN/KO state editor,
+  radians/degrees display conversion, lossless Landing/Lab URL handoff, and
+  explicit reference/perturbed readout. It starts only near the viewport, caps
   catch-up work and DPR, and rebuilds its abortable listener/observer graph
   after a BFCache restore without duplicating handlers.
 - `assets/main.js` - deferred hero lifecycle, scroll progress, one-shot section
@@ -119,20 +142,43 @@ its `_headers` isolation policy alongside the public files.
 
 ## Physics and animation lifecycle
 
-The hero is not a rotating prop. `assets/scene.js` integrates two nearby planar
-double-pendulum trajectories with deterministic classical RK4 at 240 Hz, maps
-the physical joint positions into Three.js rods and bobs, and treats scroll or
-pointer input as camera/stage motion only. The nearby trajectory begins
-`8e-4 rad` away so the visible divergence remains physically motivated. Its
-accumulator and prewarm work are bounded, and rendering stops when the hero and
-descent are outside the active region or the document is hidden.
+The three visible simulation surfaces are related, but they are not the same
+physical model:
 
-The trajectory console uses the same RHS at 150 Hz. A positive `gamma` is a
-generalized torque `-gamma * q-dot`; the shared RHS solves the coupled mass
-matrix for that torque inside all four RK4 stages. It is not a post-step visual
-velocity decay. The console caps catch-up to 12 steps, targets 30 FPS on compact
+| Surface | Model and state | Integration / damping | Authority |
+| --- | --- | --- | --- |
+| Cinematic hero | Constrained double-spherical pendulum; 3D Cartesian positions and velocities with mass-weighted position/velocity projection | Deterministic RK4 at 240 Hz; conservative (`gamma = 0`) | `assets/scene.js`; explanatory visual, not a validation oracle |
+| Trajectory console | Planar double pendulum; `[theta1, theta2, omega1, omega2]` | Shared Lab RHS, RK4 with `dt = 0.001`; trail sampled at 150 Hz; force-level `-gamma * omega` inside every RK4 stage | `assets/pendulum-demo-kernel.js` plus its source-bound manifest |
+| Full Lab | Planar, compound, triple, N-link, driven, elastic, spherical, and other supported systems | Selectable fixed, adaptive, and implicit methods with model-specific diagnostics | Main Lab repository, tests, reports, and reviewer evidence |
+
+The hero is not a rotating prop. `assets/scene.js` advances two nearby 3D
+constrained states and treats scroll or pointer input as camera/stage motion
+only. The nearby trajectory begins `8e-4 rad` away so the visible divergence
+remains physically motivated. Its accumulator and prewarm work are bounded,
+and rendering stops when the hero and descent are outside the active region or
+the document is hidden.
+
+The trajectory console uses the same RHS with RK4 and `dt = 0.001`, while the
+visible trail is sampled at 150 Hz. A positive `gamma` is a generalized torque
+`-gamma * q-dot`; the shared RHS solves the coupled mass matrix for that torque
+inside all four RK4 stages. It is not a post-step visual velocity decay. The
+console caps catch-up to 80 one-millisecond steps, targets 30 FPS on compact
 devices and 60 FPS otherwise, bounds DPR by a pixel budget, pauses offscreen,
 and cancels RAF/idle work plus observers/listeners on page lifecycle teardown.
+Its angular readout is the wrapped `|delta theta1(t)|`; the pixel screen-gap
+readout is presentation-only, not the phase-state norm used by the Lab's
+finite-time Lyapunov diagnostic.
+
+The console handoff contract is
+`experiment=sensitive-dependence`,
+`experimentSchema=pendulum-sensitive-dependence/v1`, `workflowStep`,
+`trajectoryStage`, `angleUnit`, `perturbationVar`, `perturbationPattern`,
+`perturbationSeed`, full-precision `deltaTheta`, and `ensembleCount`, together
+with the Lab's canonical `th1`, `th2`, `iw1`, `iw2`, `gamma`, `method`, `dt`,
+and physical-parameter keys. Angles and `deltaTheta` are serialized in radians;
+`angleUnit` is only the display preference. The Landing page mirrors the
+editable state plus fixed recipe coordinates into its own URL so language
+switches and BFCache back-navigation keep the experiment intact.
 
 These simulations explain the product; scientific validation remains the main
 Lab repository's responsibility. The two-repository equations, routing and
@@ -146,10 +192,18 @@ release contract are documented in the Lab's
   static server from Playwright/Lighthouse.
 - Rollback: redeploy the previous landing commit or revert the Pages deployment.
 
-The CI gate is `npm run check` -> Chromium smoke -> Lighthouse CI. Reports are
-written under `reports/` and are intentionally gitignored; do not mix them with
-deployable assets. `npm run lighthouse` runs the stable local audit wrapper, and
-`npm run lighthouse:lhci` is kept for raw LHCI troubleshooting.
+The CI gate is `npm run check` -> Chromium smoke -> actual-bundle regression
+fixture -> cold/warm EN+KO Lighthouse matrix -> pessimistic Lighthouse CI.
+Reports are written under `reports/` and are intentionally gitignored; do not
+mix them with deployable assets. `npm run lighthouse` records one fresh-profile
+cold run, one discarded warm-up, and three reused-profile warm runs per locale;
+it gates both the warm median and worst run. Every SLO artifact includes runner
+fingerprinting and long-task source attribution. `npm run lighthouse:fixture`
+must observe a hard-gate failure from the opt-in production-bundle long task,
+so CI proves the measurement path itself can catch a regression. Thresholds,
+noise treatment, and report filenames are documented in
+[`docs/performance-slo.md`](docs/performance-slo.md). `npm run lighthouse:lhci`
+remains the release entry point and independent pessimistic cross-check.
 
 The page uses a self-hosted, tree-shaken Three.js runtime and a self-hosted
 Pretendard subset for Korean copy. Three.js, Playwright, axe, and LHCI are

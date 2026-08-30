@@ -29,26 +29,14 @@ const env = {
     : {})
 };
 
-// GitHub-hosted runners consistently pay a one-time Chrome/Lighthouse startup
-// penalty on the first document (and sometimes the first locale). Calibrate the
-// runtime with the existing independent three-run median gate before LHCI's
-// stricter pessimistic gate. This keeps every measured LHCI run accountable
-// without lowering any release threshold to accommodate host cold-start noise.
+// Before LHCI's independent pessimistic gate, prove the real shipped bundle
+// trips the thresholds when a deterministic long task is enabled, then record
+// separate cold-start and warm-state SLOs for both language documents.
 if (process.env.CI === 'true' && process.env.PENDULUM_LHCI_SKIP_CALIBRATION !== '1') {
-  console.log('[lhci] Calibrating the cold CI runtime before the pessimistic release gate...');
-  const calibration = spawn(process.execPath, [join(root, 'scripts', 'run-lighthouse.mjs')], {
-    cwd: root,
-    env: { ...env, LIGHTHOUSE_PORT: '4176' },
-    stdio: 'inherit',
-    windowsHide: true
-  });
-  const calibrationResult = await waitForChild(calibration);
-  if (calibrationResult.signal || calibrationResult.code !== 0) {
-    const reason = calibrationResult.signal
-      ? `signal ${calibrationResult.signal}`
-      : `exit code ${calibrationResult.code ?? 1}`;
-    throw new Error(`Lighthouse CI calibration failed with ${reason}.`);
-  }
+  console.log('[lhci] Verifying the actual-bundle long-task regression fixture...');
+  await runPreGate(['--regression-fixture'], '4175', 'regression fixture');
+  console.log('[lhci] Measuring separate cold-start and warm SLOs for EN and KO...');
+  await runPreGate([], '4176', 'cold/warm language matrix');
 }
 
 const child = spawn(process.execPath, [lhciCli, 'autorun', ...process.argv.slice(2)], {
@@ -97,6 +85,20 @@ function waitForChild(child) {
     child.once('error', reject);
     child.once('exit', (code, signal) => resolve({ code, signal }));
   });
+}
+
+async function runPreGate(args, lighthousePort, label) {
+  const preGate = spawn(process.execPath, [join(root, 'scripts', 'run-lighthouse.mjs'), ...args], {
+    cwd: root,
+    env: { ...env, LIGHTHOUSE_PORT: lighthousePort },
+    stdio: 'inherit',
+    windowsHide: true
+  });
+  const result = await waitForChild(preGate);
+  if (result.signal || result.code !== 0) {
+    const reason = result.signal ? `signal ${result.signal}` : `exit code ${result.code ?? 1}`;
+    throw new Error(`Lighthouse CI ${label} failed with ${reason}.`);
+  }
 }
 
 async function exists(target) {

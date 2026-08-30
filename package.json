@@ -27,6 +27,7 @@
     "sync:changelog": "node scripts/sync-changelog-highlights.mjs",
     "sync:copy": "node scripts/sync-copy-counts.mjs",
     "lighthouse": "node scripts/run-lighthouse.mjs",
+    "lighthouse:fixture": "node scripts/run-lighthouse.mjs --regression-fixture",
     "lighthouse:lhci": "node scripts/run-lhci.mjs",
     "test": "playwright test",
     "smoke": "playwright test tests/landing-smoke.spec.ts tests/hero-runtime.spec.ts --project=chromium",

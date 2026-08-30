@@ -8,6 +8,10 @@ const landingEnUrl = process.env.PENDULUM_LIVE_LANDING_EN_URL;
 const landingKoUrl = process.env.PENDULUM_LIVE_LANDING_KO_URL;
 const labUrl = process.env.PENDULUM_LIVE_LAB_URL;
 const expectedLandingCommit = process.env.PENDULUM_EXPECTED_LANDING_COMMIT || null;
+const expectedLabSourceCommit = process.env.PENDULUM_EXPECTED_LAB_SOURCE_COMMIT || null;
+const expectedEvidenceSha256 = process.env.PENDULUM_EXPECTED_EVIDENCE_SHA256 || null;
+const expectedEvidenceEtag = process.env.PENDULUM_EXPECTED_EVIDENCE_ETAG || null;
+const strictEvidenceCoordinate = Boolean(expectedLabSourceCommit || expectedEvidenceSha256 || expectedEvidenceEtag);
 const configured = Boolean(landingEnUrl && landingKoUrl && labUrl);
 test.skip(!configured, 'Set all three PENDULUM_LIVE_* URLs to run the public deployed journey.');
 
@@ -26,6 +30,20 @@ const expectedQuery = {
   l2: '1',
   g: '9.81',
   gamma: '0.06',
+  dt: '0.001',
+} as const;
+const expectedHandoff = {
+  experiment: 'sensitive-dependence',
+  experimentSchema: 'pendulum-sensitive-dependence/v1',
+  workflowStep: 'measure',
+  trajectoryStage: 'perturbed',
+  angleUnit: 'rad',
+  perturbationVar: 'th1',
+  perturbationPattern: 'symmetric',
+  perturbationSeed: '20260826',
+  deltaTheta: '0.001',
+  ensembleCount: '12',
+  method: 'rk4',
 } as const;
 const headerNames = [
   'content-security-policy',
@@ -75,6 +93,7 @@ function errorDetails(error: unknown): { name: string; message: string } {
 
 function assertCtaQuery(url: URL, language: 'en' | 'ko', hydrated: boolean): void {
   for (const [name, value] of Object.entries(expectedQuery)) expect(url.searchParams.get(name), name).toBe(value);
+  for (const [name, value] of Object.entries(expectedHandoff)) expect(url.searchParams.get(name), name).toBe(value);
   expect(url.searchParams.get('lang')).toBe(language);
   if (hydrated) {
     expect(url.searchParams.get('utm_source')).toBe('pendulum-landing');
@@ -213,46 +232,49 @@ async function readDeploymentSnapshot(request: APIRequestContext, attempt: numbe
     readFile(new URL('../index.html', import.meta.url)),
     readFile(new URL('../ko.html', import.meta.url)),
   ]);
-  const [liveEn, liveKo, landingEvidenceResponse, kernelManifestResponse, kernelResponse, labEvidenceResponse] = await Promise.all([
+  const [liveEn, liveKo, landingEvidenceResponse, kernelManifestResponse, kernelResponse] = await Promise.all([
     fetchBytes(request, landingEnUrl!, attempt, 'landing-en'),
     fetchBytes(request, landingKoUrl!, attempt, 'landing-ko'),
     fetchBytes(request, new URL('assets/evidence-summary.json', landingEnUrl!).href, attempt, 'landing-evidence'),
     fetchBytes(request, new URL('assets/demo-kernel-manifest.json', landingEnUrl!).href, attempt, 'kernel-manifest'),
     fetchBytes(request, new URL('assets/pendulum-demo-kernel.js', landingEnUrl!).href, attempt, 'kernel-bytes'),
-    fetchBytes(request, new URL('reports/evidence-summary.json', labUrl!).href, attempt, 'lab-evidence'),
   ]);
 
   const expectedEnSha256 = sha256(expectedEn);
   const expectedKoSha256 = sha256(expectedKo);
   const liveEnSha256 = sha256(liveEn.bytes);
   const liveKoSha256 = sha256(liveKo.bytes);
-  contract(liveEnSha256 === expectedEnSha256, `live EN HTML ${liveEnSha256} != checkout ${expectedEnSha256}`);
-  contract(liveKoSha256 === expectedKoSha256, `live KO HTML ${liveKoSha256} != checkout ${expectedKoSha256}`);
-
   const landingEvidence = parseJson(landingEvidenceResponse.bytes, 'Landing evidence');
   const kernelManifest = parseJson(kernelManifestResponse.bytes, 'kernel manifest');
-  const labEvidence = parseJson(labEvidenceResponse.bytes, 'Lab evidence');
   const landingEvidenceSha256 = sha256(landingEvidenceResponse.bytes);
-  const labEvidenceSha256 = sha256(labEvidenceResponse.bytes);
-  contract(
-    landingEvidenceSha256 === labEvidenceSha256,
-    `Landing evidence bytes ${landingEvidenceSha256} != deployed Lab evidence ${labEvidenceSha256}`,
-  );
+  const evidenceEtag = landingEvidenceResponse.headers.etag ?? null;
+  const lastSynchronizedAt = landingEvidence.generatedAt ?? null;
+  console.log(JSON.stringify({
+    probe: 'landing-deployment',
+    attempt,
+    landingHtml: { current: liveEnSha256, expected: expectedEnSha256 },
+    evidence: {
+      currentSourceCommit: landingEvidence.provenance?.sourceCommit ?? null,
+      expectedSourceCommit: expectedLabSourceCommit,
+      sha256: landingEvidenceSha256,
+      expectedSha256: expectedEvidenceSha256,
+      etag: evidenceEtag,
+      expectedEtag: expectedEvidenceEtag,
+      lastSynchronizedAt,
+    },
+  }));
+  contract(liveEnSha256 === expectedEnSha256, `live EN HTML ${liveEnSha256} != checkout ${expectedEnSha256}`);
+  contract(liveKoSha256 === expectedKoSha256, `live KO HTML ${liveKoSha256} != checkout ${expectedKoSha256}`);
   contract(landingEvidence.schemaVersion === 'pendulum-evidence-summary/v1', 'unexpected Landing evidence schema');
-  contract(labEvidence.schemaVersion === 'pendulum-evidence-summary/v1', 'unexpected Lab evidence schema');
   contract(kernelManifest.schemaVersion === 'pendulum-demo-kernel-manifest/v1', 'unexpected kernel manifest schema');
   contract(landingEvidence.tests?.success === true, 'Landing evidence tests are not successful');
   contract(landingEvidence.tests?.failed === 0, 'Landing evidence reports failed tests');
   contract(landingEvidence.provenance?.dirtyWorktree === false, 'Landing evidence came from a dirty worktree');
   const claimEvidence = deployedClaimEvidence(landingEvidence);
+  contract(kernelManifest.sourceCommit === landingEvidence.provenance?.sourceCommit, 'kernel and Landing evidence commits differ');
   contract(
-    landingEvidence.provenance?.sourceCommit === labEvidence.provenance?.sourceCommit,
-    'Landing and Lab evidence source commits differ',
-  );
-  contract(kernelManifest.sourceCommit === labEvidence.provenance?.sourceCommit, 'kernel and Lab evidence commits differ');
-  contract(
-    kernelManifest.sourcePackageVersion === labEvidence.provenance?.packageVersion,
-    'kernel and Lab evidence package versions differ',
+    kernelManifest.sourcePackageVersion === landingEvidence.provenance?.packageVersion,
+    'kernel and Landing evidence package versions differ',
   );
   contract(kernelManifest.kernel === 'assets/pendulum-demo-kernel.js', 'kernel manifest points to an unexpected path');
   contract(/^[a-f0-9]{64}$/.test(kernelManifest.sha256), 'kernel manifest SHA-256 is malformed');
@@ -278,8 +300,8 @@ async function readDeploymentSnapshot(request: APIRequestContext, attempt: numbe
         checkoutSha256: expectedKoSha256,
       },
     },
-    sourceCommit: labEvidence.provenance.sourceCommit as string,
-    packageVersion: labEvidence.provenance.packageVersion as string,
+    sourceCommit: landingEvidence.provenance.sourceCommit as string,
+    packageVersion: landingEvidence.provenance.packageVersion as string,
     kernelSha256: liveKernelSha256,
     claimEvidence,
     landingEvidence: {
@@ -287,12 +309,8 @@ async function readDeploymentSnapshot(request: APIRequestContext, attempt: numbe
       status: landingEvidenceResponse.status,
       headers: landingEvidenceResponse.headers,
       sha256: landingEvidenceSha256,
-    },
-    labEvidence: {
-      url: labEvidenceResponse.url,
-      status: labEvidenceResponse.status,
-      headers: labEvidenceResponse.headers,
-      sha256: labEvidenceSha256,
+      etag: evidenceEtag,
+      lastSynchronizedAt,
     },
     kernelManifest: {
       url: kernelManifestResponse.url,
@@ -307,7 +325,7 @@ async function readDeploymentSnapshot(request: APIRequestContext, attempt: numbe
   };
 }
 
-async function waitForDeploymentSnapshot(request: APIRequestContext) {
+async function waitForLandingDeployment(request: APIRequestContext) {
   const timeoutMs = parseBoundedInteger('PENDULUM_JOURNEY_POLL_TIMEOUT_MS', 180_000, 10_000, 600_000);
   const intervalMs = parseBoundedInteger('PENDULUM_JOURNEY_POLL_INTERVAL_MS', 5_000, 1_000, 30_000);
   const deadline = Date.now() + timeoutMs;
@@ -324,8 +342,56 @@ async function waitForDeploymentSnapshot(request: APIRequestContext) {
     }
   }
   throw new Error(
-    `deployment did not converge within ${timeoutMs} ms after ${attempt} attempts: ${errorDetails(lastError).message}`,
+    `Landing deployment did not converge within ${timeoutMs} ms after ${attempt} attempts: ${errorDetails(lastError).message}`,
   );
+}
+
+async function verifyExpectedEvidenceCoordinate(
+  request: APIRequestContext,
+  landing: Awaited<ReturnType<typeof readDeploymentSnapshot>>,
+) {
+  if (!strictEvidenceCoordinate) return null;
+  contract(
+    Boolean(expectedLabSourceCommit && expectedEvidenceSha256),
+    'strict evidence verification requires both PENDULUM_EXPECTED_LAB_SOURCE_COMMIT and PENDULUM_EXPECTED_EVIDENCE_SHA256',
+  );
+  contract(/^[a-f0-9]{40}$/.test(expectedLabSourceCommit!), 'expected Lab source commit must be a full lowercase SHA-1');
+  contract(/^[a-f0-9]{64}$/.test(expectedEvidenceSha256!), 'expected evidence SHA-256 must be lowercase hex');
+
+  // Deliberately one attempt: a dispatched immutable coordinate must fail
+  // closed immediately instead of being mistaken for ordinary propagation.
+  const response = await fetchBytes(
+    request,
+    new URL('reports/evidence-summary.json', labUrl!).href,
+    1,
+    'strict-lab-evidence',
+  );
+  const summary = parseJson(response.bytes, 'strict Lab evidence');
+  const actualSha256 = sha256(response.bytes);
+  const actualEtag = response.headers.etag ?? null;
+  console.log(JSON.stringify({
+    probe: 'strict-evidence-coordinate',
+    currentSourceCommit: summary.provenance?.sourceCommit ?? null,
+    expectedSourceCommit: expectedLabSourceCommit,
+    currentSha256: actualSha256,
+    expectedSha256: expectedEvidenceSha256,
+    currentEtag: actualEtag,
+    expectedEtag: expectedEvidenceEtag,
+    lastSynchronizedAt: summary.generatedAt ?? null,
+  }));
+  contract(summary.schemaVersion === 'pendulum-evidence-summary/v1', 'unexpected strict Lab evidence schema');
+  contract(summary.provenance?.sourceCommit === expectedLabSourceCommit, 'strict Lab source commit mismatch');
+  contract(actualSha256 === expectedEvidenceSha256, 'strict Lab evidence bytes do not match the dispatched SHA-256');
+  contract(landing.landingEvidence.sha256 === expectedEvidenceSha256, 'Landing evidence is not the dispatched byte coordinate');
+  if (expectedEvidenceEtag) contract(actualEtag === expectedEvidenceEtag, 'strict Lab evidence ETag mismatch');
+  return {
+    sourceCommit: summary.provenance.sourceCommit as string,
+    sha256: actualSha256,
+    etag: actualEtag,
+    lastSynchronizedAt: summary.generatedAt ?? null,
+    url: response.url,
+    headers: response.headers,
+  };
 }
 
 async function verifyLabControls(browser: Browser, launchUrl: string, language: 'en' | 'ko') {
@@ -340,6 +406,23 @@ async function verifyLabControls(browser: Browser, launchUrl: string, language: 
   for (const [id, expected] of Object.entries(expectedQuery).filter(([key]) => !['goal', 'audience', 'tab', 'sysType'].includes(key))) {
     expect(Number(await page.locator(`#${id}`).inputValue()), id).toBeCloseTo(Number(expected), 6);
   }
+  for (const [name, expected] of Object.entries(expectedHandoff)) {
+    expect(new URL(page.url()).searchParams.get(name), `preserved ${name}`).toBe(expected);
+  }
+  await expect(page.locator('#handoffContinuity')).toBeVisible();
+  await expect(page.locator('#experimentGoal')).toHaveValue('sensitive-dependence');
+  await expect(page.locator('#angleUnit')).toHaveValue('rad');
+  await expect(page.locator('#ensVariable')).toHaveValue('th1');
+  await expect(page.locator('#ensPattern')).toHaveValue(expectedHandoff.perturbationPattern);
+  await expect(page.locator('#ensSeed')).toHaveValue(expectedHandoff.perturbationSeed);
+  await expect(page.locator('#ensembleRequestedCount')).toHaveValue(expectedHandoff.ensembleCount);
+  await expect(page.locator('#method')).toHaveValue(expectedHandoff.method);
+  expect(Number(await page.locator('#ensEpsExact').inputValue())).toBe(Number(expectedHandoff.deltaTheta));
+  await expect(page.locator('#workflowStep')).toHaveValue('measure');
+  await expect(page.locator('#trajectoryStage')).toHaveValue('perturbed');
+  await expect(page.locator('#trajectoryReadout')).toContainText(language === 'ko' ? '기준' : 'Reference');
+  await expect(page.locator('#trajectoryReadout')).toContainText('Δθ₁');
+  await expect(page.locator('#workflowCurrentTitle')).toBeVisible();
   await page.getByTestId('share-experiment').click();
   const hash = await page.evaluate(() => location.hash);
   expect(hash).toMatch(/^#experiment=/);
@@ -355,6 +438,13 @@ async function verifyLabControls(browser: Browser, launchUrl: string, language: 
   for (const [id, expected] of Object.entries(expectedQuery).filter(([key]) => !['goal', 'audience', 'tab', 'sysType'].includes(key))) {
     expect(Number(await restorePage.locator(`#${id}`).inputValue()), `restored ${id}`).toBeCloseTo(Number(expected), 6);
   }
+  await expect(restorePage.locator('#experimentGoal')).toHaveValue('sensitive-dependence');
+  await expect(restorePage.locator('#angleUnit')).toHaveValue('rad');
+  await expect(restorePage.locator('#ensPattern')).toHaveValue(expectedHandoff.perturbationPattern);
+  await expect(restorePage.locator('#ensSeed')).toHaveValue(expectedHandoff.perturbationSeed);
+  await expect(restorePage.locator('#ensembleRequestedCount')).toHaveValue(expectedHandoff.ensembleCount);
+  await expect(restorePage.locator('#method')).toHaveValue(expectedHandoff.method);
+  expect(Number(await restorePage.locator('#ensEpsExact').inputValue())).toBe(Number(expectedHandoff.deltaTheta));
   const result = {
     document: responseEvidence(response),
     shareHashPrefix: hash.slice(0, 13),
@@ -366,20 +456,27 @@ async function verifyLabControls(browser: Browser, launchUrl: string, language: 
   return result;
 }
 
-test('EN/KO Landing CTAs launch, share, restore, and match deployed evidence', async ({ browser, request }, testInfo) => {
+test('EN/KO Landing CTAs continue exact experiments; optional evidence coordinates fail closed', async ({ browser, request }, testInfo) => {
   const artifact: Record<string, unknown> = {
-    schemaVersion: 'pendulum-deployed-cross-repo-journey/v2',
+    schemaVersion: 'pendulum-deployed-cross-repo-journey/v3',
     checkedAt: new Date().toISOString(),
     retry: testInfo.retry,
     expectedLandingCommit,
+    evidenceMode: strictEvidenceCoordinate ? 'strict-coordinate' : 'landing-ui',
+    expectedEvidence: {
+      sourceCommit: expectedLabSourceCommit,
+      sha256: expectedEvidenceSha256,
+      etag: expectedEvidenceEtag,
+    },
     urls: { landingEnUrl, landingKoUrl, labUrl },
     variants: [],
     success: false,
   };
   const outputPath = resolve(process.env.PENDULUM_JOURNEY_ARTIFACT || 'reports/deployment/deployed-cross-repo-journey.json');
   try {
-    const deployment = await waitForDeploymentSnapshot(request);
+    const deployment = await waitForLandingDeployment(request);
     artifact.deployment = deployment;
+    artifact.strictEvidence = await verifyExpectedEvidenceCoordinate(request, deployment);
 
     for (const variant of [
       { language: 'en' as const, url: landingEnUrl! },

@@ -15,8 +15,7 @@
  *    English text-node content to Korean; anything unmapped stays English
  *    (graceful for future copy edits — the build is re-run and diffed in CI).
  *  - Dynamic surfaces (data-evidence, data-count, data-orbit-readout) and
- *    deliberate terminal chrome (mono readout keys, the marquee of method
- *    names) are skipped by design.
+ *    deliberate terminal chrome (mono readout keys) are skipped by design.
  *  - App links (data-app-link) gain `lang=ko`, which the simulator reads to
  *    preload its own Korean menu guide.
  */
@@ -299,8 +298,7 @@
     'Cite this repository': '이 저장소 인용하기',
     // ---- mini lab controls -------------------------------------------------
     'Mini lab controls': '미니 실험실 조절기',
-    'separation': '간격',
-    'drift': '궤적 거리',
+    'screen gap': '화면상 끝점 간격',
     'trace': '궤적',
     'mode': '상태',
     'initial angle θ₁': '초기각 θ₁',
@@ -350,7 +348,148 @@
     'Historical entries preserved': '기존 기록 보존',
     'older CHANGELOG entries keep their original docs/...': '이전 CHANGELOG 항목은 기존 docs/... 경로를 유지합니다.',
     'Read the full changelog': '전체 변경 기록 읽기',
-    'Synced with release evidence': '릴리스 증거와 동기화됨'
+    'Synced with release evidence': '릴리스 증거와 동기화됨',
+    // ---- first-session experiment story ----------------------------------
+    'An interactive laboratory for understanding and measuring nonlinear dynamics.':
+      '비선형 동역학을 이해하고 측정하는 인터랙티브 실험실입니다.',
+    'Start with the same state': '같은 상태에서 시작',
+    'Open full Lab': '전체 랩 열기',
+    'same start': '같은 시작',
+    'tiny difference': '아주 작은 차이',
+    'divergence': '발산',
+    'measure it': '측정하기',
+    'open full Lab': '전체 랩 열기',
+    '01 · Same start': '01 · 같은 시작',
+    'One question, five steps': '하나의 질문, 다섯 단계',
+    'Begin with one reference.': '하나의 기준 상태에서 시작합니다.',
+    'First, follow a single release. The reference is the state we will keep unchanged while we ask what one tiny difference can do.':
+      '먼저 하나의 운동만 따라갑니다. 기준 상태는 그대로 둔 채, 아주 작은 차이가 무엇을 바꾸는지 살펴봅니다.',
+    'The still image preserves the same reference path when motion or graphics preferences keep the live renderer off.':
+      '동작 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 정적 이미지에 같은 기준 경로가 유지됩니다.',
+    'Reference trajectory · cyan · unchanged': '기준 궤적 · 시안 · 변경 없음',
+    'Reference trajectory · static view': '기준 궤적 · 정적 화면',
+    '02 · Tiny difference': '02 · 아주 작은 차이',
+    'Change only one number.': '숫자 하나만 바꿉니다.',
+    'The violet trajectory copies the reference, then adds Δθ₁ = 8×10⁻⁴ rad to its first angle. Everything else stays identical.':
+      '보라색 궤적은 기준 상태를 복사한 뒤 첫 번째 각도에 Δθ₁ = 8×10⁻⁴ rad만 더합니다. 나머지는 모두 같습니다.',
+    'The static traces preserve the reference and the one-variable perturbation without implying that animation is running.':
+      '정적 궤적은 애니메이션이 실행된다고 암시하지 않으면서 기준 상태와 한 변수의 섭동을 보존합니다.',
+    'reference': '기준',
+    'perturbed': '섭동',
+    '03 · Divergence': '03 · 발산',
+    'Watch the futures stop agreeing.': '두 미래가 달라지는 순간을 봅니다.',
+    'At first the two paths overlap. Then the same deterministic rules carry them apart. Cyan always means reference; violet always means perturbed.':
+      '처음에는 두 경로가 겹칩니다. 이후 같은 결정론적 규칙이 둘을 서로 멀어지게 합니다. 시안은 언제나 기준, 보라는 언제나 섭동 상태입니다.',
+    'Cyan marks the reference and violet marks the perturbed path; their growing distance is visible without relying on motion alone.':
+      '시안은 기준, 보라는 섭동 경로를 나타내며, 동작만 보지 않아도 커지는 거리를 확인할 수 있습니다.',
+    'reference: cyan': '기준: 시안',
+    'perturbed: violet': '섭동: 보라',
+    'one variable changed': '변수 하나만 변경',
+    'Turn the visible split into a number.': '눈에 보이는 갈라짐을 숫자로 바꿉니다.',
+    'The console below reports the wrapped angular difference |Δθ₁(t)| for a planar double pendulum. Enter its exact reference state and perturbation, then continue that exact planar experiment in the full Lab without retyping it.':
+      '아래 콘솔은 평면 이중진자의 래핑된 각도 차이 |Δθ₁(t)|를 보여 줍니다. 정확한 기준 상태와 섭동을 입력한 뒤 다시 입력하지 않고 그 평면 실험을 전체 랩에서 그대로 이어 가세요.',
+    'What is the 3D view calculating?': '3D 화면은 무엇을 계산하나요?',
+    'The hero uses a constrained double-spherical model at 240 Hz. The hands-on console below integrates a planar double pendulum with RK4 at dt=0.001 and samples its trail at 150 Hz, matching the experiment continued in the full Lab.':
+      '히어로는 240 Hz 제약 이중 구면진자 모델을 사용합니다. 아래 콘솔은 평면 이중진자를 RK4와 dt=0.001로 적분하고 궤적은 150 Hz로 표본화하므로, 전체 랩에서 이어지는 실험과 일치합니다.',
+    'Measure the split': '갈라짐 측정',
+    '04 · Measure it': '04 · 측정하기',
+    'One reference. One declared perturbation.': '하나의 기준, 명시된 하나의 섭동.',
+    'Enter exact values or use the sliders for quick exploration. The reference and perturbed states are named, not left for colour alone to explain.':
+      '정확한 값을 입력하거나 슬라이더로 빠르게 탐색하세요. 기준과 섭동 상태를 색상에만 맡기지 않고 이름으로 표시합니다.',
+    'Goal': '목표',
+    'See how a tiny change grows.': '아주 작은 변화가 커지는 과정 보기.',
+    'Exact start': '정확한 시작',
+    'θ=(2.18, 2.64) rad · ω=(0, 0) rad/s · γ=0.06.': 'θ=(2.18, 2.64) rad · ω=(0, 0) rad/s · γ=0.06.',
+    'Method': '방법',
+    'RK4 · dt=0.001.': 'RK4 · dt=0.001.',
+    'Change': '변경',
+    'Only θ₁ by Δθ₁=1e-3 rad · symmetric · seed 20260826 · n=12.':
+      'θ₁만 Δθ₁=1e-3 rad · 대칭 패턴 · 시드 20260826 · n=12.',
+    'Expected': '예상',
+    'The paths begin together, then |Δθ₁(t)| grows; trail shape alone is not the result.':
+      '두 경로는 함께 시작한 뒤 |Δθ₁(t)|가 커집니다. 궤적 모양만으로 판단하지 않습니다.',
+    'Measure': '측정',
+    "|Δθ₁(t)| here, then finite-time λ₁ with the Lab's phase-state norm.":
+      '여기서는 |Δθ₁(t)|, 다음에는 랩의 위상상태 norm으로 유한시간 λ₁.',
+    'Theory': '이론',
+    'Assumptions and evidence': '가정과 근거',
+    'Reference': '기준',
+    'unchanged initial state': '변경하지 않은 초기 상태',
+    'Perturbed': '섭동',
+    'reference + Δθ₁': '기준 + Δθ₁',
+    'Angle display': '각도 표시',
+    'Radians': '라디안',
+    'Degrees': '도',
+    'The Lab URL always carries canonical radians.': '랩 URL에는 항상 정규 라디안 값을 전달합니다.',
+    'reference angle θ₁': '기준 각도 θ₁',
+    'reference angle θ₂': '기준 각도 θ₂',
+    'Enter reference angle θ₁': '기준 각도 θ₁ 직접 입력',
+    'Enter reference angle θ₂': '기준 각도 θ₂ 직접 입력',
+    'perturbation Δθ₁': '섭동 Δθ₁',
+    'applied to θ₁ only': 'θ₁에만 적용',
+    'Enter perturbation Δθ₁': '섭동 Δθ₁ 직접 입력',
+    'Enter damping γ': '감쇠 계수 γ 직접 입력',
+    'Exact experiment state': '정확한 실험 상태',
+    'Full-precision radians and Δθ₁ will continue into the Lab.': '전체 정밀도 라디안 값과 Δθ₁이 랩으로 그대로 이어집니다.',
+    'Continue this exact experiment': '이 정확한 실험 이어 가기',
+    'Next: measure λ₁': '다음: λ₁ 측정',
+    'reference + one perturbation': '기준 + 하나의 섭동',
+    // ---- audience entry points and capability hierarchy -------------------
+    'Choose your next depth': '다음 탐색 깊이 선택',
+    'Start from your question, not the feature list.': '기능 목록이 아니라 질문에서 시작하세요.',
+    'Each entry opens the smallest useful workspace for that goal. You can reveal more controls later without restarting the experiment.':
+      '각 경로는 목표에 필요한 최소 워크스페이스를 엽니다. 실험을 다시 시작하지 않고 나중에 더 많은 조절기를 펼칠 수 있습니다.',
+    'Curious beginner': '호기심 많은 입문자',
+    'Watch one clear motion': '명확한 운동 하나 보기',
+    'Open a clean preset with only the essential controls.': '핵심 조절기만 있는 깔끔한 프리셋 열기.',
+    'Understand the equations': '방정식 이해하기',
+    'Follow assumptions, motion, equations, and checks in order.': '가정, 운동, 방정식, 검증을 순서대로 따라가기.',
+    'Numerical methods': '수치해석 학습자',
+    'Compare solver behaviour': '해법 동작 비교',
+    'Start with energy drift and a convergence question.': '에너지 표류와 수렴 질문에서 시작하기.',
+    'Research / review': '연구 / 리뷰',
+    'Inspect a scientific claim': '과학적 주장 검토',
+    'Open the workbench with provenance and caveats nearby.': '출처와 주의점이 함께 보이는 워크벤치 열기.',
+    'Developer': '개발자',
+    'Contribute code': '코드 기여하기',
+    'Go straight to setup, architecture, tests, and review rules.': '설정, 구조, 테스트, 리뷰 규칙으로 바로 이동하기.',
+    'Four capabilities': '네 가지 핵심 역량',
+    'From motion to a result someone else can check.': '움직임에서 다른 사람이 확인할 수 있는 결과까지.',
+    'The Lab is organised around four jobs. Method names stay one level deeper until you need them.':
+      '랩은 네 가지 작업을 중심으로 구성됩니다. 방법 이름은 필요할 때까지 한 단계 아래에 둡니다.',
+    'Simulation': '시뮬레이션',
+    'Choose a pendulum system, set exact initial conditions, and watch its state evolve. Presets give beginners a safe start; direct controls remain available for deliberate experiments.':
+      '진자 시스템을 고르고 정확한 초기 조건을 설정한 뒤 상태가 변화하는 과정을 봅니다. 프리셋은 안전한 출발점을 제공하고, 의도적인 실험에는 직접 조절기를 사용할 수 있습니다.',
+    'systems': '시스템',
+    'initial state': '초기 상태',
+    'live motion': '실시간 운동',
+    'Chaos & Analysis': '카오스와 분석',
+    'Move from “the paths look different” to quantities that describe divergence, recurrence, stability, and phase-space structure—with uncertainty where the method defines it.':
+      '“경로가 달라 보인다”에서 발산, 재귀, 안정성, 위상공간 구조를 설명하는 수치로 나아갑니다. 방법이 정의하는 경우 불확실성도 함께 제공합니다.',
+    'structure': '구조',
+    'uncertainty': '불확실성',
+    'Numerical Trust': '수치적 신뢰',
+    'Compare resolution, convergence, residuals, conservation, and independent references before treating a computed pattern as a scientific conclusion.':
+      '계산 패턴을 과학적 결론으로 받아들이기 전에 해상도, 수렴, 잔차, 보존량, 독립 기준을 비교합니다.',
+    'convergence': '수렴',
+    'residuals': '잔차',
+    'reference checks': '기준 검증',
+    'Reproducibility': '재현성',
+    'Carry exact setup data in a link, save manifests and research bundles, and keep each public result tied to source evidence and explicit caveats.':
+      '정확한 설정을 링크에 담고, 매니페스트와 연구 번들을 저장하며, 공개 결과를 소스 근거와 명시적 주의점에 연결합니다.',
+    'shareable state': '공유 가능한 상태',
+    'manifests': '매니페스트',
+    'provenance': '출처 추적',
+    'Explore all methods': '모든 방법 살펴보기',
+    'The advanced workspace includes fifteen primary integrators, Lyapunov spectra and vectors, Poincaré sections, recurrence analysis, FTLE, basin entropy, continuation, data-driven models, and CPU-oracle-gated GPU paths. Each method explains what it measures and where it can fail.':
+      '고급 워크스페이스에는 15종의 주력 적분기, 랴푸노프 스펙트럼과 벡터, 푸앵카레 단면, 재귀 분석, FTLE, 흡인역 엔트로피, 연속법, 데이터 기반 모델, CPU 오러클로 게이트되는 GPU 경로가 있습니다. 각 방법은 측정 대상과 실패 가능 지점을 설명합니다.',
+    'Optional deeper paths': '선택형 심화 경로',
+    'Research library and engineering context.': '연구 라이브러리와 공학적 맥락.',
+    'The interactive laboratory is the primary product. These sections document the broader research library and the separate engineering portfolio connection for readers who need them.':
+      '핵심 제품은 인터랙티브 실험실입니다. 아래 섹션은 필요한 독자를 위해 더 넓은 연구 라이브러리와 별도의 공학 포트폴리오 연결을 설명합니다.',
+    'Secondary · Research Frontier': '보조 경로 · 연구 프런티어',
+    'Secondary · Engineering portfolio': '보조 경로 · 공학 포트폴리오',
+    'Why this work maps to TCAD.': '이 작업이 TCAD로 이어지는 이유.'
   };
 
   const ATTRS = [
@@ -358,15 +497,19 @@
     ['a.nav-launch', 'aria-label', 'Pendulum Lab 시뮬레이션 열기'],
     ['#nav-menu summary', 'aria-label', '섹션 메뉴'],
     ['.hero-foot .scroll-cue', 'aria-label', '스크롤로 움직이는 발산 이야기 탐색'],
+    ['.signal-strip', 'aria-label', '실험 진행 경로'],
     ['.orbit-descent-sticky', 'aria-label', '실시간 3D 위상 및 카메라 정보'],
     ['.val-board', 'aria-label', '가로로 스크롤할 수 있는 검증 근거 표'],
     ['.console-readouts', 'aria-label', '실시간 콘솔 판독'],
     ['.orbit-controls', 'aria-label', '미니 실험실 조절기'],
+    ['.experiment-recipe', 'aria-label', '민감한 의존성 실험 레시피'],
+    ['.trajectory-legend', 'aria-label', '궤적 의미'],
     ['#orbit-theta', 'aria-valuetext', '2.18 라디안'],
+    ['#orbit-theta-two', 'aria-valuetext', '2.64 라디안'],
     ['#orbit-separation', 'aria-valuetext', '1.0e-3 라디안'],
     ['#orbit-damping', 'aria-valuetext', '감쇠 계수 0.06'],
     ['.orbit-static-fallback-template', 'aria-label', '실시간 궤적을 사용할 수 없어 정적인 이중진자 궤적을 표시합니다.'],
-    ['.recipe-grid', 'aria-label', '30초 실험 레시피'],
+    ['.recipe-grid', 'aria-label', '목표별 진입 경로'],
     ['#orbit-console', 'aria-label', '이중진자 궤적 콘솔 애니메이션'],
     ['.diverge-stage svg', 'aria-label', '민감한 의존성: 갈라지는 두 궤적'],
     ['.app-preview img', 'alt', '시뮬레이션 캔버스, 컨트롤 레일, 연구 인터페이스가 보이는 Pendulum Lab 앱']

@@ -5,8 +5,22 @@ on:
     workflows: ["Deploy landing to GitHub Pages"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      expected_lab_source_commit:
+        description: Optional exact Lab evidence source commit (requires evidence SHA-256)
+        required: false
+        type: string
+      expected_evidence_sha256:
+        description: Optional exact deployed evidence SHA-256 (requires source commit)
+        required: false
+        type: string
+      expected_evidence_etag:
+        description: Optional exact deployed Lab evidence ETag
+        required: false
+        type: string
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -28,12 +42,28 @@ jobs:
       PENDULUM_LIVE_LAB_URL: https://elliotjung.github.io/pendulum-lab/
       PENDULUM_JOURNEY_ARTIFACT: reports/deployment/deployed-cross-repo-journey.json
       PENDULUM_EXPECTED_LANDING_COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+      PENDULUM_EXPECTED_LAB_SOURCE_COMMIT: ${{ inputs.expected_lab_source_commit || '' }}
+      PENDULUM_EXPECTED_EVIDENCE_SHA256: ${{ inputs.expected_evidence_sha256 || '' }}
+      PENDULUM_EXPECTED_EVIDENCE_ETAG: ${{ inputs.expected_evidence_etag || '' }}
       PENDULUM_JOURNEY_POLL_TIMEOUT_MS: 240000
       PENDULUM_JOURNEY_POLL_INTERVAL_MS: 5000
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Download the deployment's journey coordinate
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: deployed-journey-coordinate
+          path: deployed-coordinate
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Enable exact evidence verification only for evidence-produced deploys
+        if: github.event_name == 'workflow_run'
+        shell: bash
+        run: |
+          node -e "const fs=require('node:fs'); const c=JSON.parse(fs.readFileSync('deployed-coordinate/deployed-journey-coordinate.json','utf8')); if(c.schemaVersion!=='pendulum-deployed-journey-coordinate/v1') throw new Error('unsupported journey coordinate'); if(c.mode==='strict-coordinate'){fs.appendFileSync(process.env.GITHUB_ENV,'PENDULUM_EXPECTED_LAB_SOURCE_COMMIT='+c.sourceCommit+'\nPENDULUM_EXPECTED_EVIDENCE_SHA256='+c.evidenceSha256+'\n')} console.log(JSON.stringify({mode:c.mode,currentSourceCommit:c.sourceCommit,expectedSourceCommit:c.mode==='strict-coordinate'?c.sourceCommit:null,evidenceSha256:c.evidenceSha256,lastSynchronizedAt:c.lastSynchronizedAt}))"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24

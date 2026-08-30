@@ -16,7 +16,34 @@
   let orbitUnavailable = false;
   const MAX_PENDING_ORBIT_BUTTONS = 32;
   const pendingOrbitButtons = [];
-  const pendingOrbitInputs = new Set();
+  const pendingOrbitInputs = new Map();
+  let orbitStatusBeforePreparation = null;
+
+  function setOrbitCtasPreparing() {
+    for (const anchor of document.querySelectorAll('[data-orbit-launch], [data-orbit-next]')) {
+      anchor.setAttribute('aria-disabled', 'true');
+      anchor.setAttribute('aria-busy', 'true');
+    }
+    const status = document.querySelector('[data-orbit-state-status]');
+    if (status instanceof HTMLElement) {
+      orbitStatusBeforePreparation ??= status.textContent;
+      status.textContent = document.documentElement.lang === 'ko'
+        ? '정확한 설정을 실험실 링크에 반영하는 중입니다…'
+        : 'Preparing the exact setup for the Lab link…';
+    }
+  }
+
+  function clearOrbitCtaPreparation({ restoreStatus = false } = {}) {
+    for (const anchor of document.querySelectorAll('[data-orbit-launch], [data-orbit-next]')) {
+      anchor.removeAttribute('aria-disabled');
+      anchor.removeAttribute('aria-busy');
+    }
+    const status = document.querySelector('[data-orbit-state-status]');
+    if (restoreStatus && status instanceof HTMLElement && orbitStatusBeforePreparation !== null) {
+      status.textContent = orbitStatusBeforePreparation;
+    }
+    orbitStatusBeforePreparation = null;
+  }
 
   function syncOrbitMotionControl() {
     if (document.body.classList.contains('orbit-console-static')) return;
@@ -34,13 +61,14 @@
     orbitReplayScheduled = false;
     pendingOrbitInputs.clear();
     pendingOrbitButtons.length = 0;
+    clearOrbitCtaPreparation({ restoreStatus: true });
     document.body.classList.remove('orbit-console-loading', 'orbit-console-ready');
     document.body.classList.add('orbit-console-static');
     consoleSection?.setAttribute('data-orbit-state', 'unavailable');
     const controls = consoleSection?.querySelector('.orbit-controls');
     if (controls instanceof HTMLElement) {
       controls.hidden = true;
-      controls.querySelectorAll('input, button').forEach((control) => {
+      controls.querySelectorAll('input, select, button').forEach((control) => {
         control.disabled = true;
         control.setAttribute('aria-disabled', 'true');
       });
@@ -98,9 +126,14 @@
       const inputs = [...pendingOrbitInputs];
       const buttons = pendingOrbitButtons.splice(0);
       pendingOrbitInputs.clear();
-      inputs.forEach((input) => {
-        if (input.isConnected) input.dispatchEvent(new Event('input', { bubbles: true }));
+      inputs.forEach(([input, value]) => {
+        if (!input.isConnected) return;
+        input.value = value;
+        input.dispatchEvent(new Event(input instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
       });
+      // The replay above synchronously refreshes both experiment links. Only
+      // expose them again after the exact user-authored values are in href.
+      clearOrbitCtaPreparation();
       buttons.forEach((action) => {
         const selector = action === 'reset' ? '[data-orbit-reset]' : '[data-orbit-toggle]';
         const button = consoleSection?.querySelector(selector);
@@ -129,12 +162,29 @@
         passive: type !== 'focusin'
       });
     }
-    consoleSection.addEventListener('input', (event) => {
-      if (orbitReady || !(event.target instanceof HTMLInputElement)) return;
-      pendingOrbitInputs.add(event.target);
+    const queuePendingOrbitInput = (event) => {
+      if (orbitReady || !(event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)) return;
+      // Import-time initialization is allowed to refresh the form surface.
+      // Snapshot the last authored value and replay controls in last-touch
+      // order so those refreshes cannot erase input made during hydration.
+      pendingOrbitInputs.delete(event.target);
+      pendingOrbitInputs.set(event.target, event.target.value);
+      setOrbitCtasPreparing();
       scheduleOrbitReplay();
-    }, true);
+    };
+    consoleSection.addEventListener('input', queuePendingOrbitInput, true);
+    consoleSection.addEventListener('change', queuePendingOrbitInput, true);
     consoleSection.addEventListener('click', (event) => {
+      const anchor = event.target instanceof Element
+        ? event.target.closest('[data-orbit-launch], [data-orbit-next]')
+        : null;
+      if (anchor instanceof HTMLAnchorElement && !orbitReady && pendingOrbitInputs.size > 0) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setOrbitCtasPreparing();
+        scheduleOrbitReplay();
+        return;
+      }
       const target = event.target instanceof Element
         ? event.target.closest('[data-orbit-reset], [data-orbit-toggle]')
         : null;

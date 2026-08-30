@@ -216,9 +216,10 @@
         <p class="lede">
           거의 같은 두 진자를 놓아 보세요. 확실성이 두 개의 세계로 갈라지는 순간을 보고, 예측이 얼마나 빠르게 사라지는지 정확히 측정할 수 있습니다.
         </p>
+        <p class="product-statement">비선형 동역학을 이해하고 측정하는 인터랙티브 실험실입니다.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;preset=butterfly&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="hero-explore">랩 열기 <span class="arrow">→</span></a>
-          <a class="btn ghost" href="#console">실험 실행</a>
+          <a class="btn primary" href="#orbit-descent">같은 상태에서 시작 <span class="arrow">↓</span></a>
+          <a class="btn ghost" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;preset=butterfly&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="hero-open">전체 랩 열기</a>
         </div>
         <p class="hero-trust-line">
           <strong data-evidence="tests.formatted">1,597</strong> 테스트
@@ -242,10 +243,14 @@
   </div>
 </header>
 
-<!-- ============================== MARQUEE ============================== -->
-<div class="signal-strip" aria-hidden="true">
+<!-- ============================== CONCEPT PATH ============================== -->
+<div class="signal-strip" aria-label="실험 진행 경로">
   <div class="signal-strip-track">
-    <span class="dot">◆</span> Runge–Kutta 4 <span class="dot">◆</span> Dormand–Prince 5(4) <span class="dot">◆</span> Gragg–Bulirsch–Stoer <span class="dot">◆</span> Lyapunov Spectrum <span class="dot">◆</span> Covariant Lyapunov Vectors <span class="dot">◆</span> Poincaré Sections <span class="dot">◆</span> Kaplan–Yorke Dimension <span class="dot">◆</span> Melnikov Threshold <span class="dot">◆</span> Floquet Continuation <span class="dot">◆</span> Koopman–DMD <span class="dot">◆</span> HAVOK <span class="dot">◆</span> SINDy <span class="dot">◆</span> FTLE Ridges <span class="dot">◆</span> Basin Entropy <span class="dot">◆</span>
+    <span><b>1</b> 같은 시작</span><i aria-hidden="true">→</i>
+    <span><b>2</b> 아주 작은 차이</span><i aria-hidden="true">→</i>
+    <span><b>3</b> 발산</span><i aria-hidden="true">→</i>
+    <span><b>4</b> 측정하기</span><i aria-hidden="true">→</i>
+    <span><b>5</b> 전체 랩 열기</span>
   </div>
 </div>
 
@@ -269,42 +274,46 @@
   <div class="orbit-descent-track">
     <article class="descent-beat is-current" data-orbit-beat="0">
       <div class="descent-card">
-        <span class="descent-index">01 · 놓기</span>
-        <span class="kicker">스크롤로 움직이는 카오스</span>
-        <h2 id="orbit-descent-title">위상공간을 가로질러 내려가다.</h2>
-        <p class="descent-live-copy">스크롤하면 카메라가 실제 깊이에서 서로 다른 방위각을 훑는 이중 구면진자 둘레를 절제된 호로 이동합니다. 영상 반복 재생이 아닙니다. 3차원 위치와 속도는 길이 제약을 적용한 240 Hz RK4 계산으로 진전하며, 시점은 물리 계산과 독립적으로 유지됩니다.</p>
-        <p class="descent-static-copy">동작, 데이터 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 결정론적 위상 초상은 그대로 제공됩니다. 아래의 조절 가능한 궤적 콘솔에서 관련 초기 조건을 직접 탐색할 수 있습니다.</p>
-        <span class="descent-signal descent-live-copy"><i></i> 실시간 방정식 · 공간 링크 · 궤도 카메라</span>
-        <span class="descent-signal descent-static-copy"><i></i> 정적 근거 화면 · 동작 환경설정 존중</span>
+        <span class="descent-index">01 · 같은 시작</span>
+        <span class="kicker">하나의 질문, 다섯 단계</span>
+        <h2 id="orbit-descent-title">하나의 기준 상태에서 시작합니다.</h2>
+        <p class="descent-live-copy">먼저 하나의 운동만 따라갑니다. 기준 상태는 그대로 둔 채, 아주 작은 차이가 무엇을 바꾸는지 살펴봅니다.</p>
+        <p class="descent-static-copy">동작 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 정적 이미지에 같은 기준 경로가 유지됩니다.</p>
+        <span class="descent-signal descent-live-copy"><i></i> 기준 궤적 · 시안 · 변경 없음</span>
+        <span class="descent-signal descent-static-copy"><i></i> 기준 궤적 · 정적 화면</span>
       </div>
     </article>
 
     <article class="descent-beat descent-beat-right" data-orbit-beat="1">
       <div class="descent-card">
-        <span class="descent-index">02 · 발산</span>
-        <h3>한 상태가 두 개의 미래가 된다.</h3>
-        <p class="descent-live-copy">옅은 그림자 상태는 불과 8×10⁻⁴ 라디안 차이에서 시작합니다. 절제된 시점 변화가 두 상태의 분리를 드러내면서 그림자 궤적이 기준 상태에서 벗어납니다.</p>
-        <p class="descent-static-copy">옅은 기준 상태는 불과 8×10⁻⁴ 라디안 떨어진 곳에서 시작합니다. 정적 궤적은 애니메이션이 실행된다고 암시하지 않으면서 두 초기 조건을 보존합니다.</p>
-        <div class="descent-equation"><span>δ(t)</span><strong>≈ δ₀e<sup>λ₁t</sup></strong></div>
+        <span class="descent-index">02 · 아주 작은 차이</span>
+        <h3>숫자 하나만 바꿉니다.</h3>
+        <p class="descent-live-copy">보라색 궤적은 기준 상태를 복사한 뒤 첫 번째 각도에 Δθ₁ = 8×10⁻⁴ rad만 더합니다. 나머지는 모두 같습니다.</p>
+        <p class="descent-static-copy">정적 궤적은 애니메이션이 실행된다고 암시하지 않으면서 기준 상태와 한 변수의 섭동을 보존합니다.</p>
+        <div class="descent-equation"><span>기준</span><strong>θ₁</strong><span>섭동</span><strong>θ₁ + Δθ₁</strong></div>
       </div>
     </article>
 
     <article class="descent-beat" data-orbit-beat="2">
       <div class="descent-card">
-        <span class="descent-index">03 · 궤적 기억</span>
-        <h3>지나온 길 자체가 계측기가 된다.</h3>
-        <p class="descent-live-copy">시안과 보라색 이력이 깊이 속에 떠 있습니다. 회전할 때마다 평면 궤적이 숨기던 접힘, 가까운 회귀, 예측 가능성이 처음 무너지는 순간이 드러납니다.</p>
-        <p class="descent-static-copy">시안과 보라색 이력은 움직임 없는 기준 이미지에서 접힘, 가까운 회귀, 예측 가능성이 처음 무너지는 순간을 보존합니다.</p>
-        <div class="descent-tags"><span>고정 시간 간격</span><span>결정론적</span><span>재생 가능</span></div>
+        <span class="descent-index">03 · 발산</span>
+        <h3>두 미래가 달라지는 순간을 봅니다.</h3>
+        <p class="descent-live-copy">처음에는 두 경로가 겹칩니다. 이후 같은 결정론적 규칙이 둘을 서로 멀어지게 합니다. 시안은 언제나 기준, 보라는 언제나 섭동 상태입니다.</p>
+        <p class="descent-static-copy">시안은 기준, 보라는 섭동 경로를 나타내며, 동작만 보지 않아도 커지는 거리를 확인할 수 있습니다.</p>
+        <div class="descent-tags"><span>기준: 시안</span><span>섭동: 보라</span><span>변수 하나만 변경</span></div>
       </div>
     </article>
 
     <article class="descent-beat descent-beat-right" data-orbit-beat="3">
       <div class="descent-card">
         <span class="descent-index">04 · 측정</span>
-        <h3>장관을 검증 가능한 근거로 바꾸다.</h3>
-        <p>하강의 끝은 아래의 직접 조작 궤적 콘솔로 이어집니다. 주 초기각, 감쇠, 초기 간격을 조절하고 주 상태를 전체 실험실로 가져가세요.</p>
-        <a class="btn primary sm" href="#console">직접 조작하기 <span class="arrow">↓</span></a>
+        <h3>눈에 보이는 갈라짐을 숫자로 바꿉니다.</h3>
+        <p>아래 콘솔은 평면 이중진자의 래핑된 각도 차이 |Δθ₁(t)|를 보여 줍니다. 정확한 기준 상태와 섭동을 입력한 뒤 다시 입력하지 않고 그 평면 실험을 전체 랩에서 그대로 이어 가세요.</p>
+        <details class="story-technical">
+          <summary>3D 화면은 무엇을 계산하나요?</summary>
+          <p>히어로는 240 Hz 제약 이중 구면진자 모델을 사용합니다. 아래 콘솔은 평면 이중진자를 RK4와 dt=0.001로 적분하고 궤적은 150 Hz로 표본화하므로, 전체 랩에서 이어지는 실험과 일치합니다.</p>
+        </details>
+        <a class="btn primary sm" href="#console">갈라짐 측정 <span class="arrow">↓</span></a>
       </div>
     </article>
   </div>
@@ -314,39 +323,90 @@
 <section class="band console-band" id="console">
   <div class="wrap console-grid">
     <div class="console-copy reveal">
-      <span class="kicker">궤적 콘솔</span>
-      <h2 data-rise="">앱을 열기도 전에 체감되는 카오스.</h2>
-      <p>가벼운 캔버스 계기가 거의 동일한 두 이중진자 릴리스를 실시간으로 그립니다. 시안과 보라 궤적은 함께 출발하지만, 민감성이 지배하는 순간 서로 갈라집니다.</p>
+      <span class="kicker">04 · 측정하기</span>
+      <h2 data-rise="">하나의 기준, 명시된 하나의 섭동.</h2>
+      <p>정확한 값을 입력하거나 슬라이더로 빠르게 탐색하세요. 기준과 섭동 상태를 색상에만 맡기지 않고 이름으로 표시합니다.</p>
+      <dl class="experiment-recipe" aria-label="민감한 의존성 실험 레시피">
+        <div><dt>목표</dt><dd>아주 작은 변화가 커지는 과정 보기.</dd></div>
+        <div><dt>정확한 시작</dt><dd>θ=(2.18, 2.64) rad · ω=(0, 0) rad/s · γ=0.06.</dd></div>
+        <div><dt>방법</dt><dd>RK4 · dt=0.001.</dd></div>
+        <div><dt>변경</dt><dd>θ₁만 Δθ₁=1e-3 rad · 대칭 패턴 · 시드 20260826 · n=12.</dd></div>
+        <div><dt>예상</dt><dd>두 경로는 함께 시작한 뒤 |Δθ₁(t)|가 커집니다. 궤적 모양만으로 판단하지 않습니다.</dd></div>
+        <div><dt>측정</dt><dd>여기서는 |Δθ₁(t)|, 다음에는 랩의 위상상태 norm으로 유한시간 λ₁.</dd></div>
+        <div><dt>이론</dt><dd><a href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=ko&amp;tab=theory#theory-chaos-lyapunov" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-theory">가정과 근거</a></dd></div>
+      </dl>
+      <div class="trajectory-legend" role="list" aria-label="궤적 의미">
+        <span role="listitem"><i class="reference-swatch" aria-hidden="true"></i><b>기준</b> 변경하지 않은 초기 상태</span>
+        <span role="listitem"><i class="perturbed-swatch" aria-hidden="true"></i><b>섭동</b> 기준 + Δθ₁</span>
+      </div>
       <div class="console-readouts" role="group" aria-label="실시간 콘솔 판독">
-        <div class="console-readout"><span>간격</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
-        <div class="console-readout"><span>궤적 거리</span><strong data-orbit-readout="drift">0.00 px</strong></div>
+        <div class="console-readout"><span>|Δθ₁(t)|</span><strong data-orbit-readout="separation">0.001 rad</strong></div>
+        <div class="console-readout"><span>화면상 끝점 간격</span><strong data-orbit-readout="drift">0.00 px</strong></div>
         <div class="console-readout"><span>궤적</span><strong data-orbit-readout="trace">warming</strong></div>
         <div class="console-readout"><span>상태</span><strong data-orbit-readout="mode">live</strong></div>
       </div>
       <div class="orbit-controls" role="group" aria-label="미니 실험실 조절기">
+        <div class="orbit-unit-row">
+          <label for="orbit-angle-unit">각도 표시</label>
+          <select id="orbit-angle-unit" data-orbit-unit="" aria-describedby="orbit-unit-note">
+            <option value="rad">라디안</option>
+            <option value="deg">도</option>
+          </select>
+          <small id="orbit-unit-note">랩 URL에는 항상 정규 라디안 값을 전달합니다.</small>
+        </div>
         <div class="orbit-control-meta">
-          <label for="orbit-theta">초기각 θ₁</label>
+          <label for="orbit-theta">기준 각도 θ₁</label>
           <output id="orbit-theta-output" for="orbit-theta" data-orbit-output="theta">2.18 라디안</output>
         </div>
-        <input id="orbit-theta" data-orbit-control="theta" type="range" min="0.40" max="3.00" step="0.01" value="2.18" aria-describedby="orbit-theta-output" aria-valuetext="2.18 라디안">
+        <div class="orbit-input-row">
+          <input id="orbit-theta" data-orbit-control="theta" type="range" min="-3.141592653589793" max="3.141592653589793" step="any" data-orbit-keyboard-step="0.01" value="2.18" aria-describedby="orbit-theta-output" aria-valuetext="2.18 라디안">
+          <label class="sr-only" for="orbit-theta-number">기준 각도 θ₁ 직접 입력</label>
+          <input id="orbit-theta-number" class="orbit-number" data-orbit-number="theta" type="number" min="-3.141592653589793" max="3.141592653589793" step="any" value="2.18" inputmode="decimal" aria-describedby="orbit-theta-output orbit-unit-note">
+          <span data-orbit-unit-label="" aria-hidden="true">rad</span>
+        </div>
         <div class="orbit-control-meta">
-          <label for="orbit-separation">초기 간격 δθ₁</label>
+          <label for="orbit-theta-two">기준 각도 θ₂</label>
+          <output id="orbit-theta-two-output" for="orbit-theta-two" data-orbit-output="thetaTwo">2.64 rad</output>
+        </div>
+        <div class="orbit-input-row">
+          <input id="orbit-theta-two" data-orbit-control="thetaTwo" type="range" min="-3.141592653589793" max="3.141592653589793" step="any" data-orbit-keyboard-step="0.01" value="2.64" aria-describedby="orbit-theta-two-output" aria-valuetext="2.64 라디안">
+          <label class="sr-only" for="orbit-theta-two-number">기준 각도 θ₂ 직접 입력</label>
+          <input id="orbit-theta-two-number" class="orbit-number" data-orbit-number="thetaTwo" type="number" min="-3.141592653589793" max="3.141592653589793" step="any" value="2.64" inputmode="decimal" aria-describedby="orbit-theta-two-output orbit-unit-note">
+          <span data-orbit-unit-label="" aria-hidden="true">rad</span>
+        </div>
+        <div class="orbit-control-meta">
+          <label for="orbit-separation">섭동 Δθ₁ <small>θ₁에만 적용</small></label>
           <output id="orbit-separation-output" for="orbit-separation" data-orbit-output="separation">1.0e-3 라디안</output>
         </div>
-        <input id="orbit-separation" data-orbit-control="separation" type="range" min="0.0001" max="0.0200" step="0.0001" value="0.0010" aria-describedby="orbit-separation-output" aria-valuetext="1.0e-3 라디안">
+        <div class="orbit-input-row">
+          <input id="orbit-separation" data-orbit-control="separation" type="range" min="0.0001" max="0.0100" step="any" data-orbit-keyboard-step="0.0001" value="0.0010" aria-describedby="orbit-separation-output" aria-valuetext="1.0e-3 라디안">
+          <label class="sr-only" for="orbit-separation-number">섭동 Δθ₁ 직접 입력</label>
+          <input id="orbit-separation-number" class="orbit-number" data-orbit-number="separation" type="number" min="0.0000001" max="0.01" step="any" value="0.001" inputmode="decimal" aria-describedby="orbit-separation-output orbit-unit-note">
+          <span data-orbit-unit-label="" aria-hidden="true">rad</span>
+        </div>
         <div class="orbit-control-meta">
           <label for="orbit-damping">감쇠 계수 γ</label>
           <output id="orbit-damping-output" for="orbit-damping" data-orbit-output="damping">0.06</output>
         </div>
-        <input id="orbit-damping" data-orbit-control="damping" type="range" min="0" max="0.80" step="0.01" value="0.06" aria-describedby="orbit-damping-output" aria-valuetext="감쇠 계수 0.06">
+        <div class="orbit-input-row">
+          <input id="orbit-damping" data-orbit-control="damping" type="range" min="0" max="0.80" step="any" data-orbit-keyboard-step="0.01" value="0.06" aria-describedby="orbit-damping-output" aria-valuetext="감쇠 계수 0.06">
+          <label class="sr-only" for="orbit-damping-number">감쇠 계수 γ 직접 입력</label>
+          <input id="orbit-damping-number" class="orbit-number" data-orbit-number="damping" type="number" min="0" max="10" step="any" value="0.06" inputmode="decimal" aria-describedby="orbit-damping-output">
+        </div>
         <div class="orbit-button-row">
           <button class="orbit-reset" type="button" data-orbit-reset="" aria-controls="orbit-console">궤적 초기화</button>
           <button class="orbit-reset" type="button" data-orbit-toggle="" aria-pressed="false" aria-controls="orbit-console">움직임 일시정지</button>
         </div>
       </div>
+      <div class="exact-state" aria-live="polite">
+        <span>정확한 실험 상태</span>
+        <p><b>기준</b><code data-orbit-state="reference">θ₁ 2.18 rad · θ₂ 2.64 rad · ω₁ 0 · ω₂ 0</code></p>
+        <p><b>섭동</b><code data-orbit-state="perturbed">θ₁ 2.181 rad · θ₂ 2.64 rad · ω₁ 0 · ω₂ 0</code></p>
+        <small data-orbit-state-status="">전체 정밀도 라디안 값과 Δθ₁이 랩으로 그대로 이어집니다.</small>
+      </div>
       <div class="console-actions">
-        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06" data-app-link="" data-orbit-launch="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="orbit-primary">주 상태 열기 <span class="arrow">→</span></a>
-        <a class="btn ghost sm" href="https://elliotjung.github.io/pendulum-lab/reviewer.html">리뷰어 원장</a>
+        <a class="btn primary sm" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab&amp;experiment=sensitive-dependence&amp;experimentSchema=pendulum-sensitive-dependence%2Fv1&amp;workflowStep=measure&amp;trajectoryStage=perturbed&amp;angleUnit=rad&amp;perturbationVar=th1&amp;perturbationPattern=symmetric&amp;perturbationSeed=20260826&amp;deltaTheta=0.001&amp;ensembleCount=12&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06&amp;method=rk4&amp;dt=0.001" data-app-link="" data-orbit-launch="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="orbit-primary">이 정확한 실험 이어 가기 <span class="arrow">→</span></a>
+        <a class="btn ghost sm" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=ko&amp;tab=lyap&amp;experiment=sensitive-dependence&amp;experimentSchema=pendulum-sensitive-dependence%2Fv1&amp;workflowStep=measure&amp;trajectoryStage=perturbed&amp;angleUnit=rad&amp;perturbationVar=th1&amp;perturbationPattern=symmetric&amp;perturbationSeed=20260826&amp;deltaTheta=0.001&amp;ensembleCount=12&amp;sysType=double&amp;th1=2.18&amp;th2=2.64&amp;iw1=0&amp;iw2=0&amp;m1=1&amp;m2=1&amp;l1=1&amp;l2=1&amp;g=9.81&amp;gamma=0.06&amp;method=rk4&amp;dt=0.001" data-app-link="" data-orbit-next="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="orbit-measure">다음: λ₁ 측정</a>
       </div>
     </div>
 
@@ -360,7 +420,7 @@
         두 개의 이중진자가 0.001 라디안 차이로 시작합니다. 시안과 보라 궤적은 시간이 지날수록 갈라집니다.
       </canvas>
       <figcaption id="orbit-console-caption">
-        <span data-orbit-caption-label="">두 초기 조건</span>
+        <span data-orbit-caption-label="">기준 + 하나의 섭동</span>
         <span data-orbit-caption="separation">1.0e-3 라디안 간격</span>
       </figcaption>
     </figure>
@@ -371,24 +431,34 @@
 <section class="band preview-band" id="preview">
   <div class="wrap preview-grid">
     <div class="preview-copy reveal">
-      <span class="kicker">라이브 워크벤치</span>
-      <h2 data-rise="">티저 목업이 아닌, 실제 랩 화면.</h2>
-      <p>첫 클릭에 준비된 경로가 열립니다: 입문자용 나비 프리셋, 학생용 이론-근거 안내, 혹은 리뷰어 증거가 곁에 있는 연구 워크벤치.</p>
-      <div class="recipe-grid" role="group" aria-label="30초 실험 레시피">
+      <span class="kicker">다음 탐색 깊이 선택</span>
+      <h2 data-rise="">기능 목록이 아니라 질문에서 시작하세요.</h2>
+      <p>각 경로는 목표에 필요한 최소 워크스페이스를 엽니다. 실험을 다시 시작하지 않고 나중에 더 많은 조절기를 펼칠 수 있습니다.</p>
+      <div class="recipe-grid" role="group" aria-label="목표별 진입 경로">
         <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;preset=butterfly&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="recipe-beginner">
-          <span>입문자</span>
-          <strong>나비 운동</strong>
-          <em>깔끔한 스타터 프리셋으로 랩 열기.</em>
+          <span>호기심 많은 입문자</span>
+          <strong>명확한 운동 하나 보기</strong>
+          <em>핵심 조절기만 있는 깔끔한 프리셋 열기.</em>
         </a>
         <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=ko&amp;preset=chaotic&amp;tab=theory" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-student-theory">
           <span>학생</span>
-          <strong>이론에서 근거까지</strong>
-          <em>가정, 방정식, 코드와 검증을 차례로 따라가기.</em>
+          <strong>방정식 이해하기</strong>
+          <em>가정, 운동, 방정식, 검증을 순서대로 따라가기.</em>
+        </a>
+        <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=classroom&amp;audience=student&amp;lang=ko&amp;preset=periodic&amp;tab=compare" data-app-link="" data-cta-goal="classroom" data-cta-persona="student" data-utm-content="recipe-numerics">
+          <span>수치해석 학습자</span>
+          <strong>해법 동작 비교</strong>
+          <em>에너지 표류와 수렴 질문에서 시작하기.</em>
         </a>
         <a class="recipe-card" href="https://elliotjung.github.io/pendulum-lab/?goal=reproduce&amp;audience=research&amp;lang=ko&amp;preset=periodic&amp;tab=research" data-app-link="" data-cta-goal="reproduce" data-cta-persona="research" data-utm-content="recipe-research-reproduce">
-          <span>연구</span>
-          <strong>리뷰어 증거</strong>
-          <em>저장된 연구 워크벤치 열기.</em>
+          <span>연구 / 리뷰</span>
+          <strong>과학적 주장 검토</strong>
+          <em>출처와 주의점이 함께 보이는 워크벤치 열기.</em>
+        </a>
+        <a class="recipe-card" href="https://github.com/elliotjung/pendulum-lab/blob/master/CONTRIBUTING.md">
+          <span>개발자</span>
+          <strong>코드 기여하기</strong>
+          <em>설정, 구조, 테스트, 리뷰 규칙으로 바로 이동하기.</em>
         </a>
       </div>
     </div>
@@ -460,60 +530,50 @@
 <section class="band" id="capabilities">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="kicker">플랫폼</span>
-      <h2 data-rise="">카오스 연구가 요구하는 모든 것 — 측정하고, 테스트하고, 증명했다.</h2>
-      <p>수치해석·물리·카오스 진단·시각화·재현성의 다섯 분야를 닫힌형 해, 에너지, 독립 레퍼런스 기준으로 각각 단위 테스트했습니다.</p>
+      <span class="kicker">네 가지 핵심 역량</span>
+      <h2 data-rise="">움직임에서 다른 사람이 확인할 수 있는 결과까지.</h2>
+      <p>랩은 네 가지 작업을 중심으로 구성됩니다. 방법 이름은 필요할 때까지 한 단계 아래에 둡니다.</p>
     </div>
 
     <div class="cap-grid" data-stagger="">
       <article class="cap-card">
         <span class="idx">01</span>
         <span class="glyph"><svg viewBox="0 0 24 24"><path d="M3 17c3-8 6-8 9 0s6 8 9 0"></path><circle cx="3" cy="17" r="1.4"></circle><circle cx="21" cy="17" r="1.4"></circle></svg></span>
-        <h3>15종의 주력 적분기</h3>
-        <p>Euler부터 RK4, 임베디드 RKF45, Dormand-Prince 5(4), DOP853 8(5,3), Gauss-Legendre 4/6, Yoshida-4, Gragg-Bulirsch-Stoer, L-stable TR-BDF2까지 — 각각 이론 차수를 실측으로 확인했고, 조건수 진단이 붙은 완전 뉴턴 음함수 중점법을 더했습니다.</p>
-        <div class="tags"><span class="tag">RK4</span><span class="tag">DOP853</span><span class="tag">GBS</span><span class="tag">TR-BDF2</span></div>
+        <h3>시뮬레이션</h3>
+        <p>진자 시스템을 고르고 정확한 초기 조건을 설정한 뒤 상태가 변화하는 과정을 봅니다. 프리셋은 안전한 출발점을 제공하고, 의도적인 실험에는 직접 조절기를 사용할 수 있습니다.</p>
+        <div class="tags"><span class="tag">시스템</span><span class="tag">초기 상태</span><span class="tag">실시간 운동</span></div>
       </article>
 
       <article class="cap-card">
         <span class="idx">02</span>
         <span class="glyph"><svg viewBox="0 0 24 24"><path d="M4 20 L9 6 L13 16 L17 9 L20 14"></path></svg></span>
-        <h3>카오스 진단</h3>
-        <p>최대·전체 스펙트럼 랴푸노프 지수, 공변 랴푸노프 벡터, Kaplan-Yorke 차원, SALI/FLI, 푸앵카레 단면, 0–1 테스트, RQA, 베이슨 엔트로피, 자동 분기 스윕 — 정의되는 곳마다 방법별 진단과 불확실성을 함께 제공합니다.</p>
-        <div class="tags"><span class="tag">λ-spectrum</span><span class="tag">CLV</span><span class="tag">0–1 test</span><span class="tag">RQA</span></div>
+        <h3>카오스와 분석</h3>
+        <p>“경로가 달라 보인다”에서 발산, 재귀, 안정성, 위상공간 구조를 설명하는 수치로 나아갑니다. 방법이 정의하는 경우 불확실성도 함께 제공합니다.</p>
+        <div class="tags"><span class="tag">발산</span><span class="tag">구조</span><span class="tag">불확실성</span></div>
       </article>
 
       <article class="cap-card">
         <span class="idx">03</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="2"></circle><circle cx="12" cy="18" r="2.6"></circle><path d="M12 8 L12 15.4"></path></svg></span>
-        <h3>물리 시스템</h3>
-        <p>이중·삼중·일반화 N-진자, 구동 및 감쇠-구동 진동자, Kapitza·자기 진자, 탄성 스프링, 결합 진자 격자, 그리고 E와 Lz 보존량 판독이 달린 진짜 3D 구면·로프 진자까지.</p>
-        <div class="tags"><span class="tag">N-pendulum</span><span class="tag">driven</span><span class="tag">lattice</span><span class="tag">3D Lab</span></div>
+        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 L20 7 V13 C20 17 16 20 12 21 C8 20 4 17 4 13 V7 Z"></path><path d="M9 12 l2 2 l4 -4"></path></svg></span>
+        <h3>수치적 신뢰</h3>
+        <p>계산 패턴을 과학적 결론으로 받아들이기 전에 해상도, 수렴, 잔차, 보존량, 독립 기준을 비교합니다.</p>
+        <div class="tags"><span class="tag">수렴</span><span class="tag">잔차</span><span class="tag">기준 검증</span></div>
       </article>
 
       <article class="cap-card">
         <span class="idx">04</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2"></rect><path d="M3.5 14 L9 9 L13 13 L20.5 6"></path></svg></span>
-        <h3>정직한 시각화</h3>
-        <p>순수 캔버스에 색각 안전 Okabe-Ito 렌더러; 위상 초상, 푸앵카레 맵, FTLE 능선, 그리고 데스크톱·모바일 기준선에 걸쳐 결정론적 SVG와 시각 회귀 지문을 갖춘 출판용 그림 파이프라인.</p>
-        <div class="tags"><span class="tag">phase 3D</span><span class="tag">FTLE</span><span class="tag">figures</span></div>
-      </article>
-
-      <article class="cap-card">
-        <span class="idx">05</span>
         <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 L20 7 V13 C20 17 16 20 12 21 C8 20 4 17 4 13 V7 Z"></path><path d="M9 12 l2 2 l4 -4"></path></svg></span>
-        <h3>완전한 재현성</h3>
-        <p>결정론적 재생 메타데이터가 담긴 해시 스탬프 실행 매니페스트, 파일별 SHA-256 무결성 검사(ZIP 호환 CRC32 포함)를 갖춘 진짜 ZIP 연구 번들, IndexedDB 장기 저장소, 그리고 소스 커밋에 묶인 증거 출처.</p>
-        <div class="tags"><span class="tag">manifests</span><span class="tag">SHA-256</span><span class="tag">provenance</span></div>
-      </article>
-
-      <article class="cap-card">
-        <span class="idx">06</span>
-        <span class="glyph"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z"></path></svg></span>
-        <h3>CPU 오러클이 게이트하는 WebGPU 스케일</h3>
-        <p>무거운 카오스 작업은 우선순위 큐, 체크포인트/재개, 우아한 폴백을 갖춘 타입 Web Worker에서 돌아가고 — WebGPU 앙상블·전체 스펙트럼·CLV·FTLE 커널은 같은 실행의 CPU f64 오러클 비교를 통과해야만 승격됩니다.</p>
-        <div class="tags"><span class="tag">worker V2</span><span class="tag">WebGPU</span><span class="tag">CPU oracle</span></div>
+        <h3>재현성</h3>
+        <p>정확한 설정을 링크에 담고, 매니페스트와 연구 번들을 저장하며, 공개 결과를 소스 근거와 명시적 주의점에 연결합니다.</p>
+        <div class="tags"><span class="tag">공유 가능한 상태</span><span class="tag">매니페스트</span><span class="tag">출처 추적</span></div>
       </article>
     </div>
+
+    <details class="methods-disclosure reveal">
+      <summary>모든 방법 살펴보기</summary>
+      <p>고급 워크스페이스에는 15종의 주력 적분기, 랴푸노프 스펙트럼과 벡터, 푸앵카레 단면, 재귀 분석, FTLE, 흡인역 엔트로피, 연속법, 데이터 기반 모델, CPU 오러클로 게이트되는 GPU 경로가 있습니다. 각 방법은 측정 대상과 실패 가능 지점을 설명합니다.</p>
+      <div class="tags" aria-label="Selected advanced methods"><span class="tag">DOP853</span><span class="tag">GBS</span><span class="tag">Lyapunov</span><span class="tag">Poincaré</span><span class="tag">CLV</span><span class="tag">RQA</span><span class="tag">FTLE</span><span class="tag">SINDy</span><span class="tag">HAVOK</span></div>
+    </details>
   </div>
 </section>
 
@@ -561,12 +621,23 @@
   </div>
 </section>
 
-<!-- ============================== FRONTIER ============================== -->
-<section class="band" id="frontier">
+<!-- ============================== SECONDARY STORIES ============================== -->
+<section class="band secondary-intro" id="advanced" aria-labelledby="advanced-title">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="kicker">연구 프런티어</span>
-      <h2 data-rise="">시뮬레이션 너머: 스스로 검증하는 동역학 라이브러리.</h2>
+      <span class="kicker">선택형 심화 경로</span>
+      <h2 id="advanced-title" data-rise="">연구 라이브러리와 공학적 맥락.</h2>
+      <p>핵심 제품은 인터랙티브 실험실입니다. 아래 섹션은 필요한 독자를 위해 더 넓은 연구 라이브러리와 별도의 공학 포트폴리오 연결을 설명합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== FRONTIER ============================== -->
+<section class="band secondary-band" id="frontier" aria-labelledby="frontier-title">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">보조 경로 · 연구 프런티어</span>
+      <h2 id="frontier-title" data-rise="">시뮬레이션 너머: 스스로 검증하는 동역학 라이브러리.</h2>
       <p>헤드리스 코어는 배치 연구용 CLI가 딸린 타입 라이브러리로 제공됩니다. 모든 프런티어 모듈은 닫힌형 앵커, 수렴 차수, 교차 방법 일치 같은 반증 가능한 테스트 계약을 스스로 지닙니다.</p>
     </div>
 
@@ -613,11 +684,11 @@
 </section>
 
 <!-- ============================== TCAD MAPPING ============================== -->
-<section class="band tcad-band" id="tcad">
+<section class="band tcad-band secondary-band" id="tcad" aria-labelledby="tcad-title">
   <div class="wrap tcad-grid">
     <div class="sec-head reveal">
-      <span class="kicker">이 경험이 TCAD로 이어지는 이유</span>
-      <h2 data-rise="">소자 시뮬레이션의 원칙으로 만든 카오스 실험실.</h2>
+      <span class="kicker">보조 경로 · 공학 포트폴리오</span>
+      <h2 id="tcad-title" data-rise="">이 작업이 TCAD로 이어지는 이유.</h2>
       <p>진자 동역학과 반도체 소자는 서로 다른 방정식을 풀지만, 신뢰할 수 있는 시뮬레이션에는 같은 공학 원칙이 필요합니다. 해법의 가정을 드러내고, 이산화 오차를 수치화하며, 독립적인 참조해와 비교해 검증합니다.</p>
     </div>
     <div class="tcad-cards" data-stagger="">
