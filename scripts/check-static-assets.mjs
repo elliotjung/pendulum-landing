@@ -3,13 +3,7 @@ import { dirname, extname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { evidenceFreshnessText, koreanEvidenceFallbacks } from './evidence-copy.mjs';
-import {
-  CLAIM_IDS,
-  claimById,
-  claimCaveatLabel,
-  claimEvidenceView,
-  claimLevelLabel,
-} from './evidence-claims.mjs';
+import { CLAIM_IDS, claimById, claimCaveatLabel, claimEvidenceView, claimLevelLabel } from './evidence-claims.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const failures = [];
@@ -21,14 +15,34 @@ const CONTENT_PAGES = new Set(['index.html', 'ko.html']);
 
 const ignoredDirs = new Set(['.git', '.lighthouseci', 'node_modules', 'reports', 'test-results', 'assets/vendor']);
 const textExtensions = new Set(['.css', '.html', '.js', '.json', '.md', '.mjs', '.txt', '.xml']);
-const mojibakeTokens = ['\uCA0C', '\uCC55', '\uD69E', '\uBBB6', '\uBD55', '\uBC1A', '\uBC23', '\uBC04', '\uBC2A', '\uBC33', '\uBC20', '\uBC06', '\uAC4E', '\uBB56', '\uBBCA', '\uBBCB', '\u7F50', '\u6B3E', '\u8CAB'];
+const mojibakeTokens = [
+  '\uCA0C',
+  '\uCC55',
+  '\uD69E',
+  '\uBBB6',
+  '\uBD55',
+  '\uBC1A',
+  '\uBC23',
+  '\uBC04',
+  '\uBC2A',
+  '\uBC33',
+  '\uBC20',
+  '\uBC06',
+  '\uAC4E',
+  '\uBB56',
+  '\uBBCA',
+  '\uBBCB',
+  '\u7F50',
+  '\u6B3E',
+  '\u8CAB',
+];
 const mojibakeRegexes = [
   ['replacement-character', /\uFFFD/],
   ['latin1-utf8-c1', /\u00C3[\u0080-\u00BF]/],
   ['stray-cp1252-latin1', /\u00C2[\u0080-\u00BF]?/],
   ['cp1252-punctuation', /\u00E2[\u0080-\u2122]{1,2}/],
   ['emoji-mojibake', /\u00F0\u0178[\u0080-\u00BF]?/],
-  ['known-rendered-mojibake-token', new RegExp(mojibakeTokens.map(escapeRegExp).join('|'))]
+  ['known-rendered-mojibake-token', new RegExp(mojibakeTokens.map(escapeRegExp).join('|'))],
 ];
 
 for (const pageName of PAGES) {
@@ -59,14 +73,21 @@ for (const pageName of PAGES) {
       failures.push(`${pageName}: the meta CSP must precede every script so the hashed pre-paint boot is enforced`);
     }
     verifySocialMetadata(pageName, html);
+    verifyBrandMark(pageName, html);
     verifyLanguagePreloads(pageName, html);
     verifySkipLinkOrder(pageName, html);
+    if (/Cyan and violet histories|시안과 보라색 이력/.test(html)) {
+      failures.push(`${pageName}: stale cyan/violet hero palette copy remains`);
+    }
   }
 
   const attrPattern = /\b(?:href|src|srcset)=["']([^"']+)["']/g;
   for (const match of html.matchAll(attrPattern)) {
     const refs = match[0].startsWith('srcset=')
-      ? match[1].split(',').map((candidate) => candidate.trim().split(/\s+/)[0]).filter(Boolean)
+      ? match[1]
+          .split(',')
+          .map((candidate) => candidate.trim().split(/\s+/)[0])
+          .filter(Boolean)
       : [match[1]];
     for (const ref of refs) {
       if (!ref || shouldSkip(ref)) continue;
@@ -182,20 +203,14 @@ async function checkClaimEvidenceSurfaces(summary) {
     const korean = pageName === 'ko.html';
     for (const id of CLAIM_IDS) {
       const claim = claimById(view, id);
-      const expectedLevel = korean
-        ? koreanFallbacks[`claim.${id}.level`]
-        : claimLevelLabel(claim?.effectiveVisibleLevel);
-      const expectedCaveat = korean
-        ? koreanFallbacks[`claim.${id}.caveat`]
-        : claimCaveatLabel(claim);
+      const expectedLevel = korean ? koreanFallbacks[`claim.${id}.level`] : claimLevelLabel(claim?.effectiveVisibleLevel);
+      const expectedCaveat = korean ? koreanFallbacks[`claim.${id}.caveat`] : claimCaveatLabel(claim);
       const escapedId = escapeRegExp(id);
-      const levels = [...html.matchAll(new RegExp(`<[^>]+data-claim-status="${escapedId}"[^>]*>([^<]*)<\\/[^>]+>`, 'g'))]
-        .map((match) => match[1]);
+      const levels = [...html.matchAll(new RegExp(`<[^>]+data-claim-status="${escapedId}"[^>]*>([^<]*)<\\/[^>]+>`, 'g'))].map((match) => match[1]);
       if (levels.length === 0 || levels.some((value) => value !== expectedLevel)) {
         failures.push(`${pageName}: claim status ${id} is missing or does not equal ${expectedLevel}`);
       }
-      const caveats = [...html.matchAll(new RegExp(`<[^>]+data-claim-caveat="${escapedId}"[^>]*>([^<]*)<\\/[^>]+>`, 'g'))]
-        .map((match) => match[1].replaceAll('&amp;', '&'));
+      const caveats = [...html.matchAll(new RegExp(`<[^>]+data-claim-caveat="${escapedId}"[^>]*>([^<]*)<\\/[^>]+>`, 'g'))].map((match) => match[1].replaceAll('&amp;', '&'));
       if (caveats.length === 0 || caveats.some((value) => value !== expectedCaveat)) {
         failures.push(`${pageName}: claim caveat ${id} is missing or stale`);
       }
@@ -204,10 +219,7 @@ async function checkClaimEvidenceSurfaces(summary) {
     const software = structuredGraphEntries(html, pageName).find((entry) => entry?.['@type'] === 'SoftwareSourceCode');
     const properties = Array.isArray(software?.additionalProperty) ? software.additionalProperty : [];
     const propertyMap = new Map(properties.map((entry) => [entry?.propertyID, entry?.value]));
-    if (
-      properties.length !== CLAIM_IDS.length
-      || CLAIM_IDS.some((id) => propertyMap.get(id) !== claimById(view, id)?.effectiveVisibleLevel)
-    ) {
+    if (properties.length !== CLAIM_IDS.length || CLAIM_IDS.some((id) => propertyMap.get(id) !== claimById(view, id)?.effectiveVisibleLevel)) {
       failures.push(`${pageName}: JSON-LD claim levels do not match the evaluated evidence surface`);
     }
 
@@ -227,13 +239,13 @@ async function checkWorkflowNetworkContracts() {
     {
       file: '.github/workflows/cross-repo-release.yml',
       step: 'Materialize the exact release evidence payload',
-      required: ['curl ', '--retry 5', '--retry-all-errors', '--connect-timeout 10', '--max-time 60']
+      required: ['curl ', '--retry 5', '--retry-all-errors', '--connect-timeout 10', '--max-time 60'],
     },
     {
       file: '.github/workflows/cloudflare-pages.yml',
       step: 'Verify deployed isolation and security headers',
-      required: ['curl ', '--retry 5', '--retry-all-errors', '--connect-timeout 10', '--max-time 60']
-    }
+      required: ['curl ', '--retry 5', '--retry-all-errors', '--connect-timeout 10', '--max-time 60'],
+    },
   ];
 
   for (const contract of contracts) {
@@ -261,7 +273,7 @@ async function checkKernelPairReleaseContract() {
     readFile(join(root, '.github', 'workflows', 'cross-repo-release.yml'), 'utf8').catch(() => ''),
     readFile(join(root, '.github', 'workflows', 'evidence-sync.yml'), 'utf8').catch(() => ''),
     readFile(join(root, 'scripts', 'sync-kernel-manifest.mjs'), 'utf8').catch(() => ''),
-    readFile(join(root, 'scripts', 'materialize-evidence-handoff.mjs'), 'utf8').catch(() => '')
+    readFile(join(root, 'scripts', 'materialize-evidence-handoff.mjs'), 'utf8').catch(() => ''),
   ]);
 
   for (const token of [
@@ -272,15 +284,13 @@ async function checkKernelPairReleaseContract() {
     'The exact kernel and manifest base64 payloads are required',
     'Materialize and verify the exact dispatched demo-kernel pair',
     'node scripts/sync-kernel-manifest.mjs --materialize-dispatched',
-    'assets/pendulum-demo-kernel.js assets/demo-kernel-manifest.json'
+    'assets/pendulum-demo-kernel.js assets/demo-kernel-manifest.json',
   ]) {
     if (!releaseWorkflow.includes(token)) {
       failures.push(`.github/workflows/cross-repo-release.yml: missing exact kernel-pair contract ${token}`);
     }
   }
-  const materializePosition = releaseWorkflow.indexOf(
-    'node scripts/sync-kernel-manifest.mjs --materialize-dispatched'
-  );
+  const materializePosition = releaseWorkflow.indexOf('node scripts/sync-kernel-manifest.mjs --materialize-dispatched');
   const staticGatePosition = releaseWorkflow.indexOf('- name: Static, accessibility, and browser gate');
   if (materializePosition < 0 || staticGatePosition <= materializePosition) {
     failures.push('cross-repo release: the exact kernel pair must be materialized before any static/browser gate');
@@ -297,16 +307,11 @@ async function checkKernelPairReleaseContract() {
     'node scripts/materialize-evidence-handoff.mjs',
     'node scripts/sync-kernel-manifest.mjs --materialize-handoff',
     'assets/pendulum-demo-kernel.js assets/demo-kernel-manifest.json',
-    'landing-evidence-handoff-${{ github.run_id }}'
+    'landing-evidence-handoff-${{ github.run_id }}',
   ]) {
     if (!evidenceWorkflow.includes(token)) failures.push(`evidence sync: missing exact Pages handoff contract ${token}`);
   }
-  for (const forbidden of [
-    'raw.githubusercontent.com/elliotjung/pendulum-lab',
-    'git ls-remote',
-    'schedule:',
-    'workflow_dispatch:'
-  ]) {
+  for (const forbidden of ['raw.githubusercontent.com/elliotjung/pendulum-lab', 'git ls-remote', 'schedule:', 'workflow_dispatch:']) {
     if (evidenceWorkflow.includes(forbidden)) failures.push(`evidence sync: forbidden non-artifact fallback remains: ${forbidden}`);
   }
   if (/node scripts\/sync-kernel-manifest\.mjs\s*(?:\r?\n|$)/u.test(evidenceWorkflow)) {
@@ -328,7 +333,7 @@ async function checkKernelPairReleaseContract() {
     'constants.COPYFILE_EXCL',
     "['--materialize-dispatched', '--materialize-handoff', '--verify-current']",
     'materializeDispatchedPair({ requireReleaseTag: true })',
-    'materializeDispatchedPair({ requireReleaseTag: false })'
+    'materializeDispatchedPair({ requireReleaseTag: false })',
   ]) {
     if (!syncScript.includes(token)) failures.push(`scripts/sync-kernel-manifest.mjs: missing pair contract ${token}`);
   }
@@ -355,7 +360,7 @@ async function checkKernelPairReleaseContract() {
     'evidence?.provenance?.dirtyWorktree !== false',
     'evidence?.tests?.success !== true',
     'installed evidence failed its post-write hash check',
-    'pendulum-landing-evidence-handoff-audit/v1'
+    'pendulum-landing-evidence-handoff-audit/v1',
   ]) {
     if (!handoffScript.includes(token)) {
       failures.push(`scripts/materialize-evidence-handoff.mjs: missing fail-closed handoff contract ${token}`);
@@ -370,26 +375,26 @@ async function checkWorkflowTimeoutContracts() {
       file: '.github/workflows/pages.yml',
       job: 'quality-gate',
       timeout: 10,
-      required: ['actions/download-artifact@', 'validated-source-sha.txt', 'actions/upload-pages-artifact@']
+      required: ['actions/download-artifact@', 'validated-source-sha.txt', 'actions/upload-pages-artifact@'],
     },
     {
       file: '.github/workflows/cloudflare-pages.yml',
       job: 'deploy',
       timeout: 90,
-      required: ['--project=chromium --project=mobile-chrome', 'npm run lighthouse:lhci']
+      required: ['--project=chromium --project=mobile-chrome', 'npm run lighthouse:lhci'],
     },
     {
       file: '.github/workflows/evidence-sync.yml',
       job: 'sync',
       timeout: 90,
-      required: ['npm run smoke:ci', 'npm run lighthouse:lhci']
+      required: ['npm run smoke:ci', 'npm run lighthouse:lhci'],
     },
     {
       file: '.github/workflows/cross-repo-release.yml',
       job: 'gate-and-tag',
       timeout: 90,
-      required: ['npm run smoke:ci', 'npm run lighthouse:lhci']
-    }
+      required: ['npm run smoke:ci', 'npm run lighthouse:lhci'],
+    },
   ];
 
   for (const contract of contracts) {
@@ -440,7 +445,7 @@ async function checkPagesDeploymentContract() {
     'validated-source-sha.txt',
     'gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha',
     'actions/upload-pages-artifact@',
-    'path: validated-handoff/_site'
+    'path: validated-handoff/_site',
   ]) {
     if (!qualityBlock.includes(token)) failures.push(`${workflowPath}: quality-gate must include ${token}`);
   }
@@ -466,7 +471,7 @@ async function checkPagesDeploymentContract() {
     "github.event.workflow_run.event == 'push'",
     "github.event.workflow_run.name == 'Evidence Sync'",
     "github.event.workflow_run.event == 'schedule'",
-    "github.event.workflow_run.name == 'Cross-repository release'"
+    "github.event.workflow_run.name == 'Cross-repository release'",
   ]) {
     if (!source.includes(token)) failures.push(`${workflowPath}: missing trusted producer handoff contract ${token}`);
   }
@@ -480,7 +485,7 @@ async function checkPagesDeploymentContract() {
 async function checkPlaywrightServerContract() {
   const [config, server] = await Promise.all([
     readFile(join(root, 'playwright.config.js'), 'utf8').catch(() => ''),
-    readFile(join(root, 'scripts', 'static-server.mjs'), 'utf8').catch(() => '')
+    readFile(join(root, 'scripts', 'static-server.mjs'), 'utf8').catch(() => ''),
   ]);
   if (!config.includes("command: 'node scripts/static-server.mjs 4177'")) {
     failures.push('playwright.config.js: webServer must use the repository Node static server');
@@ -496,22 +501,21 @@ async function checkPlaywrightServerContract() {
     'server.closeAllConnections',
     'Static server shutdown timed out',
     'process.exit(1)',
-    '5_000'
+    '5_000',
   ]) {
     if (!server.includes(token)) failures.push(`scripts/static-server.mjs: graceful shutdown must include ${token}`);
   }
-  for (const token of [
-    'decodeURIComponent(url.pathname)',
-    "response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' })",
-    "response.end('Bad request')"
-  ]) {
+  for (const token of ['decodeURIComponent(url.pathname)', "response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' })", "response.end('Bad request')"]) {
     if (!server.includes(token)) failures.push(`scripts/static-server.mjs: malformed request handling must include ${token}`);
   }
 }
 
 function verifyMetaCspSourceAllowlist(pageName, pageHtml, policy) {
   const directives = new Map();
-  for (const part of policy.split(';').map((value) => value.trim()).filter(Boolean)) {
+  for (const part of policy
+    .split(';')
+    .map((value) => value.trim())
+    .filter(Boolean)) {
     const [name, ...values] = part.split(/\s+/);
     const normalizedName = name.toLowerCase();
     if (directives.has(normalizedName)) {
@@ -527,7 +531,12 @@ function verifyMetaCspSourceAllowlist(pageName, pageHtml, policy) {
       const type = (match[1]?.match(/type\s*=\s*"([^"]*)"/i)?.[1] ?? '').trim().toLowerCase();
       return executableTypes.has(type);
     })
-    .map((match) => `'sha256-${createHash('sha256').update(match[2] ?? '', 'utf8').digest('base64')}'`);
+    .map(
+      (match) =>
+        `'sha256-${createHash('sha256')
+          .update(match[2] ?? '', 'utf8')
+          .digest('base64')}'`,
+    );
   const expected = {
     'default-src': ["'self'"],
     'script-src': ["'self'", ...executableHashes],
@@ -543,10 +552,7 @@ function verifyMetaCspSourceAllowlist(pageName, pageHtml, policy) {
   for (const [directive, expectedValues] of Object.entries(expected)) {
     const actual = directives.get(directive) ?? [];
     if (actual.length !== expectedValues.length || expectedValues.some((value) => !actual.includes(value))) {
-      failures.push(
-        `${pageName}: meta CSP ${directive} must be exactly ${expectedValues.join(' ')}; `
-          + `got ${actual.join(' ') || 'missing'}`,
-      );
+      failures.push(`${pageName}: meta CSP ${directive} must be exactly ${expectedValues.join(' ')}; ` + `got ${actual.join(' ') || 'missing'}`);
     }
   }
   for (const directive of directives.keys()) {
@@ -576,13 +582,15 @@ function verifyCspInlineScriptHashes(pageName, pageHtml, policy) {
     const attrs = match[1] ?? '';
     if (/\bsrc\s*=/i.test(attrs)) continue;
     const type = (attrs.match(/type\s*=\s*"([^"]*)"/i)?.[1] ?? '').trim().toLowerCase();
-    const hash = createHash('sha256').update(match[2] ?? '', 'utf8').digest('base64');
+    const hash = createHash('sha256')
+      .update(match[2] ?? '', 'utf8')
+      .digest('base64');
     inline.push({ type, hash, executable: executableTypes.has(type) });
   }
   for (const script of inline) {
     if (script.executable && !cspHashes.has(script.hash)) {
       failures.push(
-        `${pageName}: CSP script-src is missing the hash of an inline ${script.type || 'classic'} script: 'sha256-${script.hash}' — update the CSP after editing the inline block`
+        `${pageName}: CSP script-src is missing the hash of an inline ${script.type || 'classic'} script: 'sha256-${script.hash}' — update the CSP after editing the inline block`,
       );
     }
   }
@@ -597,9 +605,7 @@ function verifyCspInlineScriptHashes(pageName, pageHtml, policy) {
 function verifySocialMetadata(pageName, html) {
   const expectedLocale = pageName === 'ko.html' ? 'ko_KR' : 'en_US';
   const expectedAlternate = pageName === 'ko.html' ? 'en_US' : 'ko_KR';
-  const expectedTitle = pageName === 'ko.html'
-    ? 'Pendulum Lab — 질서, 카오스에 무너지다'
-    : 'Pendulum Lab — Order, Undone by Chaos';
+  const expectedTitle = pageName === 'ko.html' ? 'Pendulum Lab — 비선형 동역학 워크벤치' : 'Pendulum Lab — Nonlinear Dynamics Workbench';
   const required = [
     [`<title>${expectedTitle}</title>`, 'canonical page title'],
     [`property="og:title" content="${expectedTitle}"`, 'canonical OG title'],
@@ -612,13 +618,36 @@ function verifySocialMetadata(pageName, html) {
     ['property="og:image:height" content="630"', 'OG image height'],
     ['name="twitter:image" content="https://elliotjung.github.io/pendulum-landing/assets/og-card.png"', 'Twitter image'],
     ['rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png"', 'PNG favicon'],
-    ['rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png"', 'Apple touch icon']
+    ['rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png"', 'Apple touch icon'],
   ];
   for (const [token, label] of required) if (!html.includes(token)) failures.push(`${pageName}: missing ${label}`);
 }
 
+function verifyBrandMark(pageName, html) {
+  const inlineMark = [
+    '<circle cx="16" cy="5" r="2" fill="#8d99a3"',
+    '<path d="M16 7 L22.5 16.5 L18.5 25" fill="none" stroke="#8d99a3" stroke-width="1.35"',
+    '<circle cx="22.5" cy="16.5" r="2.2" fill="#75b8c7"',
+    '<circle cx="18.5" cy="25" r="2.8" fill="#d2a968"',
+  ];
+  for (const token of inlineMark) {
+    if (html.split(token).length !== 3) {
+      failures.push(`${pageName}: canonical pendulum mark token must appear in both page marks: ${token}`);
+    }
+  }
+  for (const token of [
+    "r='2' fill='%238d99a3'",
+    "d='M16 7 L22.5 16.5 L18.5 25' fill='none' stroke='%238d99a3' stroke-width='1.35'",
+    "cx='22.5' cy='16.5' r='2.2' fill='%2375b8c7'",
+    "cx='18.5' cy='25' r='2.8' fill='%23d2a968'",
+  ]) {
+    if (!html.includes(token)) failures.push(`${pageName}: SVG favicon diverges from the canonical pendulum mark: ${token}`);
+  }
+}
+
 function verifyLanguagePreloads(pageName, html) {
-  const regularFontPreload = /<link[^>]+rel="preload"[^>]+href="assets\/fonts\/Pretendard-Regular\.subset\.woff2"[^>]+as="font"[^>]+type="font\/woff2"[^>]+crossorigin="anonymous"/i;
+  const regularFontPreload =
+    /<link[^>]+rel="preload"[^>]+href="assets\/fonts\/Pretendard-Regular\.subset\.woff2"[^>]+as="font"[^>]+type="font\/woff2"[^>]+crossorigin="anonymous"/i;
   if (pageName === 'ko.html' && !regularFontPreload.test(html)) {
     failures.push('ko.html: missing early Pretendard regular font preload');
   }
@@ -643,37 +672,37 @@ function checkChangelog(summary, evidenceSummary) {
   if (!Array.isArray(summary.highlights) || summary.highlights.length !== 3) failures.push('changelog highlights must contain exactly three entries');
   else if (summary.highlights.some((item) => typeof item.title !== 'string' || !item.title.trim() || typeof item.summary !== 'string' || !item.summary.trim())) {
     failures.push('changelog highlights contain an empty title or summary');
-  }
-  else if (summary.highlights.some((item) => {
-    const titleKo = item.titleKo;
-    const summaryKo = item.summaryKo;
-    const hasEither = titleKo !== undefined || summaryKo !== undefined;
-    return hasEither && (typeof titleKo !== 'string' || !titleKo.trim() || typeof summaryKo !== 'string' || !summaryKo.trim());
-  })) {
+  } else if (
+    summary.highlights.some((item) => {
+      const titleKo = item.titleKo;
+      const summaryKo = item.summaryKo;
+      const hasEither = titleKo !== undefined || summaryKo !== undefined;
+      return hasEither && (typeof titleKo !== 'string' || !titleKo.trim() || typeof summaryKo !== 'string' || !summaryKo.trim());
+    })
+  ) {
     failures.push('changelog highlights must provide titleKo and summaryKo together when localized copy exists');
   }
   const suspiciousEncoding = /(?:\uFFFD|\u00C3.|\u00C2.|\u00E2\u20AC|\u00F0\u0178|\?{3,})/u;
-  if (Array.isArray(summary.highlights) && summary.highlights.some((item) =>
-    suspiciousEncoding.test(String(item?.title ?? '')) || suspiciousEncoding.test(String(item?.summary ?? '')))) {
+  if (
+    Array.isArray(summary.highlights) &&
+    summary.highlights.some((item) => suspiciousEncoding.test(String(item?.title ?? '')) || suspiciousEncoding.test(String(item?.summary ?? '')))
+  ) {
     failures.push('changelog highlights contain likely mojibake');
   }
   if (summary.sourceCommit !== evidenceSummary.provenance?.sourceCommit) failures.push('changelog sourceCommit does not match evidence sourceCommit');
   if (summary.generatedAt !== evidenceSummary.generatedAt) failures.push('changelog generatedAt must equal evidence generatedAt for deterministic sync');
-  if (!/^https:\/\/github\.com\/elliotjung\/pendulum-lab\/blob\/[a-f0-9]{40}\/CHANGELOG\.md$/i.test(summary.sourceUrl ?? '')) {
+  if (!/^https:\/\/github\.com\/elliotjung\/pendulum-lab\/blob\/[a-f0-9]{40}\/CHANGELOG\.md$/i.test(summary.sourceUrl || '')) {
     failures.push('changelog sourceUrl is missing or not commit-pinned');
   }
 }
 
 async function checkStaticEvidenceFallbacks(summary, changelogSummary) {
-  const [indexHtml, koreanHtml] = await Promise.all([
-    readFile(join(root, 'index.html'), 'utf8').catch(() => ''),
-    readFile(join(root, 'ko.html'), 'utf8').catch(() => '')
-  ]);
+  const [indexHtml, koreanHtml] = await Promise.all([readFile(join(root, 'index.html'), 'utf8').catch(() => ''), readFile(join(root, 'ko.html'), 'utf8').catch(() => '')]);
   const expectedEnglishFreshness = evidenceFreshnessText(summary.provenance?.expiresAt, false, summary);
   const expectedKoreanFreshness = evidenceFreshnessText(summary.provenance?.expiresAt, true, summary);
   for (const [pageName, html, expected] of [
     ['index.html', indexHtml, expectedEnglishFreshness],
-    ['ko.html', koreanHtml, expectedKoreanFreshness]
+    ['ko.html', koreanHtml, expectedKoreanFreshness],
   ]) {
     const actual = html.match(/data-evidence-freshness[^>]*>([^<]*)</)?.[1]?.trim();
     if (!expected || actual !== expected) {
@@ -691,15 +720,37 @@ async function checkStaticEvidenceFallbacks(summary, changelogSummary) {
     }
   }
 
-  const escapeHtml = (value) => String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-  const staticCards = changelogSummary.highlights?.map((highlight, index) =>
-    `<article class="changelog-card"><span>${String(index + 1).padStart(2, '0')}</span><h3>${escapeHtml(highlight.title)}</h3><p>${escapeHtml(highlight.summary)}</p></article>`
-  ) ?? [];
+  const englishFallbacks = {
+    'validation.scipyAgreement': summary.validation?.scipyAgreement?.display,
+    'energy.profileLabel': Number.isInteger(summary.energy?.profiledMethods) ? `${summary.energy.profiledMethods} methods profiled` : null,
+  };
+  for (const [key, expected] of Object.entries(englishFallbacks)) {
+    if (typeof expected !== 'string') {
+      failures.push(`evidence summary has no usable English fallback for ${key}`);
+      continue;
+    }
+    const matcher = new RegExp(`data-evidence="${escapeRegExp(key)}">([^<]*)<`, 'g');
+    const values = [...indexHtml.matchAll(matcher)].map((match) => match[1].trim());
+    if (!values.length || values.some((value) => value !== expected)) {
+      failures.push(`index.html: static ${key} fallback must match current evidence`);
+    }
+  }
+  const scipyDisplay = summary.validation?.scipyAgreement?.display;
+  if (typeof scipyDisplay === 'string') {
+    if (!indexHtml.includes(`Regular orbits agree to ${scipyDisplay} over 20 s;`)) {
+      failures.push('index.html: SciPy narrative must match the current evidence display');
+    }
+    if (!koreanHtml.includes(`규칙 궤도는 20초 동안 ${scipyDisplay} 수준으로 일치하고`)) {
+      failures.push('ko.html: SciPy narrative must match the current evidence display');
+    }
+  }
+
+  const escapeHtml = (value) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+  const staticCards =
+    changelogSummary.highlights?.map(
+      (highlight, index) =>
+        `<article class="changelog-card"><span>${String(index + 1).padStart(2, '0')}</span><h3>${escapeHtml(highlight.title)}</h3><p>${escapeHtml(highlight.summary)}</p></article>`,
+    ) ?? [];
   for (const card of staticCards) {
     if (!indexHtml.includes(card)) failures.push('index.html: static changelog fallback must match changelog-highlights.json');
   }
@@ -739,8 +790,7 @@ async function checkCopyCounts(summary) {
       failures.push(`${pageName}: expected exactly one JSON-LD WebPage, found ${webPages.length}`);
     } else {
       const jsonDescription = String(webPages[0].description ?? '');
-      const jsonCount = jsonDescription.match(/([\d,]+) (?:verified |unit )?tests/)?.[1]
-        ?? jsonDescription.match(/([\d,]+)개 단위 테스트/)?.[1];
+      const jsonCount = jsonDescription.match(/([\d,]+) (?:verified |unit )?tests/)?.[1] ?? jsonDescription.match(/([\d,]+)개 단위 테스트/)?.[1];
       if (!jsonCount || parseCount(jsonCount) !== total) {
         failures.push(`${pageName}: JSON-LD WebPage test count (${jsonCount ?? 'none'}) != evidence total ${total} — run scripts/sync-copy-counts.mjs and npm run build:ko`);
       }
@@ -755,7 +805,7 @@ async function checkCopyCounts(summary) {
   const indexHtml = await readFile(join(root, 'index.html'), 'utf8').catch(() => '');
   const fallbacks = [
     [/data-evidence="tests\.formatted">([^<]*)</, total.toLocaleString('en-US')],
-    [/data-count="(\d+)" data-decimals="0" data-evidence-count="tests\.passed"/, String(passed)]
+    [/data-count="(\d+)" data-decimals="0" data-evidence-count="tests\.passed"/, String(passed)],
   ];
   for (const [pattern, expected] of fallbacks) {
     const actual = indexHtml.match(pattern)?.[1];
@@ -775,16 +825,32 @@ async function checkCopyCounts(summary) {
   } else if (ogMeta.testsTotal !== total) {
     failures.push(`og-card pixels quote ${ogMeta.testsTotal} tests but evidence says ${total} — run node scripts/generate-og-card.mjs`);
   } else if (ogMeta.sourceEvidenceCommit !== summary.provenance?.sourceCommit) {
-    failures.push(`og-card provenance ${ogMeta.sourceEvidenceCommit || 'missing'} does not match evidence ${summary.provenance?.sourceCommit || 'missing'} — regenerate the social card from current evidence`);
+    failures.push(
+      `og-card provenance ${ogMeta.sourceEvidenceCommit || 'missing'} does not match evidence ${summary.provenance?.sourceCommit || 'missing'} — regenerate the social card from current evidence`,
+    );
   } else {
-    const [baseBytes, cardBytes] = await Promise.all([
+    const [baseBytes, cardBytes, rendererBytes] = await Promise.all([
       readFile(join(root, 'assets', 'og-card-base.png')),
-      readFile(join(root, 'assets', 'og-card.png'))
+      readFile(join(root, 'assets', 'og-card.png')),
+      readFile(join(root, 'scripts', 'generate-og-card.mjs')),
     ]);
     const baseSha256 = createHash('sha256').update(baseBytes).digest('hex');
     const cardSha256 = createHash('sha256').update(cardBytes).digest('hex');
+    const rendererSha256 = createHash('sha256').update(rendererBytes).digest('hex');
+    const claimView = claimEvidenceView(summary);
+    const testsClaimLevel = claimById(claimView, 'tests.unit')?.effectiveVisibleLevel ?? 'withheld';
+    const scipyClaimLevel = claimById(claimView, 'validation.scipy.regular')?.effectiveVisibleLevel ?? 'withheld';
     if (ogMeta.baseSha256 !== baseSha256) {
       failures.push('og-card base art changed after the social card was rendered — regenerate the social card');
+    }
+    if (ogMeta.rendererSha256 !== rendererSha256) {
+      failures.push('og-card renderer changed after the social card was rendered — regenerate the social card');
+    }
+    if (ogMeta.tagline !== 'Nonlinear dynamics workbench.') {
+      failures.push('og-card tagline metadata does not match the canonical workbench label');
+    }
+    if (ogMeta.testsClaimLevel !== testsClaimLevel || ogMeta.scipyClaimLevel !== scipyClaimLevel) {
+      failures.push('og-card claim levels do not match the current fail-closed evidence surface');
     }
     if (ogMeta.cardSha256 !== cardSha256) {
       failures.push('og-card PNG does not match cardSha256 in its metadata — regenerate the social card');
@@ -820,29 +886,36 @@ async function checkPngDimensions(relativePath, expectedWidth, expectedHeight) {
   }
 }
 
-async function checkSitemap(evidenceSummary) {
+async function checkSitemap(_evidenceSummary) {
   const sitemap = await readFile(join(root, 'sitemap.xml'), 'utf8');
   const urls = [...sitemap.matchAll(/<url>[\s\S]*?<loc>([^<]+)<\/loc>[\s\S]*?<lastmod>([^<]+)<\/lastmod>[\s\S]*?<\/url>/g)];
-  const evidenceTimestamp = Date.parse(evidenceSummary.generatedAt || '');
-  const evidenceDay = Number.isFinite(evidenceTimestamp)
-    ? new Date(evidenceTimestamp).toISOString().slice(0, 10)
-    : null;
   if (urls.length !== 2) failures.push('sitemap must contain two URLs with lastmod values');
   for (const [, loc, lastmod] of urls) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(lastmod) || !Number.isFinite(Date.parse(lastmod))) failures.push(`sitemap ${loc}: invalid lastmod ${lastmod}`);
-    else if (evidenceDay && lastmod !== evidenceDay) failures.push(`sitemap ${loc}: lastmod ${lastmod} must equal current evidence day (${evidenceDay})`);
   }
+  const documentDays = [];
   for (const pageName of CONTENT_PAGES) {
     const html = await readFile(join(root, pageName), 'utf8').catch(() => '');
     const dates = structuredGraphEntries(html, pageName)
       .filter((entry) => Object.hasOwn(entry ?? {}, 'dateModified'))
       .map((entry) => entry.dateModified);
     if (dates.length < 2) failures.push(`${pageName}: expected at least two JSON-LD dateModified claims`);
+    const pageDays = new Set(dates);
+    if (pageDays.size === 1) documentDays.push(dates[0]);
+    else failures.push(`${pageName}: JSON-LD dateModified claims must agree with each other`);
     for (const dateModified of dates) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dateModified) || !Number.isFinite(Date.parse(dateModified))) {
         failures.push(`${pageName}: structured-data dateModified is missing or invalid (${dateModified ?? 'missing'})`);
-      } else if (evidenceDay && dateModified !== evidenceDay) {
-        failures.push(`${pageName}: dateModified ${dateModified} must equal current evidence day (${evidenceDay})`);
+      }
+    }
+  }
+  const currentDocumentDay = documentDays[0];
+  if (!currentDocumentDay || documentDays.some((day) => day !== currentDocumentDay)) {
+    failures.push('EN and KO dateModified claims must agree');
+  } else {
+    for (const [, loc, lastmod] of urls) {
+      if (lastmod !== currentDocumentDay) {
+        failures.push(`sitemap ${loc}: lastmod ${lastmod} must equal document dateModified ${currentDocumentDay}`);
       }
     }
   }
@@ -859,7 +932,7 @@ async function checkPublishArtifactContract() {
     readFile(join(root, '.github', 'workflows', 'cloudflare-pages.yml'), 'utf8'),
     readFile(join(root, 'wrangler.toml'), 'utf8'),
     readFile(join(root, '.gitignore'), 'utf8'),
-    readFile(join(root, 'docs', 'cloudflare-pages.md'), 'utf8')
+    readFile(join(root, 'docs', 'cloudflare-pages.md'), 'utf8'),
   ]);
   for (const token of [
     "'index.html'",
@@ -869,12 +942,12 @@ async function checkPublishArtifactContract() {
     "'sitemap.xml'",
     "'assets'",
     "'_headers'",
-    "await rm(site, { recursive: true, force: true })",
+    'await rm(site, { recursive: true, force: true })',
     "relative(root, site) !== '_site'",
     "'package.json'",
     "'scripts'",
     "'tests'",
-    "'assets/og-card-base.png'"
+    "'assets/og-card-base.png'",
   ]) {
     if (!prepare.includes(token)) failures.push(`scripts/prepare-site.mjs: missing allowlist safety contract ${token}`);
   }
@@ -884,7 +957,7 @@ async function checkPublishArtifactContract() {
   const producers = [
     ['Landing CI', landingCi],
     ['Evidence Sync', evidenceSync],
-    ['Cross-repository release', crossRepoRelease]
+    ['Cross-repository release', crossRepoRelease],
   ];
   for (const [name, producer] of producers) {
     for (const token of [
@@ -892,7 +965,7 @@ async function checkPublishArtifactContract() {
       'run: npm run prepare:site',
       'git rev-parse HEAD > validated-source-sha.txt',
       'name: landing-validated-site',
-      'validated-source-sha.txt'
+      'validated-source-sha.txt',
     ]) {
       if (!producer.includes(token)) failures.push(`${name}: publish handoff must include ${token}`);
     }
@@ -918,10 +991,7 @@ async function checkPublishArtifactContract() {
 async function checkLighthouseLanguageMatrix() {
   const config = JSON.parse(await readFile(join(root, 'lighthouserc.json'), 'utf8'));
   const urls = config?.ci?.collect?.url;
-  const required = [
-    'http://127.0.0.1:4177/?lang=en',
-    'http://127.0.0.1:4177/ko.html?lang=ko'
-  ];
+  const required = ['http://127.0.0.1:4177/?lang=en', 'http://127.0.0.1:4177/ko.html?lang=ko'];
   if (!Array.isArray(urls) || urls.length !== required.length || required.some((url) => !urls.includes(url))) {
     failures.push('lighthouserc.json: EN and KO must be measured as two explicit documents');
   }
@@ -929,8 +999,8 @@ async function checkLighthouseLanguageMatrix() {
     failures.push('lighthouserc.json: assertions must use pessimistic aggregation so the worst run gates release');
   }
   const runner = await readFile(join(root, 'scripts', 'run-lighthouse.mjs'), 'utf8');
-  if (!runner.includes("/?lang=en`")) failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must pin lang=en');
-  if (!runner.includes("/ko.html?lang=ko`")) failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must pin lang=ko');
+  if (!runner.includes('/?lang=en`')) failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must pin lang=en');
+  if (!runner.includes('/ko.html?lang=ko`')) failures.push('scripts/run-lighthouse.mjs: standalone Lighthouse matrix must pin lang=ko');
   if (!runner.includes("require.resolve('lighthouse/cli')") || runner.includes('lighthouse@')) {
     failures.push('scripts/run-lighthouse.mjs: Lighthouse must resolve from the audited local lockfile');
   }
@@ -979,10 +1049,7 @@ async function checkLighthouseLanguageMatrix() {
 }
 
 async function checkDemoKernelContracts() {
-  const [orbitSource, sceneSource] = await Promise.all([
-    readFile(join(root, 'assets', 'orbit-console.js'), 'utf8'),
-    readFile(join(root, 'assets', 'scene.js'), 'utf8')
-  ]);
+  const [orbitSource, sceneSource] = await Promise.all([readFile(join(root, 'assets', 'orbit-console.js'), 'utf8'), readFile(join(root, 'assets', 'scene.js'), 'utf8')]);
 
   for (const token of [
     'runtimeParams.damping = damping;',
@@ -992,7 +1059,7 @@ async function checkDemoKernelContracts() {
     'consoleResizeObserver?.disconnect();',
     'visibilityObserver?.disconnect();',
     'if (event.persisted) resumeRuntime();',
-    'window.__orbitConsoleLifecycle'
+    'window.__orbitConsoleLifecycle',
   ]) {
     if (!orbitSource.includes(token)) failures.push(`assets/orbit-console.js: missing damping/lifecycle contract ${token}`);
   }
@@ -1045,7 +1112,7 @@ async function checkDemoKernelContracts() {
       get() {
         dampingReads += 1;
         return gamma;
-      }
+      },
     });
     rk4StepDouble([...state], stagedParameters, 1 / 240, createRk4Work());
     if (dampingReads < 4) {
@@ -1057,10 +1124,8 @@ async function checkDemoKernelContracts() {
       const y1 = -parameters.l1 * Math.cos(a1);
       const y2 = y1 - parameters.l2 * Math.cos(a2);
       const v1Squared = parameters.l1 * parameters.l1 * v1 * v1;
-      const v2Squared = v1Squared + parameters.l2 * parameters.l2 * v2 * v2
-        + 2 * parameters.l1 * parameters.l2 * v1 * v2 * Math.cos(a1 - a2);
-      return 0.5 * parameters.m1 * v1Squared + 0.5 * parameters.m2 * v2Squared
-        + parameters.g * (parameters.m1 * y1 + parameters.m2 * y2);
+      const v2Squared = v1Squared + parameters.l2 * parameters.l2 * v2 * v2 + 2 * parameters.l1 * parameters.l2 * v1 * v2 * Math.cos(a1 - a2);
+      return 0.5 * parameters.m1 * v1Squared + 0.5 * parameters.m2 * v2Squared + parameters.g * (parameters.m1 * y1 + parameters.m2 * y2);
     };
     const dampedState = [...state];
     const initialEnergy = energy(dampedState);
@@ -1087,7 +1152,7 @@ async function checkHeroRuntimeContracts() {
     readFile(join(root, 'assets', 'landing.css'), 'utf8'),
     readFile(join(root, 'package.json'), 'utf8'),
     readFile(join(root, 'tests', 'landing-smoke.spec.ts'), 'utf8'),
-    readFile(join(root, 'tests', 'hero-runtime.spec.ts'), 'utf8')
+    readFile(join(root, 'tests', 'hero-runtime.spec.ts'), 'utf8'),
   ]);
   const requiredHtml = [
     'data-hero-toggle',
@@ -1099,7 +1164,7 @@ async function checkHeroRuntimeContracts() {
     'aria-describedby="orbit-damping-output"',
     'aria-controls="orbit-console"',
     'src="assets/enhancements-loader.js"',
-    '<html lang="en" class="no-js js-ready">'
+    '<html lang="en" class="no-js js-ready">',
   ];
   for (const token of requiredHtml) if (!html.includes(token)) failures.push(`index.html: missing hero/accessibility contract ${token}`);
   for (const eagerAsset of ['orbit-console.js']) {
@@ -1113,7 +1178,7 @@ async function checkHeroRuntimeContracts() {
   if (main.includes("window.addEventListener('keydown', requestHeroScene")) {
     failures.push('assets/main.js: keyboard navigation must not eagerly load the heavy hero renderer');
   }
-  for (const token of ['canCreateWebGL2', 'heroUnavailable', 'heroEnsurePromise', 'window.__heroLifecycle', "import(sceneUrl)", "setHeroState('static')"]) {
+  for (const token of ['canCreateWebGL2', 'heroUnavailable', 'heroEnsurePromise', 'window.__heroLifecycle', 'import(sceneUrl)', "setHeroState('static')"]) {
     if (!main.includes(token)) failures.push(`assets/main.js: missing deferred/fallback hero contract ${token}`);
   }
   for (const token of [
@@ -1127,7 +1192,7 @@ async function checkHeroRuntimeContracts() {
     "document.documentElement.classList.remove('no-js')",
     'let previousScrollY = 0',
     'let previousScrollTime = 0',
-    'event.persisted || window.location.hash'
+    'event.persisted || window.location.hash',
   ]) {
     if (!main.includes(token)) failures.push(`assets/main.js: missing deferred hero/descent lifecycle contract ${token}`);
   }
@@ -1143,7 +1208,7 @@ async function checkHeroRuntimeContracts() {
     'w.__PENDULUM_MAIN_WATCHDOG=setTimeout',
     'w.__PENDULUM_MAIN_READY!==true',
     'd.classList.add("no-js")',
-    '},4000)'
+    '},4000)',
   ]) {
     if (!html.includes(token)) failures.push(`index.html: missing pre-paint/no-JS watchdog contract ${token}`);
   }
@@ -1153,7 +1218,7 @@ async function checkHeroRuntimeContracts() {
     'window.__PENDULUM_MAIN_WATCHDOG = 0',
     "document.documentElement.classList.contains('no-js')",
     'const recoveredFromNoJs',
-    "document.documentElement.classList.remove('no-js')"
+    "document.documentElement.classList.remove('no-js')",
   ]) {
     if (!main.includes(token)) failures.push(`assets/main.js: missing main-readiness watchdog contract ${token}`);
   }
@@ -1163,12 +1228,7 @@ async function checkHeroRuntimeContracts() {
   if (!landingCss.includes('--orbit-scroll:0;')) {
     failures.push('assets/landing.css: orbit descent must define a zero visual progress before the first scroll frame');
   }
-  for (const token of [
-    'orbit-static-fallback-template',
-    'html.no-js .orbit-console canvas',
-    ':not(.is-visible):focus-within',
-    '[data-stagger] > :not(.is-visible):focus'
-  ]) {
+  for (const token of ['orbit-static-fallback-template', 'html.no-js .orbit-console canvas', ':not(.is-visible):focus-within', '[data-stagger] > :not(.is-visible):focus']) {
     if (!landingCss.includes(token)) failures.push(`assets/landing.css: missing accessible visual-state contract ${token}`);
   }
   for (const removedToken of ['window.gsap', 'cinematic-static', 'cursor-glow', 'data-mouse', '--mx', '--my']) {
@@ -1188,11 +1248,11 @@ async function checkHeroRuntimeContracts() {
     '동작 줄임',
     "'동작 줄임' : 'Motion reduced'",
     'markOrbitUnavailable',
-    "controls.hidden = true",
-    "consoleCanvas.hidden = true",
+    'controls.hidden = true',
+    'consoleCanvas.hidden = true',
     '실시간 궤적을 사용할 수 없어 정적인 이중 진자 궤적을 표시합니다.',
     '실시간 궤적을 사용할 수 없어 정적 이중 진자 궤적을 표시합니다.',
-    'Live trajectory unavailable; showing a static double-pendulum trace.'
+    'Live trajectory unavailable; showing a static double-pendulum trace.',
   ]) {
     if (/[^\x00-\x7f]/u.test(token)) continue;
     if (!enhancements.includes(token)) failures.push(`assets/enhancements-loader.js: missing deferred enhancement contract ${token}`);
@@ -1210,7 +1270,12 @@ async function checkHeroRuntimeContracts() {
     'const maximumPhysicsSteps = Math.ceil(maximumFrameElapsed / fixedStep);',
     'rk4StepDouble(s, runtimeParams, experimentContract.dt, work);',
     'method: experimentContract.method',
-    'dt: canonicalNumber(experimentContract.dt)'
+    'dt: canonicalNumber(experimentContract.dt)',
+    "experimentSchema: 'pendulum-sensitive-dependence/v1'",
+    'deltaTheta: canonicalNumber(initialSeparation)',
+    "perturbationPattern: 'symmetric'",
+    "perturbationSeed: '20260826'",
+    "ensembleCount: '12'",
   ]) {
     if (!orbitConsole.includes(token)) failures.push(`assets/orbit-console.js: missing live initial-separation contract ${token}`);
   }
@@ -1241,7 +1306,7 @@ async function checkHeroRuntimeContracts() {
     'get numericalEnvelope()',
     'get spatialState()',
     'constraintErrors',
-    'tangentErrors'
+    'tangentErrors',
   ]) {
     if (!scene.includes(token)) failures.push(`assets/scene.js: missing constrained double-spherical dynamics contract ${token}`);
   }
@@ -1251,13 +1316,13 @@ async function checkHeroRuntimeContracts() {
   const scrollSyncStart = scene.indexOf('setScrollActive(nextActive)');
   const scrollPoseStart = scene.indexOf('get scrollPose()', scrollSyncStart);
   if (
-    scrollSyncStart < 0
-    || scrollPoseStart < scrollSyncStart
-    || !scene.slice(scrollSyncStart, scrollPoseStart).includes('scrollActive = Boolean(nextActive)')
-    || !scene.slice(scrollSyncStart, scrollPoseStart).includes('syncPlayback()')
-    || !scene.includes('(visible || scrollActive)')
-    || !scene.includes('now - lastTelemetryAt >= 180')
-    || !scene.includes('coordinateActiveLastFrame = coordinateActive')
+    scrollSyncStart < 0 ||
+    scrollPoseStart < scrollSyncStart ||
+    !scene.slice(scrollSyncStart, scrollPoseStart).includes('scrollActive = Boolean(nextActive)') ||
+    !scene.slice(scrollSyncStart, scrollPoseStart).includes('syncPlayback()') ||
+    !scene.includes('(visible || scrollActive)') ||
+    !scene.includes('now - lastTelemetryAt >= 180') ||
+    !scene.includes('coordinateActiveLastFrame = coordinateActive')
   ) {
     failures.push('assets/scene.js: descent visibility must remain an explicit playback source during observer hand-off');
   }
@@ -1266,16 +1331,24 @@ async function checkHeroRuntimeContracts() {
   }
   for (const token of [
     "window.addEventListener('pointerdown'",
-    "{ capture: true, signal }",
+    '{ capture: true, signal }',
     "target.closest('.hero, #orbit-descent')",
     'target.isContentEditable',
     '[contenteditable]:not([contenteditable="false"])',
     'get dragging() { return dragging; }',
-    'interactionController?.abort()'
+    'interactionController?.abort()',
   ]) {
     if (!scene.includes(token)) failures.push(`assets/scene.js: missing hit-testable safe drag contract ${token}`);
   }
-  for (const token of ['ensureHero', 'lifecycleGeneration', 'cancelActivePrewarm', "invalidateHeroInitialization('context-lost')", 'generation !== lifecycleGeneration', 'disposeHero', 'renderer?.forceContextLoss?.()']) {
+  for (const token of [
+    'ensureHero',
+    'lifecycleGeneration',
+    'cancelActivePrewarm',
+    "invalidateHeroInitialization('context-lost')",
+    'generation !== lifecycleGeneration',
+    'disposeHero',
+    'renderer?.forceContextLoss?.()',
+  ]) {
     if (!scene.includes(token)) failures.push(`assets/scene.js: missing restartable async lifecycle contract ${token}`);
   }
   for (const token of ['captureMode ? 3112 : 1440', 'completed + 64']) {
@@ -1301,7 +1374,7 @@ async function checkHeroRuntimeContracts() {
   for (const token of [
     "for (const route of ['/', '/ko.html?lang=ko'])",
     "page.locator('[data-hero-toggle]').dispatchEvent('click')",
-    "{ timeout: 45_000 }",
+    '{ timeout: 45_000 }',
     'deferredEnhancementRequests',
     '__landingEnhancements?.orbitReady',
     "endsWith('/orbit-console.js'))).toHaveLength(1)",
@@ -1311,7 +1384,7 @@ async function checkHeroRuntimeContracts() {
     '__orbitReplayOrder',
     "toEqual(['toggle', 'toggle', 'reset', 'toggle'])",
     'data-hero-drag-exclusion-probe',
-    "toHaveClass(/no-js/)",
+    'toHaveClass(/no-js/)',
     '__pendulumInlineCspProbe',
     'securitypolicyviolation',
     '__PENDULUM_MAIN_WATCHDOG',
@@ -1327,7 +1400,7 @@ async function checkHeroRuntimeContracts() {
     "initialThetaTwo: 2.0943951023931953",
     '__orbitConsolePainted',
     "Object.defineProperty(event, 'persisted'",
-    'pendingWork: false'
+    'pendingWork: false',
   ]) {
     if (!smoke.includes(token)) failures.push(`tests/landing-smoke.spec.ts: missing low-contention browser contract ${token}`);
   }
@@ -1337,7 +1410,7 @@ async function checkHeroRuntimeContracts() {
   for (const token of [
     'cssProgress',
     'getComputedStyle(orbitDescentElement)',
-    "progress: 0",
+    'progress: 0',
     'Number.isFinite(scrollState.velocity)',
     'pose.cameraAzimuth - start.cameraAzimuth',
     'cameraTravel > 1.5',
@@ -1347,7 +1420,7 @@ async function checkHeroRuntimeContracts() {
     'toBeLessThan(2.35)',
     'constraintErrors',
     'tangentErrors',
-    'toEqual(frozenPhysics?.bob1)'
+    'toEqual(frozenPhysics?.bob1)',
   ]) {
     if (!smoke.includes(token)) failures.push(`tests/landing-smoke.spec.ts: missing finite static-scroll regression ${token}`);
   }
@@ -1360,16 +1433,11 @@ async function checkHeroRuntimeContracts() {
     "'initial separation δθ₁': '초기 간격 δθ₁'",
     "['#orbit-theta', 'aria-valuetext'",
     "['#orbit-separation', 'aria-valuetext'",
-    "['#orbit-damping', 'aria-valuetext'"
+    "['#orbit-damping', 'aria-valuetext'",
   ]) {
     if (!i18n.includes(token)) failures.push(`assets/i18n-core.js: missing generated-page localization contract ${token}`);
   }
-  for (const token of [
-    "page.locator('[data-hero-view-reset]')",
-    "page.keyboard.press('Home')",
-    'checkpointHash',
-    'maxRelativeEnergyDrift'
-  ]) {
+  for (const token of ["page.locator('[data-hero-view-reset]')", "page.keyboard.press('Home')", 'checkpointHash', 'maxRelativeEnergyDrift']) {
     if (!heroSmoke.includes(token)) failures.push(`tests/hero-runtime.spec.ts: missing focused hero contract ${token}`);
   }
 }
@@ -1379,7 +1447,7 @@ async function checkDeploymentHeaderContracts() {
     readFile(join(root, '_headers'), 'utf8'),
     readFile(join(root, '.github', 'workflows', 'cloudflare-pages.yml'), 'utf8'),
     readFile(join(root, 'scripts', 'check-deployment-headers.mjs'), 'utf8').catch(() => ''),
-    readFile(join(root, 'docs', 'cloudflare-pages.md'), 'utf8')
+    readFile(join(root, 'docs', 'cloudflare-pages.md'), 'utf8'),
   ]);
   for (const token of [
     'Content-Security-Policy:',
@@ -1391,7 +1459,7 @@ async function checkDeploymentHeaderContracts() {
     'Cross-Origin-Opener-Policy: same-origin',
     'Cross-Origin-Embedder-Policy: require-corp',
     'Cross-Origin-Resource-Policy: same-origin',
-    'X-Content-Type-Options: nosniff'
+    'X-Content-Type-Options: nosniff',
   ]) {
     if (!headers.includes(token)) failures.push(`_headers: missing hardened response contract ${token}`);
   }
@@ -1412,7 +1480,7 @@ async function checkDeploymentHeaderContracts() {
     'liveBodySha256',
     'contains unexpected directive',
     'writeFile',
-    'process.exitCode = 1'
+    'process.exitCode = 1',
   ]) {
     if (!checker.includes(token)) failures.push(`scripts/check-deployment-headers.mjs: missing fail-closed contract ${token}`);
   }
@@ -1428,7 +1496,7 @@ async function checkDeploymentHeaderContracts() {
     'contract_passed=false',
     'node scripts/check-deployment-headers.mjs',
     'cloudflare-header-contract',
-    'actions/upload-artifact@'
+    'actions/upload-artifact@',
   ]) {
     if (!workflow.includes(token)) failures.push(`cloudflare workflow: missing live header artifact contract ${token}`);
   }
@@ -1481,7 +1549,7 @@ async function checkDeployedJourneyContract() {
     'data-claim-status',
     'additionalProperty',
     'artifact.error = errorDetails(error)',
-    'selectedHeaders'
+    'selectedHeaders',
   ]) {
     if (!spec.includes(token)) failures.push(`tests/deployed-cross-repo-journey.spec.ts: missing deployed contract ${token}`);
   }
@@ -1496,7 +1564,7 @@ async function checkDeployedJourneyContract() {
     'npm run test:journey:deployed',
     'actions/upload-artifact@',
     'test-results',
-    'deployed-cross-repo-journey'
+    'deployed-cross-repo-journey',
   ]) {
     if (!workflow.includes(token)) failures.push(`deployed journey workflow: missing post-deploy contract ${token}`);
   }
@@ -1511,14 +1579,7 @@ async function checkDeployedJourneyContract() {
 }
 
 function shouldSkip(ref) {
-  return (
-    ref.startsWith('#') ||
-    ref.startsWith('data:') ||
-    ref.startsWith('mailto:') ||
-    ref.startsWith('tel:') ||
-    ref.startsWith('http://') ||
-    ref.startsWith('https://')
-  );
+  return ref.startsWith('#') || ref.startsWith('data:') || ref.startsWith('mailto:') || ref.startsWith('tel:') || ref.startsWith('http://') || ref.startsWith('https://');
 }
 
 function escapeRegExp(value) {
@@ -1558,7 +1619,8 @@ async function compareMainEvidenceIfProvided(summary) {
     if (source.tests?.[key] !== summary.tests?.[key]) failures.push(`evidence tests.${key} mismatch: landing=${summary.tests?.[key]} main=${source.tests?.[key]}`);
   }
   if (source.gpu?.status !== summary.gpu?.status) failures.push(`evidence gpu.status mismatch: landing=${summary.gpu?.status} main=${source.gpu?.status}`);
-  if (source.publication?.status !== summary.publication?.status) failures.push(`evidence publication.status mismatch: landing=${summary.publication?.status} main=${source.publication?.status}`);
+  if (source.publication?.status !== summary.publication?.status)
+    failures.push(`evidence publication.status mismatch: landing=${summary.publication?.status} main=${source.publication?.status}`);
   if (source.provenance?.sourceCommit !== summary.provenance?.sourceCommit) failures.push('evidence provenance.sourceCommit mismatch');
   if (source.provenance?.lockfileSha256 !== summary.provenance?.lockfileSha256) failures.push('evidence provenance.lockfileSha256 mismatch');
 }
@@ -1602,7 +1664,7 @@ async function walk(dir) {
     const rel = relative(root, path).replace(/\\/g, '/');
     if ([...ignoredDirs].some((ignored) => rel === ignored || rel.startsWith(`${ignored}/`))) continue;
     const info = await stat(path);
-    if (info.isDirectory()) out.push(...await walk(path));
+    if (info.isDirectory()) out.push(...(await walk(path)));
     else if (info.isFile() && textExtensions.has(extname(path).toLowerCase())) out.push(path);
   }
   return out;

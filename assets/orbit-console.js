@@ -239,7 +239,7 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
     ctx.fillStyle = '#02040b';
     ctx.fillRect(0, 0, width, height);
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(24,212,248,.07)';
+    ctx.strokeStyle = 'rgba(117,184,199,.08)';
     for (let x = 0; x <= width; x += 46) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -619,10 +619,10 @@ import { createRk4Work, rk4StepDouble } from './pendulum-demo-kernel.js';
 
   function draw() {
     drawGrid();
-    drawTrail(trailA, 'rgba(24,212,248,ALPHA)');
-    drawTrail(trailB, 'rgba(157,120,255,ALPHA)');
-    drawPendulum(primary, 'rgba(24,212,248,.92)');
-    drawPendulum(twin, 'rgba(157,120,255,.86)');
+    drawTrail(trailA, 'rgba(117,184,199,ALPHA)');
+    drawTrail(trailB, 'rgba(210,169,104,ALPHA)');
+    drawPendulum(primary, 'rgba(117,184,199,.92)');
+    drawPendulum(twin, 'rgba(210,169,104,.88)');
     ctx.fillStyle = 'rgba(244,248,255,.86)';
     pointInto(primary, pointA);
     ctx.beginPath();

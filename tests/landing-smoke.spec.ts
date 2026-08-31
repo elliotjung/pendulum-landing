@@ -12,7 +12,9 @@ function rawHttpStatus(target: string): Promise<number> {
     socket.once('connect', () => {
       socket.end(`GET ${target} HTTP/1.1\r\nHost: 127.0.0.1:4177\r\nConnection: close\r\n\r\n`);
     });
-    socket.on('data', (chunk) => { response += chunk; });
+    socket.on('data', (chunk) => {
+      response += chunk;
+    });
     socket.once('error', reject);
     socket.once('end', () => {
       const status = Number.parseInt(response.match(/^HTTP\/1\.[01] (\d{3})/)?.[1] ?? '', 10);
@@ -25,14 +27,16 @@ function rawHttpStatus(target: string): Promise<number> {
 test.afterEach(async ({ page }, testInfo) => {
   testInfo.setTimeout(testInfo.timeout + 15_000);
   if (page.isClosed()) return;
-  await page.evaluate(() => {
-    const runtime = window as unknown as {
-      __heroLifecycle?: { dispose?: () => void };
-      __hero?: { dispose?: () => void };
-    };
-    runtime.__heroLifecycle?.dispose?.();
-    runtime.__hero?.dispose?.();
-  }).catch(() => undefined);
+  await page
+    .evaluate(() => {
+      const runtime = window as unknown as {
+        __heroLifecycle?: { dispose?: () => void };
+        __hero?: { dispose?: () => void };
+      };
+      runtime.__heroLifecycle?.dispose?.();
+      runtime.__hero?.dispose?.();
+    })
+    .catch(() => undefined);
   await page.goto('about:blank', { waitUntil: 'commit', timeout: 5_000 }).catch(() => undefined);
 });
 
@@ -50,6 +54,23 @@ test('skip link is the first keyboard stop and moves focus to main content', asy
   await expect(page.locator('#main')).toBeFocused();
 });
 
+for (const route of ['/#validation', '/ko.html?lang=ko#validation']) {
+  test(`a fresh ${route} request lands on the evidence section`, async ({ page }) => {
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => document.fonts.ready);
+    await expect
+      .poll(async () =>
+        page.locator('#validation').evaluate((element) => {
+          const top = element.getBoundingClientRect().top;
+          return top >= 50 && top < 120;
+        }),
+      )
+      .toBe(true);
+    const top = await page.locator('#validation').evaluate((element) => element.getBoundingClientRect().top);
+    expect(top).toBeGreaterThanOrEqual(50);
+  });
+}
+
 test('landing page has no console errors and paints the hero', async ({ page }) => {
   test.setTimeout(90_000);
   const errors: string[] = [];
@@ -59,14 +80,19 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
 
   await page.goto('/?captureHero=1', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.nav')).toBeVisible();
-  await expect(page.locator('h1')).toHaveAccessibleName('Order, undone by chaos.');
+  await expect(page.locator('h1')).toHaveAccessibleName('Nonlinear dynamics, measured in the browser.');
   await expect(page.locator('#hero-canvas')).toBeAttached();
   await expect(page.locator('#orbit-console')).toBeVisible();
   await expect(page.locator('.app-preview img')).toBeVisible();
-  await page.waitForFunction(() => {
-    const fallback = document.body.classList.contains('no-webgl') || document.body.classList.contains('low-power-hero') || document.body.classList.contains('reduced-motion-hero');
-    return Boolean((window as unknown as { __heroPainted?: boolean }).__heroPainted) || fallback;
-  }, null, { timeout: 8_000 });
+  await page.waitForFunction(
+    () => {
+      const fallback =
+        document.body.classList.contains('no-webgl') || document.body.classList.contains('low-power-hero') || document.body.classList.contains('reduced-motion-hero');
+      return Boolean((window as unknown as { __heroPainted?: boolean }).__heroPainted) || fallback;
+    },
+    null,
+    { timeout: 8_000 },
+  );
   await page.waitForFunction(() => Boolean((window as unknown as { __orbitConsolePainted?: boolean }).__orbitConsolePainted), null, { timeout: 8_000 });
 
   const nonBlank = await page.locator('#hero-canvas').evaluate((canvas: HTMLCanvasElement) => {
@@ -75,7 +101,13 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
     if (!gl || canvas.width === 0 || canvas.height === 0) return fallback;
     const probeSize = 48;
     const pixels = new Uint8Array(probeSize * probeSize * 4);
-    const probes = [[0.5, 0.74], [0.58, 0.62], [0.66, 0.52], [0.76, 0.68], [0.82, 0.82]];
+    const probes = [
+      [0.5, 0.74],
+      [0.58, 0.62],
+      [0.66, 0.52],
+      [0.76, 0.68],
+      [0.82, 0.82],
+    ];
     for (const [x, y] of probes) {
       gl.readPixels(
         Math.max(0, Math.floor(canvas.width * x - probeSize / 2)),
@@ -84,7 +116,7 @@ test('landing page has no console errors and paints the hero', async ({ page }) 
         probeSize,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        pixels
+        pixels,
       );
       for (let i = 0; i < pixels.length; i += 4) {
         if (pixels[i] !== 0 || pixels[i + 1] !== 0 || pixels[i + 2] !== 0 || pixels[i + 3] !== 0) return true;
@@ -163,7 +195,9 @@ test('default load paints instantly and defers the heavy 3D bundle until intent'
   const deferredEnhancementRequests: string[] = [];
   let webglUnavailable = false;
   let releaseScene: () => void = () => undefined;
-  const sceneGate = new Promise<void>((resolve) => { releaseScene = resolve; });
+  const sceneGate = new Promise<void>((resolve) => {
+    releaseScene = resolve;
+  });
   page.on('request', (request) => {
     if (request.url().includes('/assets/scene.bundle.js')) sceneRequests.push(request.url());
     if (/\/assets\/orbit-console\.js/.test(request.url())) {
@@ -179,21 +213,27 @@ test('default load paints instantly and defers the heavy 3D bundle until intent'
     await expect(page.locator('.hero-static-art')).toBeVisible();
     await expect(page.locator('html')).toHaveClass(/js-ready/);
     await expect(page.locator('html')).not.toHaveClass(/no-js/);
-    expect(await page.evaluate(() => ({
-      ready: (window as unknown as { __PENDULUM_MAIN_READY?: boolean }).__PENDULUM_MAIN_READY,
-      watchdog: (window as unknown as { __PENDULUM_MAIN_WATCHDOG?: number }).__PENDULUM_MAIN_WATCHDOG
-    }))).toEqual({ ready: true, watchdog: 0 });
+    expect(
+      await page.evaluate(() => ({
+        ready: (window as unknown as { __PENDULUM_MAIN_READY?: boolean }).__PENDULUM_MAIN_READY,
+        watchdog: (window as unknown as { __PENDULUM_MAIN_WATCHDOG?: number }).__PENDULUM_MAIN_WATCHDOG,
+      })),
+    ).toEqual({ ready: true, watchdog: 0 });
     const cspProbe = await page.evaluate(async () => {
       const marker = '__pendulumInlineCspProbe';
       delete (window as unknown as Record<string, unknown>)[marker];
       const violation = new Promise<string>((resolve) => {
         const timeout = window.setTimeout(() => resolve(''), 500);
-        document.addEventListener('securitypolicyviolation', (event) => {
-          if (!event.blockedURI || event.blockedURI === 'inline') {
-            clearTimeout(timeout);
-            resolve(event.effectiveDirective);
-          }
-        }, { once: true });
+        document.addEventListener(
+          'securitypolicyviolation',
+          (event) => {
+            if (!event.blockedURI || event.blockedURI === 'inline') {
+              clearTimeout(timeout);
+              resolve(event.effectiveDirective);
+            }
+          },
+          { once: true },
+        );
       });
       const script = document.createElement('script');
       script.textContent = `window.${marker}=true`;
@@ -202,7 +242,7 @@ test('default load paints instantly and defers the heavy 3D bundle until intent'
       script.remove();
       return {
         executed: (window as unknown as Record<string, unknown>)[marker] === true,
-        directive
+        directive,
       };
     });
     expect(cspProbe.executed).toBe(false);
@@ -246,10 +286,15 @@ test('default load paints instantly and defers the heavy 3D bundle until intent'
   await page.unroute('**/assets/scene.bundle.js');
   await expect(page.locator('body')).not.toHaveClass(/hero-live/);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.waitForFunction(() => document.body.classList.contains('hero-live')
-    || document.body.classList.contains('no-webgl')
-    || document.body.classList.contains('low-power-hero')
-    || document.body.classList.contains('reduced-motion-hero'), null, { timeout: 30_000 });
+  await page.waitForFunction(
+    () =>
+      document.body.classList.contains('hero-live') ||
+      document.body.classList.contains('no-webgl') ||
+      document.body.classList.contains('low-power-hero') ||
+      document.body.classList.contains('reduced-motion-hero'),
+    null,
+    { timeout: 30_000 },
+  );
   await expect(page.locator('body')).not.toHaveClass(/hero-loading/);
   expect(sceneRequests).toHaveLength(1);
 });
@@ -292,8 +337,7 @@ test('hero motion control starts, pauses, and resumes the physical scene', async
   const toggle = page.locator('[data-hero-toggle]');
   await expect(toggle).toBeVisible();
   await toggle.click();
-  await page.waitForFunction(() => document.body.classList.contains('hero-live')
-    || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.classList.contains('hero-live') || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
   test.skip(await page.locator('body').evaluate((body) => body.classList.contains('no-webgl')), 'WebGL2 is unavailable');
   expect(sceneRequests).toHaveLength(1);
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
@@ -301,39 +345,59 @@ test('hero motion control starts, pauses, and resumes the physical scene', async
   const dragStart = await page.evaluate(() => {
     const candidates = [
       [window.innerWidth * 0.78, window.innerHeight * 0.52],
-      [window.innerWidth * 0.68, window.innerHeight * 0.68]
+      [window.innerWidth * 0.68, window.innerHeight * 0.68],
     ];
     for (const [x, y] of candidates) {
       const target = document.elementFromPoint(x, y);
-      if (
-        target?.closest('.hero')
-        && !target.closest('a, button, input, select, textarea, label, summary, [role="button"], [contenteditable="true"]')
-      ) {
+      if (target?.closest('.hero') && !target.closest('a, button, input, select, textarea, label, summary, [role="button"], [contenteditable="true"]')) {
         return { x, y };
       }
     }
     return null;
   });
   expect(dragStart).toBeTruthy();
-  const rotationBeforeDrag = await page.evaluate(() => (window as unknown as {
-    __hero?: { scrollPose: { cameraAzimuth: number } };
-  }).__hero?.scrollPose.cameraAzimuth ?? 0);
+  const rotationBeforeDrag = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __hero?: { scrollPose: { cameraAzimuth: number } };
+        }
+      ).__hero?.scrollPose.cameraAzimuth ?? 0,
+  );
   await page.mouse.move(dragStart!.x, dragStart!.y);
   await page.mouse.down();
-  expect(await page.evaluate(() => (window as unknown as {
-    __hero?: { dragging: boolean };
-  }).__hero?.dragging)).toBe(true);
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __hero?: { dragging: boolean };
+          }
+        ).__hero?.dragging,
+    ),
+  ).toBe(true);
   await page.mouse.move(dragStart!.x - 180, dragStart!.y, { steps: 8 });
   await page.mouse.up();
   // The visual compositor intentionally adapts to slow GPUs. Keep the
   // interaction assertion tied to the rendered pose, but give a throttled
   // cinematic frame enough time to arrive instead of using Playwright's
   // short global expect timeout.
-  await expect.poll(async () => Math.abs(
-    (await page.evaluate(() => (window as unknown as {
-      __hero?: { scrollPose: { cameraAzimuth: number } };
-    }).__hero?.scrollPose.cameraAzimuth ?? 0)) - rotationBeforeDrag
-  ), { timeout: 20_000 }).toBeGreaterThan(0.2);
+  await expect
+    .poll(
+      async () =>
+        Math.abs(
+          (await page.evaluate(
+            () =>
+              (
+                window as unknown as {
+                  __hero?: { scrollPose: { cameraAzimuth: number } };
+                }
+              ).__hero?.scrollPose.cameraAzimuth ?? 0,
+          )) - rotationBeforeDrag,
+        ),
+      { timeout: 20_000 },
+    )
+    .toBeGreaterThan(0.2);
   const editableBox = await page.evaluate(() => {
     const editor = document.createElement('div');
     editor.setAttribute('contenteditable', '');
@@ -344,7 +408,7 @@ test('hero motion control starts, pauses, and resumes the physical scene', async
       top: '56%',
       width: '120px',
       height: '64px',
-      zIndex: '30'
+      zIndex: '30',
     });
     document.querySelector('.hero')?.appendChild(editor);
     const rect = editor.getBoundingClientRect();
@@ -353,9 +417,16 @@ test('hero motion control starts, pauses, and resumes the physical scene', async
   await page.mouse.move(editableBox.x, editableBox.y);
   await page.mouse.down();
   await page.mouse.move(editableBox.x - 90, editableBox.y, { steps: 4 });
-  expect(await page.evaluate(() => (window as unknown as {
-    __hero?: { dragging: boolean };
-  }).__hero?.dragging)).toBe(false);
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __hero?: { dragging: boolean };
+          }
+        ).__hero?.dragging,
+    ),
+  ).toBe(false);
   await page.mouse.up();
   await page.locator('[data-hero-drag-exclusion-probe]').evaluate((element) => element.remove());
   await toggle.click();
@@ -372,8 +443,7 @@ test('hero integrates a constrained double-spherical state independently of came
   test.setTimeout(90_000);
   await page.goto('/');
   await page.locator('[data-hero-toggle]').click();
-  await page.waitForFunction(() => document.body.classList.contains('hero-live')
-    || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.classList.contains('hero-live') || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
   test.skip(await page.locator('body').evaluate((body) => body.classList.contains('no-webgl')), 'WebGL2 is unavailable');
 
   type SpatialSnapshot = {
@@ -384,22 +454,24 @@ test('hero integrates a constrained double-spherical state independently of came
     constraintErrors: number[];
     tangentErrors: number[];
   };
-  const readSpatial = () => page.evaluate(() => (window as unknown as {
-    __hero?: { spatialState: SpatialSnapshot };
-  }).__hero?.spatialState);
+  const readSpatial = () =>
+    page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __hero?: { spatialState: SpatialSnapshot };
+          }
+        ).__hero?.spatialState,
+    );
   const initial = await readSpatial();
   expect(initial).toBeTruthy();
   expect(Math.abs(initial?.bob1.z ?? 0)).toBeGreaterThan(0.02);
   expect(Math.abs(initial?.bob2.z ?? 0)).toBeGreaterThan(0.02);
 
-  await expect.poll(async () => (await readSpatial())?.time ?? 0, { timeout: 10_000 })
-    .toBeGreaterThan((initial?.time ?? 0) + 0.15);
+  await expect.poll(async () => (await readSpatial())?.time ?? 0, { timeout: 10_000 }).toBeGreaterThan((initial?.time ?? 0) + 0.15);
   const evolved = await readSpatial();
   expect(evolved).toBeTruthy();
-  const azimuthTravel = Math.hypot(
-    (evolved?.azimuths[0] ?? 0) - (initial?.azimuths[0] ?? 0),
-    (evolved?.azimuths[1] ?? 0) - (initial?.azimuths[1] ?? 0)
-  );
+  const azimuthTravel = Math.hypot((evolved?.azimuths[0] ?? 0) - (initial?.azimuths[0] ?? 0), (evolved?.azimuths[1] ?? 0) - (initial?.azimuths[1] ?? 0));
   expect(azimuthTravel).toBeGreaterThan(0.002);
   evolved?.constraintErrors.forEach((error) => expect(Math.abs(error)).toBeLessThan(1e-9));
   evolved?.tangentErrors.forEach((error) => expect(Math.abs(error)).toBeLessThan(1e-9));
@@ -407,14 +479,20 @@ test('hero integrates a constrained double-spherical state independently of came
   await page.locator('[data-hero-toggle]').click();
   await expect(page.locator('[data-hero-toggle]')).toHaveAttribute('aria-pressed', 'true');
   const frozenPhysics = await readSpatial();
-  const frozenCamera = await page.evaluate(() => (window as unknown as {
-    __hero?: { scrollPose: { cameraAzimuth: number } };
-  }).__hero?.scrollPose.cameraAzimuth ?? 0);
+  const frozenCamera = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __hero?: { scrollPose: { cameraAzimuth: number } };
+        }
+      ).__hero?.scrollPose.cameraAzimuth ?? 0,
+  );
   await page.locator('[data-orbit-beat="2"]').scrollIntoViewIfNeeded();
-  await page.waitForFunction((startAzimuth) => Math.abs(
-    ((window as unknown as { __hero?: { scrollPose: { cameraAzimuth: number } } }).__hero?.scrollPose.cameraAzimuth ?? 0)
-      - startAzimuth
-  ) > 0.5, frozenCamera, { timeout: 20_000 });
+  await page.waitForFunction(
+    (startAzimuth) => Math.abs(((window as unknown as { __hero?: { scrollPose: { cameraAzimuth: number } } }).__hero?.scrollPose.cameraAzimuth ?? 0) - startAzimuth) > 0.5,
+    frozenCamera,
+    { timeout: 20_000 },
+  );
   const afterCameraOrbit = await readSpatial();
   expect(afterCameraOrbit?.time).toBe(frozenPhysics?.time);
   expect(afterCameraOrbit?.bob1).toEqual(frozenPhysics?.bob1);
@@ -440,79 +518,90 @@ test('scrolling through phase descent orbits the camera around spatial pendulum 
   test.setTimeout(90_000);
   await page.goto('/');
   await page.locator('[data-hero-toggle]').click();
-  await page.waitForFunction(() => document.body.classList.contains('hero-live')
-    || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
+  await page.waitForFunction(() => document.body.classList.contains('hero-live') || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
   test.skip(await page.locator('body').evaluate((body) => body.classList.contains('no-webgl')), 'WebGL2 is unavailable');
-  const initial = await page.evaluate(() => (window as unknown as {
-    __hero?: { scrollPose: {
-      progress: number;
-      cameraAzimuth: number;
-      cameraElevation: number;
-      camera: { x: number; y: number; z: number };
-      bobDepth: number;
-      linkAzimuths: number[];
-      y: number;
-    } }
-  }).__hero?.scrollPose);
+  const initial = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __hero?: {
+            scrollPose: {
+              progress: number;
+              cameraAzimuth: number;
+              cameraElevation: number;
+              camera: { x: number; y: number; z: number };
+              bobDepth: number;
+              linkAzimuths: number[];
+              y: number;
+            };
+          };
+        }
+      ).__hero?.scrollPose,
+  );
   expect(initial).toBeTruthy();
   await page.locator('[data-orbit-beat="2"]').scrollIntoViewIfNeeded();
-  await page.waitForFunction((start) => {
-    const runtime = window as unknown as {
-      __orbitScrollProgress?: number;
-      __hero?: { scrollPose: {
-        progress: number;
-        cameraAzimuth: number;
-        camera: { x: number; y: number; z: number };
-        bobDepth: number;
-        y: number;
-      } };
-    };
-    const pose = runtime.__hero?.scrollPose;
-    const cameraTravel = pose ? Math.hypot(
-      pose.camera.x - start.camera.x,
-      pose.camera.y - start.camera.y,
-      pose.camera.z - start.camera.z
-    ) : 0;
-    return Boolean(
-      pose
-      && (runtime.__orbitScrollProgress ?? 0) > 0.4
-      && pose.progress > start.progress
-      && Math.abs(pose.cameraAzimuth - start.cameraAzimuth) > 0.5
-      && cameraTravel > 1.5
-      && Math.abs(pose.bobDepth) > 0.025
-      && pose.y < start.y - 0.2
-    );
-  }, initial!, { timeout: 45_000 });
+  await page.waitForFunction(
+    (start) => {
+      const runtime = window as unknown as {
+        __orbitScrollProgress?: number;
+        __hero?: {
+          scrollPose: {
+            progress: number;
+            cameraAzimuth: number;
+            camera: { x: number; y: number; z: number };
+            bobDepth: number;
+            y: number;
+          };
+        };
+      };
+      const pose = runtime.__hero?.scrollPose;
+      const cameraTravel = pose ? Math.hypot(pose.camera.x - start.camera.x, pose.camera.y - start.camera.y, pose.camera.z - start.camera.z) : 0;
+      return Boolean(
+        pose &&
+        (runtime.__orbitScrollProgress ?? 0) > 0.4 &&
+        pose.progress > start.progress &&
+        Math.abs(pose.cameraAzimuth - start.cameraAzimuth) > 0.5 &&
+        cameraTravel > 1.5 &&
+        Math.abs(pose.bobDepth) > 0.025 &&
+        pose.y < start.y - 0.2,
+      );
+    },
+    initial!,
+    { timeout: 45_000 },
+  );
   await expect(page.locator('body')).toHaveClass(/orbit-descent-active/);
   await expect(page.locator('body')).toHaveClass(/hero-scene-active/);
   await expect(page.locator('.descent-beat[aria-current="step"]')).toHaveCount(1);
-  const final = await page.evaluate(() => (window as unknown as {
-    __hero?: { scrollPose: {
-      progress: number;
-      cameraAzimuth: number;
-      cameraElevation: number;
-      camera: { x: number; y: number; z: number };
-      bobDepth: number;
-      linkAzimuths: number[];
-      y: number;
-    } }
-  }).__hero?.scrollPose);
+  const final = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __hero?: {
+            scrollPose: {
+              progress: number;
+              cameraAzimuth: number;
+              cameraElevation: number;
+              camera: { x: number; y: number; z: number };
+              bobDepth: number;
+              linkAzimuths: number[];
+              y: number;
+            };
+          };
+        }
+      ).__hero?.scrollPose,
+  );
   expect(final?.progress ?? 0).toBeGreaterThan(initial?.progress ?? 0);
   const azimuthTravel = Math.abs((final?.cameraAzimuth ?? 0) - (initial?.cameraAzimuth ?? 0));
   expect(azimuthTravel).toBeGreaterThan(0.5);
   expect(azimuthTravel).toBeLessThan(2.35);
-  expect(Math.hypot(
-    (final?.camera.x ?? 0) - (initial?.camera.x ?? 0),
-    (final?.camera.y ?? 0) - (initial?.camera.y ?? 0),
-    (final?.camera.z ?? 0) - (initial?.camera.z ?? 0)
-  )).toBeGreaterThan(1.5);
+  expect(
+    Math.hypot((final?.camera.x ?? 0) - (initial?.camera.x ?? 0), (final?.camera.y ?? 0) - (initial?.camera.y ?? 0), (final?.camera.z ?? 0) - (initial?.camera.z ?? 0)),
+  ).toBeGreaterThan(1.5);
   expect(Math.abs(final?.bobDepth ?? 0)).toBeGreaterThan(0.025);
   expect(Math.abs((final?.linkAzimuths?.[0] ?? 0) - (final?.linkAzimuths?.[1] ?? 0))).toBeGreaterThan(0.02);
   expect(final?.y ?? 0).toBeLessThan((initial?.y ?? 0) - 0.2);
   await expect(page.locator('[data-descent-coordinate]')).not.toHaveText('2.34 / 2.72');
-  await expect(page.locator('[data-descent-view]')).toHaveText(
-    /^\d{3}° \/ e [+-]\d{2}° \/ z -?\d+\.\d{2}$/,
-  );
+  await expect(page.locator('[data-descent-view]')).toHaveText(/^\d{3}° \/ e [+-]\d{2}° \/ z -?\d+\.\d{2}$/);
 });
 
 test('prewarm preference changes stay static and restart the same scene module', async ({ page }) => {
@@ -560,9 +649,15 @@ test('prewarm preference changes stay static and restart the same scene module',
   await expect(page.locator('[data-hero-toggle]')).toBeDisabled();
   await expect(page.locator('[data-hero-toggle-label]')).toHaveText('Static artwork');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.waitForFunction(() => document.body.classList.contains('no-webgl') || (window as unknown as {
-    __heroLifecycle?: { phase: string };
-  }).__heroLifecycle?.phase === 'prewarming');
+  await page.waitForFunction(
+    () =>
+      document.body.classList.contains('no-webgl') ||
+      (
+        window as unknown as {
+          __heroLifecycle?: { phase: string };
+        }
+      ).__heroLifecycle?.phase === 'prewarming',
+  );
   const webglUnavailable = await page.locator('body').evaluate((body) => body.classList.contains('no-webgl'));
   if (webglUnavailable) {
     await expect(page.locator('body')).toHaveAttribute('data-hero-fallback', 'webgl2-unavailable');
@@ -577,12 +672,16 @@ test('prewarm preference changes stay static and restart the same scene module',
   await expect(page.locator('body')).not.toHaveClass(/hero-live|hero-loading/);
   expect(await page.evaluate(() => Boolean((window as unknown as { __hero?: unknown }).__hero))).toBe(false);
   await page.evaluate(() => (window as unknown as { __setTestSaveData: (next: boolean) => void }).__setTestSaveData(false));
-  await page.waitForFunction(() => (window as unknown as {
-    __heroLifecycle?: { phase: string };
-  }).__heroLifecycle?.phase === 'prewarming');
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as {
+          __heroLifecycle?: { phase: string };
+        }
+      ).__heroLifecycle?.phase === 'prewarming',
+  );
   await page.evaluate(() => (window as unknown as { __flushHeroIdle: () => number }).__flushHeroIdle());
-  await page.waitForFunction(() => document.body.classList.contains('hero-live')
-    || document.body.classList.contains('no-webgl'), null, { timeout: 20_000 });
+  await page.waitForFunction(() => document.body.classList.contains('hero-live') || document.body.classList.contains('no-webgl'), null, { timeout: 20_000 });
   await expect(page.locator('body')).not.toHaveClass(/hero-loading|low-power-hero/);
 });
 
@@ -592,35 +691,33 @@ test('low-memory clients receive an immediate static hero', async ({ page }) => 
     if (request.url().includes('/assets/scene.bundle.js')) sceneRequests.push(request.url());
   });
   await page.addInitScript(() => Object.defineProperty(navigator, 'deviceMemory', { configurable: true, value: 2 }));
- await page.goto('/');
- await expect(page.locator('body')).toHaveClass(/low-power-hero/);
- await expect(page.locator('.hero-static-art')).toBeVisible();
- await page.evaluate(() => {
-   document.documentElement.style.scrollBehavior = 'auto';
-   window.scrollTo(0, 48);
-   window.dispatchEvent(new Event('scroll'));
- });
- await page.waitForTimeout(250);
- const scrollState = await page.evaluate(() => {
-   const orbitDescentElement = document.querySelector<HTMLElement>('#orbit-descent');
-   return {
-     progress: (window as unknown as { __orbitScrollProgress?: number }).__orbitScrollProgress,
-     velocity: (window as unknown as { __orbitScrollVelocity?: number }).__orbitScrollVelocity,
-     cssProgress: Number.parseFloat(orbitDescentElement
-       ? getComputedStyle(orbitDescentElement).getPropertyValue('--orbit-scroll')
-       : '0')
-   };
- });
- expect(scrollState).toEqual({ progress: 0, velocity: expect.any(Number), cssProgress: 0 });
- expect(Number.isFinite(scrollState.velocity)).toBe(true);
- expect(sceneRequests).toEqual([]);
+  await page.goto('/');
+  await expect(page.locator('body')).toHaveClass(/low-power-hero/);
+  await expect(page.locator('.hero-static-art')).toBeVisible();
+  await page.evaluate(() => {
+    document.documentElement.style.scrollBehavior = 'auto';
+    window.scrollTo(0, 48);
+    window.dispatchEvent(new Event('scroll'));
+  });
+  await page.waitForTimeout(250);
+  const scrollState = await page.evaluate(() => {
+    const orbitDescentElement = document.querySelector<HTMLElement>('#orbit-descent');
+    return {
+      progress: (window as unknown as { __orbitScrollProgress?: number }).__orbitScrollProgress,
+      velocity: (window as unknown as { __orbitScrollVelocity?: number }).__orbitScrollVelocity,
+      cssProgress: Number.parseFloat(orbitDescentElement ? getComputedStyle(orbitDescentElement).getPropertyValue('--orbit-scroll') : '0'),
+    };
+  });
+  expect(scrollState).toEqual({ progress: 0, velocity: expect.any(Number), cssProgress: 0 });
+  expect(Number.isFinite(scrollState.velocity)).toBe(true);
+  expect(sceneRequests).toEqual([]);
 });
 
 test('WebGL context loss during prewarm invalidates the pending live generation', async ({ page }) => {
- test.setTimeout(120_000);
- await page.addInitScript(() => {
-   const callbacks = new Map<number, IdleRequestCallback>();
-   let nextId = 0;
+  test.setTimeout(120_000);
+  await page.addInitScript(() => {
+    const callbacks = new Map<number, IdleRequestCallback>();
+    let nextId = 0;
     const runtime = window as unknown as {
       __flushHeroIdle: () => number;
       requestIdleCallback: (callback: IdleRequestCallback) => number;
@@ -645,9 +742,15 @@ test('WebGL context loss during prewarm invalidates the pending live generation'
   });
   await page.goto('/');
   await page.locator('.hero').hover({ position: { x: 24, y: 180 } });
-  await page.waitForFunction(() => document.body.classList.contains('no-webgl') || (window as unknown as {
-    __heroLifecycle?: { phase: string };
-  }).__heroLifecycle?.phase === 'prewarming');
+  await page.waitForFunction(
+    () =>
+      document.body.classList.contains('no-webgl') ||
+      (
+        window as unknown as {
+          __heroLifecycle?: { phase: string };
+        }
+      ).__heroLifecycle?.phase === 'prewarming',
+  );
   const webglUnavailable = await page.locator('body').evaluate((body) => body.classList.contains('no-webgl'));
   if (webglUnavailable) {
     await expect(page.locator('body')).toHaveAttribute('data-hero-fallback', 'webgl2-unavailable');
@@ -670,49 +773,80 @@ test('WebGL context loss during prewarm invalidates the pending live generation'
   await page.waitForTimeout(100);
   await expect(page.locator('body')).not.toHaveClass(/hero-live|hero-loading/);
   expect(await page.evaluate(() => Boolean((window as unknown as { __hero?: unknown }).__hero))).toBe(false);
-  expect(await page.evaluate(() => (window as unknown as {
-    __heroLifecycle?: { phase: string; contextLost: boolean };
-  }).__heroLifecycle)).toMatchObject({ phase: 'context-lost', contextLost: true });
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __heroLifecycle?: { phase: string; contextLost: boolean };
+          }
+        ).__heroLifecycle,
+    ),
+  ).toMatchObject({ phase: 'context-lost', contextLost: true });
 });
 
 test('content stays readable when the interaction script fails to load', async ({ page }) => {
   // The baked cards are a usable no-JS fallback. The runtime replaces them
   // with the synchronized release highlights when it is available.
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.route('**/assets/main.js', (route) => route.abort());
   await page.goto('/');
   await expect(page.locator('html')).toHaveClass(/no-js/, { timeout: 6_000 });
   await expect(page.locator('html')).toHaveClass(/js-ready/);
-  expect(await page.evaluate(() => ({
-    ready: (window as unknown as { __PENDULUM_MAIN_READY?: boolean }).__PENDULUM_MAIN_READY,
-    watchdog: (window as unknown as { __PENDULUM_MAIN_WATCHDOG?: number }).__PENDULUM_MAIN_WATCHDOG
-  }))).toEqual({ ready: undefined, watchdog: 0 });
+  expect(
+    await page.evaluate(() => ({
+      ready: (window as unknown as { __PENDULUM_MAIN_READY?: boolean }).__PENDULUM_MAIN_READY,
+      watchdog: (window as unknown as { __PENDULUM_MAIN_WATCHDOG?: number }).__PENDULUM_MAIN_WATCHDOG,
+    })),
+  ).toEqual({ ready: undefined, watchdog: 0 });
   await expect(page.locator('#validation .sec-head')).toBeVisible();
   await expect(page.locator('#validation .sec-head')).toHaveCSS('opacity', '1');
   await expect(page.locator('[data-changelog-list] .changelog-card')).toHaveCount(3);
   await expect(page.locator('[data-changelog-list] .changelog-card').first()).toContainText(/\S/);
   await expect(page.locator('.orbit-controls')).toBeHidden();
+  await expect(page.locator('.console-readouts')).toBeHidden();
+  await expect(page.locator('.hero-stage-status')).toBeHidden();
+  await expect(page.locator('.hero-foot')).toBeHidden();
+  await expect(page.locator('.descent-live-copy').first()).toBeHidden();
+  await expect(page.locator('.descent-static-copy').first()).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('.nav-menu summary').click();
+  await expect(page.locator('.nav-menu-panel')).toBeVisible();
+  await expect(page.locator('.nav-menu-panel a').first()).toBeVisible();
   await page.unroute('**/assets/main.js');
-  await page.evaluate(() => new Promise<void>((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'assets/main.js?late-watchdog-recovery=1';
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('late main.js recovery failed'));
-    document.head.appendChild(script);
-  }));
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'assets/main.js?late-watchdog-recovery=1';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('late main.js recovery failed'));
+        document.head.appendChild(script);
+      }),
+  );
   await expect(page.locator('html')).not.toHaveClass(/no-js/);
+  await expect(page.locator('.nav-menu')).toHaveClass(/is-open/);
+  await expect(page.locator('.nav-menu-panel')).toBeVisible();
   await expect(page.locator('#validation .sec-head')).toHaveCSS('opacity', '1');
-  expect(await page.evaluate(() => (window as unknown as {
-    __PENDULUM_MAIN_READY?: boolean;
-  }).__PENDULUM_MAIN_READY)).toBe(true);
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __PENDULUM_MAIN_READY?: boolean;
+          }
+        ).__PENDULUM_MAIN_READY,
+    ),
+  ).toBe(true);
 });
 
 test('expired or malformed evidence is fail-closed and visibly labelled', async ({ page }) => {
   // The baked static copy equals the committed evidence summary
   // (scripts/check-static-assets.mjs pins that), so the fail-closed
   // expectation is derived from the same file instead of hardcoded.
-  const committed = JSON.parse(
-    await readFile(new URL('../assets/evidence-summary.json', import.meta.url), 'utf8')
-  ) as { tests: { total: number } };
+  const committed = JSON.parse(await readFile(new URL('../assets/evidence-summary.json', import.meta.url), 'utf8')) as {
+    tests: { total: number };
+  };
   const staticCount = new Intl.NumberFormat('en-US').format(committed.tests.total);
 
   await page.route('**/assets/evidence-summary.json', async (route) => {
@@ -750,24 +884,15 @@ test('expired or malformed evidence is fail-closed and visibly labelled', async 
 });
 
 test('canonical claim evidence independently withholds only the affected quantified claim', async ({ page }) => {
-  const committed = JSON.parse(
-    await readFile(new URL('../assets/evidence-summary.json', import.meta.url), 'utf8')
-  );
-  const claimIds = [
-    'tests.unit',
-    'validation.scipy.regular',
-    'testing.mutation',
-    'benchmark.energy.methods',
-    'gpu.vendor-matrix',
-    'publication.release'
-  ];
+  const committed = JSON.parse(await readFile(new URL('../assets/evidence-summary.json', import.meta.url), 'utf8'));
+  const claimIds = ['tests.unit', 'validation.scipy.regular', 'testing.mutation', 'benchmark.energy.methods', 'gpu.vendor-matrix', 'publication.release'];
   const levels: Record<string, string> = {
     'tests.unit': 'validated',
     'validation.scipy.regular': 'validated',
     'testing.mutation': 'measured',
     'benchmark.energy.methods': 'withheld',
     'gpu.vendor-matrix': 'measured',
-    'publication.release': 'informational'
+    'publication.release': 'informational',
   };
   const expiresAt = '2099-01-01T00:00:00.000Z';
   const counts = { withheld: 0, informational: 0, measured: 0, validated: 0, 'publication-ready': 0 };
@@ -783,7 +908,7 @@ test('canonical claim evidence independently withholds only the affected quantif
       ...summary.energy,
       profiledMethods: 999,
       bestMethod: 'must-not-render',
-      bestMaxRelativeDrift: 0.123
+      bestMaxRelativeDrift: 0.123,
     };
     summary.claimEvidence = {
       schemaVersion: 'pendulum-claim-evidence-surface/v1',
@@ -795,11 +920,9 @@ test('canonical claim evidence independently withholds only the affected quantif
         id,
         effectiveVisibleLevel: levels[id],
         validUntil: expiresAt,
-        displayValue: levels[id] === 'withheld'
-          ? null
-          : String((rawClaims.get(id) as { displayValue?: string } | undefined)?.displayValue ?? ''),
-        caveats: [`${id} fixture caveat`]
-      }))
+        displayValue: levels[id] === 'withheld' ? null : String((rawClaims.get(id) as { displayValue?: string } | undefined)?.displayValue ?? ''),
+        caveats: [`${id} fixture caveat`],
+      })),
     };
     await route.fulfill({ response, json: summary });
   });
@@ -822,7 +945,7 @@ test('canonical claim evidence independently withholds only the affected quantif
   expect(structuredClaims).toMatchObject({
     'tests.unit': 'validated',
     'benchmark.energy.methods': 'withheld',
-    'publication.release': 'informational'
+    'publication.release': 'informational',
   });
   await expect(page.locator('[data-claim-status="publication.release"]')).toHaveText('informational');
   await expect(page.locator('[data-evidence-freshness]')).toContainText('1 withheld');
@@ -851,12 +974,23 @@ test('mobile launch CTA stays inside the viewport', async ({ page }) => {
         heroHeight: hero?.height ?? 0,
         headerItems,
         brandNameVisible: Boolean(document.querySelector('.brand .name')?.getClientRects().length),
-        offenders: amount > 0
-          ? Array.from(document.querySelectorAll('*')).map((element) => {
-            const rect = element.getBoundingClientRect();
-            return { tag: element.tagName, id: element.id, className: String(element.className || ''), left: rect.left, right: rect.right, width: rect.width };
-          }).filter((item) => item.left < -0.5 || item.right > window.innerWidth + 0.5).slice(0, 12)
-          : []
+        offenders:
+          amount > 0
+            ? Array.from(document.querySelectorAll('*'))
+                .map((element) => {
+                  const rect = element.getBoundingClientRect();
+                  return {
+                    tag: element.tagName,
+                    id: element.id,
+                    className: String(element.className || ''),
+                    left: rect.left,
+                    right: rect.right,
+                    width: rect.width,
+                  };
+                })
+                .filter((item) => item.left < -0.5 || item.right > window.innerWidth + 0.5)
+                .slice(0, 12)
+            : [],
       };
     });
     expect(layout.amount, JSON.stringify(layout.offenders, null, 2)).toBeLessThanOrEqual(0);
@@ -877,8 +1011,12 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   const enhancementRequests: string[] = [];
   let releaseOrbitModule: () => void = () => undefined;
   let signalOrbitRequest: () => void = () => undefined;
-  const orbitModuleGate = new Promise<void>((resolve) => { releaseOrbitModule = resolve; });
-  const orbitModuleRequested = new Promise<void>((resolve) => { signalOrbitRequest = resolve; });
+  const orbitModuleGate = new Promise<void>((resolve) => {
+    releaseOrbitModule = resolve;
+  });
+  const orbitModuleRequested = new Promise<void>((resolve) => {
+    signalOrbitRequest = resolve;
+  });
   page.on('request', (request) => {
     const pathname = new URL(request.url()).pathname;
     if (/\/assets\/orbit-console\.js$/.test(pathname)) {
@@ -924,9 +1062,10 @@ test('mini lab controls reset the trajectory and update the app state link', asy
       button?.addEventListener('click', listener);
       return { button, listener };
     });
-    runtime.__stopOrbitReplayLog = () => listeners.forEach(({ button, listener }) => {
-      button?.removeEventListener('click', listener);
-    });
+    runtime.__stopOrbitReplayLog = () =>
+      listeners.forEach(({ button, listener }) => {
+        button?.removeEventListener('click', listener);
+      });
   });
   const landingUrlBeforeBlockedLaunch = page.url();
   const directTheta = page.locator('[data-orbit-number="theta"]');
@@ -969,13 +1108,24 @@ test('mini lab controls reset the trajectory and update the app state link', asy
     __orbitConsolePainted?: boolean;
   }).__orbitConsolePainted), null, { timeout: 5_000 });
   expect(enhancementRequests.filter((path) => path.endsWith('/orbit-console.js'))).toHaveLength(1);
-  expect(await page.evaluate(() => (window as unknown as {
-    __orbitReplayOrder?: string[];
-  }).__orbitReplayOrder)).toEqual(['toggle', 'toggle', 'reset', 'toggle']);
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __orbitReplayOrder?: string[];
+          }
+        ).__orbitReplayOrder,
+    ),
+  ).toEqual(['toggle', 'toggle', 'reset', 'toggle']);
   await expect(queuedToggle).toHaveAttribute('aria-pressed', 'true');
-  await page.evaluate(() => (window as unknown as {
-    __stopOrbitReplayLog?: () => void;
-  }).__stopOrbitReplayLog?.());
+  await page.evaluate(() =>
+    (
+      window as unknown as {
+        __stopOrbitReplayLog?: () => void;
+      }
+    ).__stopOrbitReplayLog?.(),
+  );
   await queuedToggle.dispatchEvent('click');
   await expect(queuedToggle).toHaveAttribute('aria-pressed', 'false');
   await page.unroute('**/assets/orbit-console.js');
@@ -1072,9 +1222,14 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await expect(page.locator('[data-orbit-readout="mode"]')).toHaveText('paused');
   await toggle.dispatchEvent('click');
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  const quality = await page.evaluate(() => (window as unknown as {
-    __orbitConsoleQuality?: { dpr: number; targetFps: number; maxTrail: number }
-  }).__orbitConsoleQuality);
+  const quality = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __orbitConsoleQuality?: { dpr: number; targetFps: number; maxTrail: number };
+        }
+      ).__orbitConsoleQuality,
+  );
   expect(quality?.dpr).toBeLessThanOrEqual(1.6);
   expect(quality?.targetFps).toBeLessThanOrEqual(60);
   expect(quality?.maxTrail).toBeLessThanOrEqual(420);
@@ -1083,15 +1238,19 @@ test('mini lab controls reset the trajectory and update the app state link', asy
     const event = new Event('pagehide');
     Object.defineProperty(event, 'persisted', { value: true });
     window.dispatchEvent(event);
-    const lifecycle = (window as unknown as {
-      __orbitConsoleLifecycle?: { active: boolean; suspended: boolean; pendingWork: boolean; observing: boolean };
-    }).__orbitConsoleLifecycle;
-    return lifecycle ? {
-      active: lifecycle.active,
-      suspended: lifecycle.suspended,
-      pendingWork: lifecycle.pendingWork,
-      observing: lifecycle.observing
-    } : null;
+    const lifecycle = (
+      window as unknown as {
+        __orbitConsoleLifecycle?: { active: boolean; suspended: boolean; pendingWork: boolean; observing: boolean };
+      }
+    ).__orbitConsoleLifecycle;
+    return lifecycle
+      ? {
+          active: lifecycle.active,
+          suspended: lifecycle.suspended,
+          pendingWork: lifecycle.pendingWork,
+          observing: lifecycle.observing,
+        }
+      : null;
   });
   expect(suspendedLifecycle).toEqual({ active: false, suspended: true, pendingWork: false, observing: false });
   await page.evaluate(() => {
@@ -1100,9 +1259,11 @@ test('mini lab controls reset the trajectory and update the app state link', asy
     window.dispatchEvent(event);
   });
   await page.waitForFunction(() => {
-    const lifecycle = (window as unknown as {
-      __orbitConsoleLifecycle?: { active: boolean; suspended: boolean };
-    }).__orbitConsoleLifecycle;
+    const lifecycle = (
+      window as unknown as {
+        __orbitConsoleLifecycle?: { active: boolean; suspended: boolean };
+      }
+    ).__orbitConsoleLifecycle;
     return lifecycle?.active === true && lifecycle.suspended === false;
   });
   // One click after rebinding must still produce one state transition; leaked
@@ -1115,15 +1276,19 @@ test('mini lab controls reset the trajectory and update the app state link', asy
     const event = new Event('pagehide');
     Object.defineProperty(event, 'persisted', { value: false });
     window.dispatchEvent(event);
-    const lifecycle = (window as unknown as {
-      __orbitConsoleLifecycle?: { active: boolean; suspended: boolean; pendingWork: boolean; observing: boolean };
-    }).__orbitConsoleLifecycle;
-    return lifecycle ? {
-      active: lifecycle.active,
-      suspended: lifecycle.suspended,
-      pendingWork: lifecycle.pendingWork,
-      observing: lifecycle.observing
-    } : null;
+    const lifecycle = (
+      window as unknown as {
+        __orbitConsoleLifecycle?: { active: boolean; suspended: boolean; pendingWork: boolean; observing: boolean };
+      }
+    ).__orbitConsoleLifecycle;
+    return lifecycle
+      ? {
+          active: lifecycle.active,
+          suspended: lifecycle.suspended,
+          pendingWork: lifecycle.pendingWork,
+          observing: lifecycle.observing,
+        }
+      : null;
   });
   expect(terminalLifecycle).toEqual({ active: false, suspended: true, pendingWork: false, observing: false });
 
@@ -1132,10 +1297,7 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await page.locator('#console').scrollIntoViewIfNeeded();
   await expect(page.locator('body')).toHaveClass(/orbit-console-static/, { timeout: 20_000 });
   await expect(page.locator('.orbit-static-fallback')).toBeVisible();
-  await expect(page.locator('.orbit-static-fallback')).toHaveAttribute(
-    'aria-label',
-    'Live trajectory unavailable; showing a static double-pendulum trace.'
-  );
+  await expect(page.locator('.orbit-static-fallback')).toHaveAttribute('aria-label', 'Live trajectory unavailable; showing a static double-pendulum trace.');
   await expect(page.locator('#orbit-console')).toBeHidden();
   await expect(page.locator('.orbit-controls')).toBeHidden();
   await expect(page.locator('[data-orbit-control="theta"]')).toBeDisabled();
@@ -1144,12 +1306,14 @@ test('mini lab controls reset the trajectory and update the app state link', asy
   await expect(page.locator('[data-orbit-reset]')).toHaveAttribute('aria-disabled', 'true');
   await expect(page.locator('[data-orbit-readout="mode"]')).toHaveText('unavailable');
   expect(enhancementRequests.filter((path) => path.endsWith('/orbit-console.js'))).toHaveLength(2);
-  await page.evaluate(() => (window as unknown as {
-    __landingEnhancements?: { loadOrbitConsole: () => Promise<boolean> };
-  }).__landingEnhancements?.loadOrbitConsole());
+  await page.evaluate(() =>
+    (
+      window as unknown as {
+        __landingEnhancements?: { loadOrbitConsole: () => Promise<boolean> };
+      }
+    ).__landingEnhancements?.loadOrbitConsole(),
+  );
   expect(enhancementRequests.filter((path) => path.endsWith('/orbit-console.js'))).toHaveLength(2);
-
-
 });
 
 test('exact experiment URLs restore without precision loss in EN and KO', async ({ page }) => {
@@ -1240,16 +1404,23 @@ test('capture mode freezes motion and produces a repeatable hero frame', async (
   test.setTimeout(90_000);
   async function capture() {
     await page.goto('/?captureHero=1', { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => Boolean((window as unknown as { __heroPainted?: boolean }).__heroPainted)
-      || document.body.classList.contains('no-webgl'), null, { timeout: 45_000 });
+    await page.waitForFunction(() => Boolean((window as unknown as { __heroPainted?: boolean }).__heroPainted) || document.body.classList.contains('no-webgl'), null, {
+      timeout: 45_000,
+    });
     await page.waitForFunction(() => /\d/.test(document.querySelector('[data-evidence="tests.formatted"]')?.textContent ?? ''));
     await page.evaluate(async () => {
       await document.fonts.ready;
       (window as unknown as { __hero?: { pause(): void } }).__hero?.pause();
     });
-    const hiddenReveal = await page.locator('#validation .reveal').first().evaluate((element) => getComputedStyle(element).opacity);
+    const hiddenReveal = await page
+      .locator('#validation .reveal')
+      .first()
+      .evaluate((element) => getComputedStyle(element).opacity);
     expect(hiddenReveal).toBe('1');
-    const screenshot = await page.screenshot({ animations: 'disabled', clip: { x: 0, y: 0, width: 1200, height: 720 } });
+    const screenshot = await page.screenshot({
+      animations: 'disabled',
+      clip: { x: 0, y: 0, width: 1200, height: 720 },
+    });
     const frame = await page.locator('#hero-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL('image/png'));
     return { screenshot, frame };
   }
@@ -1275,26 +1446,24 @@ for (const route of ['/', '/ko.html?lang=ko']) {
 
 test('discovery metadata and Lab launch contracts stay canonical across EN and KO', async ({ page }) => {
   const evidence = JSON.parse(await readFile(new URL('../assets/evidence-summary.json', import.meta.url), 'utf8')) as {
-    generatedAt: string;
     tests: { total: number };
   };
-  const evidenceDay = evidence.generatedAt.slice(0, 10);
-  expect(evidenceDay).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  let documentDay: string | null = null;
   const variants = [
     {
       file: new URL('../index.html', import.meta.url),
       route: '/?lang=en',
       lang: 'en',
       canonical: 'https://elliotjung.github.io/pendulum-landing/',
-      locale: 'en_US'
+      locale: 'en_US',
     },
     {
       file: new URL('../ko.html', import.meta.url),
       route: '/ko.html?lang=ko',
       lang: 'ko',
       canonical: 'https://elliotjung.github.io/pendulum-landing/ko.html',
-      locale: 'ko_KR'
-    }
+      locale: 'ko_KR',
+    },
   ] as const;
 
   for (const variant of variants) {
@@ -1305,7 +1474,7 @@ test('discovery metadata and Lab launch contracts stay canonical across EN and K
         href: anchor.getAttribute('href') || '',
         goal: anchor.dataset.ctaGoal || '',
         persona: anchor.dataset.ctaPersona || '',
-        content: anchor.dataset.utmContent || ''
+        content: anchor.dataset.utmContent || '',
       }));
     }, raw);
     expect(rawContracts.length).toBeGreaterThanOrEqual(10);
@@ -1324,28 +1493,21 @@ test('discovery metadata and Lab launch contracts stay canonical across EN and K
     await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute('content', variant.locale);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /index,follow/);
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
-    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute(
-      'href',
-      'https://elliotjung.github.io/pendulum-landing/'
-    );
-    await expect(page.locator('link[rel="alternate"][hreflang="ko"]')).toHaveAttribute(
-      'href',
-      'https://elliotjung.github.io/pendulum-landing/ko.html'
-    );
-    await expect(page.locator('link[rel="alternate"][hreflang="x-default"]')).toHaveAttribute(
-      'href',
-      'https://elliotjung.github.io/pendulum-landing/'
-    );
+    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute('href', 'https://elliotjung.github.io/pendulum-landing/');
+    await expect(page.locator('link[rel="alternate"][hreflang="ko"]')).toHaveAttribute('href', 'https://elliotjung.github.io/pendulum-landing/ko.html');
+    await expect(page.locator('link[rel="alternate"][hreflang="x-default"]')).toHaveAttribute('href', 'https://elliotjung.github.io/pendulum-landing/');
 
-    const hydratedContracts = await page.locator('a[data-app-link]').evaluateAll((anchors) => anchors.map((anchor) => {
-      const element = anchor as HTMLAnchorElement;
-      return {
-        href: element.href,
-        goal: element.dataset.ctaGoal || '',
-        persona: element.dataset.ctaPersona || '',
-        content: element.dataset.utmContent || ''
-      };
-    }));
+    const hydratedContracts = await page.locator('a[data-app-link]').evaluateAll((anchors) =>
+      anchors.map((anchor) => {
+        const element = anchor as HTMLAnchorElement;
+        return {
+          href: element.href,
+          goal: element.dataset.ctaGoal || '',
+          persona: element.dataset.ctaPersona || '',
+          content: element.dataset.utmContent || '',
+        };
+      }),
+    );
     expect(hydratedContracts).toHaveLength(rawContracts.length);
     for (const contract of hydratedContracts) {
       const url = new URL(contract.href);
@@ -1363,19 +1525,27 @@ test('discovery metadata and Lab launch contracts stay canonical across EN and K
     const graph = structuredData.flatMap((entry) => entry['@graph'] || []);
     const datedEntries = graph.filter((entry) => Object.hasOwn(entry, 'dateModified'));
     expect(datedEntries.length).toBeGreaterThanOrEqual(2);
-    expect([...new Set(datedEntries.map((entry) => entry.dateModified))]).toEqual([evidenceDay]);
-    const webPage = graph.find((entry) => (
-      entry['@type'] === 'WebPage'
-      && entry['@id'] === `${variant.canonical}#webpage`
-      && entry.url === variant.canonical
-      && entry.inLanguage === variant.lang
-      && entry.dateModified === evidenceDay
-    ));
+    const pageDays = [...new Set<string>(datedEntries.map((entry) => entry.dateModified))];
+    expect(pageDays).toHaveLength(1);
+    expect(pageDays[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    documentDay ??= pageDays[0]!;
+    expect(pageDays[0]).toBe(documentDay);
+    const webPage = graph.find(
+      (entry) =>
+        entry['@type'] === 'WebPage' &&
+        entry['@id'] === `${variant.canonical}#webpage` &&
+        entry.url === variant.canonical &&
+        entry.inLanguage === variant.lang &&
+        entry.dateModified === documentDay,
+    );
     expect(webPage).toBeTruthy();
-    const jsonCount = String(webPage.description).match(/([\d,]+) (?:verified |unit )?tests/)?.[1]
-      ?? String(webPage.description).match(/([\d,]+)개 단위 테스트/)?.[1];
+    const jsonCount = String(webPage.description).match(/([\d,]+) (?:verified |unit )?tests/)?.[1] ?? String(webPage.description).match(/([\d,]+)개 단위 테스트/)?.[1];
     expect(Number.parseInt(jsonCount?.replaceAll(',', '') ?? '', 10)).toBe(evidence.tests.total);
   }
+  const sitemap = await readFile(new URL('../sitemap.xml', import.meta.url), 'utf8');
+  const lastModifiedDays = [...sitemap.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((match) => match[1]);
+  expect(lastModifiedDays).toHaveLength(2);
+  expect(new Set(lastModifiedDays)).toEqual(new Set([documentDay]));
 });
 
 test('release highlights and privacy-friendly app attribution hydrate', async ({ page }) => {
@@ -1413,7 +1583,7 @@ test('primary local assets and links are available', async ({ page, request }) =
     'robots.txt',
     'sitemap.xml',
     '404.html',
-    '_headers'
+    '_headers',
   ]) {
     const response = await request.get(href);
     expect(response.ok(), href).toBeTruthy();
@@ -1445,9 +1615,9 @@ test('KO/EN static pages: toggle, translation, app links, persistence', async ({
   await toggle.click();
   await page.waitForURL(/ko\.html\?lang=ko$/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
-  await expect(page.locator('h1')).toContainText('질서,');
+  await expect(page.locator('h1')).toContainText('비선형 동역학을');
   await expect(page.locator('a', { hasText: '가이드 모드 시작' })).toBeVisible();
-  await expect(page.locator('.hero-copy .lede')).toContainText('거의 같은 두 진자');
+  await expect(page.locator('.hero-copy .lede')).toContainText('가까운 초기 조건');
   await expect(page.locator('[data-hero-toggle-label]')).toHaveText('정적 이미지');
   await expect(page.locator('#orbit-theta')).toHaveAttribute('aria-valuetext', '2.18 라디안');
   await expect(page.locator('#orbit-damping')).toHaveAttribute('aria-valuetext', '감쇠 계수 0.06');
@@ -1468,7 +1638,7 @@ test('KO/EN static pages: toggle, translation, app links, persistence', async ({
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.locator('h1')).toHaveAccessibleName('Order, undone by chaos.');
+  await expect(page.locator('h1')).toHaveAccessibleName('Nonlinear dynamics, measured in the browser.');
   expect(errors).toEqual([]);
 });
 
@@ -1479,8 +1649,8 @@ test.describe('ko-locale first visit', () => {
     await page.goto('/').catch(() => undefined);
     await page.waitForURL(/ko\.html(?:#.*)?$/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
-    await expect(page.locator('h1')).toContainText('질서,');
-    await expect(page.locator('.hero-copy .lede')).toContainText('거의 같은 두 진자');
+    await expect(page.locator('h1')).toContainText('비선형 동역학을');
+    await expect(page.locator('.hero-copy .lede')).toContainText('가까운 초기 조건');
   });
 });
 
@@ -1535,7 +1705,10 @@ test('shared demo kernel matches main rhsDouble fixtures', async ({ page }) => {
   const rows = await page.evaluate(async () => {
     const kernel = await import('/assets/pendulum-demo-kernel.js');
     const params = { m1: 1, m2: 1, l1: 1, l2: 1, g: 9.81 };
-    const values = [[0.2, -0.3, 0.4, -0.5], [2.18, 2.64, 0, 0]].map((state) => {
+    const values = [
+      [0.2, -0.3, 0.4, -0.5],
+      [2.18, 2.64, 0, 0],
+    ].map((state) => {
       const out = [0, 0, 0, 0];
       kernel.rhsDoubleInto(state, out, params);
       return out;
@@ -1546,12 +1719,14 @@ test('shared demo kernel matches main rhsDouble fixtures', async ({ page }) => {
   });
   const expected = [
     [0.4, -0.5, -5.390276136585902, 7.706173654766009],
-    [0, 0, -9.910597545905812, 4.163545829940606]
+    [0, 0, -9.910597545905812, 4.163545829940606],
   ];
   expect(rows.version).toBe('pendulum-demo-kernel/v3');
-  rows.values.forEach((row, rowIndex) => row.forEach((value, columnIndex) => {
-    expect(value).toBeCloseTo(expected[rowIndex]![columnIndex]!, 12);
-  }));
+  rows.values.forEach((row, rowIndex) =>
+    row.forEach((value, columnIndex) => {
+      expect(value).toBeCloseTo(expected[rowIndex]![columnIndex]!, 12);
+    }),
+  );
   const expectedDamped = [0.4, -0.5, -5.560783122657057, 7.9808076124225416];
   rows.damped.forEach((value, index) => expect(value).toBeCloseTo(expectedDamped[index]!, 12));
 });

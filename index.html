@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Pendulum Lab — Order, Undone by Chaos</title>
-<meta name="description" content="Explore nonlinear pendulum dynamics in a browser lab with 1,597 verified tests, SciPy cross-validation, Lyapunov analysis, WebGPU, and reproducible exports." />
+<title>Pendulum Lab — Nonlinear Dynamics Workbench</title>
+<meta name="description" content="A browser-based workbench for nonlinear pendulum dynamics, numerical diagnostics, and reproducible experiments, with 1,597 verified tests and SciPy cross-validation." />
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<meta name="theme-color" content="#070910" />
+<meta name="theme-color" content="#0b0e12" />
 <meta name="color-scheme" content="dark" />
-<meta property="og:title" content="Pendulum Lab — Order, Undone by Chaos" />
-<meta property="og:description" content="Order, undone by chaos. A validated chaotic-pendulum research laboratory that runs entirely in your browser." />
+<meta property="og:title" content="Pendulum Lab — Nonlinear Dynamics Workbench" />
+<meta property="og:description" content="Specify, measure, and reproduce nonlinear pendulum experiments in the browser." />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Pendulum Lab" />
 <meta property="og:url" content="https://elliotjung.github.io/pendulum-landing/" />
@@ -20,12 +20,12 @@
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,597 tests and SciPy-validated." />
+<meta property="og:image:alt" content="Pendulum Lab nonlinear dynamics workbench — 1,597 tests and SciPy validation." />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Pendulum Lab — Order, Undone by Chaos" />
-<meta name="twitter:description" content="A browser-native nonlinear dynamics lab with synchronized test, reviewer, publication, and GPU evidence." />
+<meta name="twitter:title" content="Pendulum Lab — Nonlinear Dynamics Workbench" />
+<meta name="twitter:description" content="A browser workbench for specified experiments, numerical diagnostics, and reproducible research outputs." />
 <meta name="twitter:image" content="https://elliotjung.github.io/pendulum-landing/assets/og-card.png" />
-<meta name="twitter:image:alt" content="Pendulum Lab — Order, undone by chaos. 1,597 tests and SciPy-validated." />
+<meta name="twitter:image:alt" content="Pendulum Lab nonlinear dynamics workbench — 1,597 tests and SciPy validation." />
 <link rel="canonical" href="https://elliotjung.github.io/pendulum-landing/" />
 <link rel="alternate" hreflang="en" href="https://elliotjung.github.io/pendulum-landing/" />
 <link rel="alternate" hreflang="ko" href="https://elliotjung.github.io/pendulum-landing/ko.html" />
@@ -37,7 +37,7 @@
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YJ20yxvjGolaMfS/AsWUnwoZxxAFv28eUacHvp7QwNA='; style-src 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
 <script id="lang-boot">(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="en"){localStorage.setItem("pendulum-landing/lang","en");return}var s=null;try{s=localStorage.getItem("pendulum-landing/lang")}catch(e){}var ko=(navigator.languages||[navigator.language||""]).some(function(t){return String(t).toLowerCase().indexOf("ko")===0});if(q.get("lang")==="ko"||s==="ko"||(!s&&ko)){var p=q.toString();location.replace("ko.html"+(p?"?"+p:"")+location.hash)}}catch(e){}})();</script>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2' fill='%238d99a3'/%3E%3Cpath d='M16 7 L22.5 16.5 L18.5 25' fill='none' stroke='%238d99a3' stroke-width='1.35'/%3E%3Ccircle cx='22.5' cy='16.5' r='2.2' fill='%2375b8c7'/%3E%3Ccircle cx='18.5' cy='25' r='2.8' fill='%23d2a968'/%3E%3C/svg%3E" />
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
 <link rel="preload" href="assets/hero-fallback.webp" as="image" type="image/webp" media="(min-width: 761px)" fetchpriority="high" />
@@ -52,10 +52,10 @@
       "@type": "WebPage",
       "@id": "https://elliotjung.github.io/pendulum-landing/#webpage",
       "url": "https://elliotjung.github.io/pendulum-landing/",
-      "name": "Pendulum Lab — Order, Undone by Chaos",
-      "description": "Explore nonlinear pendulum dynamics in a browser lab with 1,597 verified tests, SciPy cross-validation, Lyapunov analysis, WebGPU, and reproducible exports.",
+      "name": "Pendulum Lab — Nonlinear Dynamics Workbench",
+      "description": "A browser-based workbench for nonlinear pendulum dynamics, numerical diagnostics, and reproducible experiments, with 1,597 verified tests and SciPy cross-validation.",
       "inLanguage": "en",
-      "dateModified": "2026-08-26",
+      "dateModified": "2026-08-31",
       "mainEntity": {
         "@id": "https://elliotjung.github.io/pendulum-landing/#software"
       }
@@ -72,7 +72,7 @@
         "@type": "Person",
         "name": "Elliot Jung"
       },
-      "dateModified": "2026-08-26",
+      "dateModified": "2026-08-31",
       "applicationCategory": "EducationalApplication",
       "inLanguage": [
         "en",
@@ -172,10 +172,10 @@
   <a class="brand" href="#top" aria-label="Pendulum Lab home">
     <span class="mark">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="5" r="2.4" fill="#18d4f8"/>
-        <path d="M16 6.5 L23 16 L19 25" stroke="#18d4f8" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>
-        <circle cx="23" cy="16" r="2" fill="#9d78ff"/>
-        <circle cx="19" cy="25" r="2.8" fill="#18d4f8"/>
+        <circle cx="16" cy="5" r="2" fill="#8d99a3"/>
+        <path d="M16 7 L22.5 16.5 L18.5 25" fill="none" stroke="#8d99a3" stroke-width="1.35"/>
+        <circle cx="22.5" cy="16.5" r="2.2" fill="#75b8c7"/>
+        <circle cx="18.5" cy="25" r="2.8" fill="#d2a968"/>
       </svg>
     </span>
     <span><span class="name">Pendulum Lab</span></span>
@@ -210,15 +210,15 @@
   <div class="wrap">
     <div class="hero-grid">
       <div class="hero-copy">
-        <span class="kicker">Pendulum Lab · Nonlinear Dynamics</span>
+        <span class="kicker">Pendulum Lab · Research workbench</span>
         <h1 class="display">
-          <span class="grad">Order,</span><br />
-          <span class="dissolve">undone by</span><br />
-          <span class="grad">chaos.</span>
+          <span class="grad">Nonlinear dynamics,</span><br />
+          <span class="dissolve">measured in</span><br />
+          <span class="grad">the browser.</span>
         </h1>
         <p class="lede">
-          Release two nearly identical pendulums. Watch certainty split into two
-          universes — then measure exactly how fast prediction disappears.
+          Compare nearby initial conditions, inspect numerical error, and carry a
+          fully specified experiment into a reproducible research workflow.
         </p>
         <p class="product-statement">An interactive laboratory for understanding and measuring nonlinear dynamics.</p>
         <div class="hero-actions">
@@ -283,7 +283,7 @@
         <h2 id="orbit-descent-title">Begin with one reference.</h2>
         <p class="descent-live-copy">First, follow a single release. The reference is the state we will keep unchanged while we ask what one tiny difference can do.</p>
         <p class="descent-static-copy">The still image preserves the same reference path when motion or graphics preferences keep the live renderer off.</p>
-        <span class="descent-signal descent-live-copy"><i></i> Reference trajectory · cyan · unchanged</span>
+        <span class="descent-signal descent-live-copy"><i></i> Reference trajectory · teal · unchanged</span>
         <span class="descent-signal descent-static-copy"><i></i> Reference trajectory · static view</span>
       </div>
     </article>
@@ -292,7 +292,7 @@
       <div class="descent-card">
         <span class="descent-index">02 · Tiny difference</span>
         <h3>Change only one number.</h3>
-        <p class="descent-live-copy">The violet trajectory copies the reference, then adds Δθ₁ = 8×10⁻⁴ rad to its first angle. Everything else stays identical.</p>
+        <p class="descent-live-copy">The amber trajectory copies the reference, then adds Δθ₁ = 8×10⁻⁴ rad to its first angle. Everything else stays identical.</p>
         <p class="descent-static-copy">The static traces preserve the reference and the one-variable perturbation without implying that animation is running.</p>
         <div class="descent-equation"><span>reference</span><strong>θ₁</strong><span>perturbed</span><strong>θ₁ + Δθ₁</strong></div>
       </div>
@@ -302,9 +302,9 @@
       <div class="descent-card">
         <span class="descent-index">03 · Divergence</span>
         <h3>Watch the futures stop agreeing.</h3>
-        <p class="descent-live-copy">At first the two paths overlap. Then the same deterministic rules carry them apart. Cyan always means reference; violet always means perturbed.</p>
-        <p class="descent-static-copy">Cyan marks the reference and violet marks the perturbed path; their growing distance is visible without relying on motion alone.</p>
-        <div class="descent-tags"><span>reference: cyan</span><span>perturbed: violet</span><span>one variable changed</span></div>
+        <p class="descent-live-copy">At first the two paths overlap. Then the same deterministic rules carry them apart. Teal always means reference; amber always means perturbed.</p>
+        <p class="descent-static-copy">Teal marks the reference and amber marks the perturbed path; their growing distance is visible without relying on motion alone.</p>
+        <div class="descent-tags"><span>reference: teal</span><span>perturbed: amber</span><span>one variable changed</span></div>
       </div>
     </article>
 
@@ -421,7 +421,7 @@
         <small>The full lab and validation evidence remain available.</small>
       </div>
       <canvas id="orbit-console" width="920" height="620" role="img" aria-label="Animated double-pendulum trajectory console" aria-describedby="orbit-console-caption">
-        Two simulated double pendulums begin 0.001 radians apart. Their cyan and violet trajectories separate over time.
+        Two simulated double pendulums begin 0.001 radians apart. Their teal and amber trajectories separate over time.
       </canvas>
       <figcaption id="orbit-console-caption">
         <span data-orbit-caption-label>reference + one perturbation</span>
@@ -513,8 +513,8 @@
             <line class="grid-line" x1="0" y1="240" x2="400" y2="240"></line>
             <line class="grid-line" x1="120" y1="0" x2="120" y2="320"></line>
             <line class="grid-line" x1="240" y1="0" x2="240" y2="320"></line>
-            <path class="draw-path glow-cyan" d="M58 168 C 104 118, 150 132, 186 164 S 250 248, 300 150 S 360 92, 384 134" stroke="#18d4f8" stroke-width="2.4"></path>
-            <path class="draw-path glow-violet" d="M58 168 C 104 118, 150 132, 186 164 S 250 96, 300 206 S 360 252, 384 212" stroke="#9d78ff" stroke-width="2.4"></path>
+            <path class="draw-path glow-cyan" d="M58 168 C 104 118, 150 132, 186 164 S 250 248, 300 150 S 360 92, 384 134" stroke="#75b8c7" stroke-width="2.4"></path>
+            <path class="draw-path glow-violet" d="M58 168 C 104 118, 150 132, 186 164 S 250 96, 300 206 S 360 252, 384 212" stroke="#d2a968" stroke-width="2.4"></path>
             <circle class="seed glow-seed" cx="58" cy="168" r="4.4"></circle>
           </svg>
           <div class="diverge-tag">
@@ -732,7 +732,7 @@
       <div class="val-board reveal" data-wipe tabindex="0" role="region" aria-label="Scrollable validation evidence table">
         <div class="vb-head">
           <span>Release evidence · synchronized and reproducible</span>
-          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">14 methods profiled</span></span>
+          <span class="pass"><i></i> <span data-evidence="energy.profileLabel">16 methods profiled</span></span>
         </div>
         <table class="val-table">
           <caption>Evidence snapshot from the simulation repository, including measured limitations.</caption>
@@ -743,12 +743,12 @@
             <tr>
               <th scope="row" class="name">Best energy profile</th>
               <td><strong data-evidence="energy.bestMethod">DOP853 8(5,3)</strong><small data-evidence="energy.bestDrift">1.612e-14 max relative drift</small></td>
-              <td><span data-evidence="energy.profileLabel">14 methods profiled</span><small class="evidence-caveat" data-claim-caveat="benchmark.energy.methods" data-evidence="claim.benchmark.energy.methods.caveat">Compare each method against its documented order and structure-preservation behavior.</small></td>
+              <td><span data-evidence="energy.profileLabel">16 methods profiled</span><small class="evidence-caveat" data-claim-caveat="benchmark.energy.methods" data-evidence="claim.benchmark.energy.methods.caveat">Compare each method against its documented order and structure-preservation behavior.</small></td>
               <td><span class="evidence-status measured" data-claim-status="benchmark.energy.methods" data-evidence="claim.benchmark.energy.methods.level">measured</span></td>
             </tr>
             <tr>
               <th scope="row" class="name">SciPy DOP853 agreement</th>
-              <td class="drift" data-evidence="validation.scipyAgreement">~6e-14</td>
+              <td class="drift" data-evidence="validation.scipyAgreement">~5e-14</td>
               <td>regular reference cases<small class="evidence-caveat" data-claim-caveat="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.caveat">Chaotic trajectories use time-amplified tolerances and are not claimed bitwise-identical. The flagship study centers one frequency, uses a restricted scan and warm-started attractor branch, may miss coexisting basins, and uses first-order Melnikov theory. The independent Python check uses coarser steps and finite-difference monodromy, supporting tolerance-level reproduction rather than bitwise equality. MATLAB validation is optional and unpinned; any release claim using it must pin release, toolbox, script, and checksum manifests.</small></td>
               <td><span class="evidence-status validated" data-claim-status="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.level">validated</span></td>
             </tr>
@@ -782,9 +782,9 @@
           <p><span data-claim-caveat="tests.unit" data-evidence="claim.tests.unit.caveat">Windows headless WebKit audio instability is environment evidence; user-facing audio needs a fallback and an explicit browser matrix.</span> Plus Chromium, Firefox, WebKit and mobile end-to-end suites, with a machine-readable Stryker aggregate of <span data-evidence="mutation.scoreLabel">65.32% · low band · 29 shards</span> (<span data-claim-status="testing.mutation" data-evidence="claim.testing.mutation.level">informational</span>). <span data-claim-caveat="testing.mutation" data-evidence="claim.testing.mutation.caveat">Expired or undated mutation evidence cannot retain a validated public level. A mutation score below the quality target remains a measurement, not a validated quality claim. Below the 70% quality target; the 65% regression floor is enforced. This evidence is expired and retained only as historical information.</span></p>
         </div>
         <div class="val-stat reveal">
-          <div class="big" data-count="6" data-decimals="0" data-prefix="~" data-suffix="e-14" data-evidence="validation.scipyAgreement"></div>
+          <div class="big" data-count="5" data-decimals="0" data-prefix="~" data-suffix="e-14" data-evidence="validation.scipyAgreement">~5e-14</div>
           <div class="cap">Agreement vs SciPy DOP853 · <span data-claim-status="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.level">validated</span></div>
-          <p>Regular orbits agree to ~6e-14 over 20 s; chaotic orbits to the e^{λ₁t}-amplified tolerance floor. <span data-claim-caveat="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.caveat">Chaotic trajectories use time-amplified tolerances and are not claimed bitwise-identical. The flagship study centers one frequency, uses a restricted scan and warm-started attractor branch, may miss coexisting basins, and uses first-order Melnikov theory. The independent Python check uses coarser steps and finite-difference monodromy, supporting tolerance-level reproduction rather than bitwise equality. MATLAB validation is optional and unpinned; any release claim using it must pin release, toolbox, script, and checksum manifests.</span></p>
+          <p>Regular orbits agree to ~5e-14 over 20 s; chaotic orbits to the e^{λ₁t}-amplified tolerance floor. <span data-claim-caveat="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.caveat">Chaotic trajectories use time-amplified tolerances and are not claimed bitwise-identical. The flagship study centers one frequency, uses a restricted scan and warm-started attractor branch, may miss coexisting basins, and uses first-order Melnikov theory. The independent Python check uses coarser steps and finite-difference monodromy, supporting tolerance-level reproduction rather than bitwise equality. MATLAB validation is optional and unpinned; any release claim using it must pin release, toolbox, script, and checksum manifests.</span></p>
         </div>
         <div class="val-stat reveal">
           <div class="big" data-count="1.0664" data-decimals="4" data-evidence-count="validation.periodDoublingComputed"></div>
@@ -882,8 +882,8 @@
 <!-- ============================== LAUNCH ============================== -->
 <section class="band launch" id="launch">
   <div class="wrap">
-    <span class="kicker center">Open the Engine</span>
-    <h2 class="display" data-rise><span class="grad">Release it. Watch it </span><span class="dissolve">diverge.</span></h2>
+    <span class="kicker center">Continue in the Lab</span>
+    <h2 class="display" data-rise><span class="grad">Open a specified experiment.</span></h2>
     <p class="lede">The full simulator runs in your browser — fifteen primary integrators, every analysis tab, and hash-verifiable research exports. No install, no account. Just the unvarnished mathematics of chaos.</p>
     <div class="launch-actions">
       <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=en&amp;tab=lab" data-app-link data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="launch-explore">Open Lab <span class="arrow">→</span></a>
@@ -901,10 +901,10 @@
     <div class="brand">
       <span class="mark">
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="16" cy="5" r="2.4" fill="#18d4f8"/>
-          <path d="M16 6.5 L23 16 L19 25" stroke="#18d4f8" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>
-          <circle cx="23" cy="16" r="2" fill="#9d78ff"/>
-          <circle cx="19" cy="25" r="2.8" fill="#18d4f8"/>
+          <circle cx="16" cy="5" r="2" fill="#8d99a3"/>
+          <path d="M16 7 L22.5 16.5 L18.5 25" fill="none" stroke="#8d99a3" stroke-width="1.35"/>
+          <circle cx="22.5" cy="16.5" r="2.2" fill="#75b8c7"/>
+          <circle cx="18.5" cy="25" r="2.8" fill="#d2a968"/>
         </svg>
       </span>
       <span>

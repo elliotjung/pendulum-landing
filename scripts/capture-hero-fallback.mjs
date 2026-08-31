@@ -39,6 +39,9 @@ try {
   const page = await browser.newPage({
     viewport: { width: 1731, height: 909 },
     deviceScaleFactor: 1,
+    // Capture-only stylesheet below isolates the canvas; production remains
+    // under the strict page CSP and is verified separately.
+    bypassCSP: true,
   });
   await page.goto(`${base}/?captureHero=1`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => Boolean(window.__heroPainted)
@@ -51,16 +54,13 @@ try {
     window.__hero?.pause?.();
   });
   await page.addStyleTag({ content: `
-    html, body { margin: 0 !important; background: #070910 !important; }
+    html, body { margin: 0 !important; background: #0b0f14 !important; }
     body > :not(#hero-canvas) { visibility: hidden !important; }
     #hero-canvas {
       visibility: visible !important;
       display: block !important;
       opacity: 1 !important;
-      background:
-        radial-gradient(circle at 72% 34%, rgba(114, 214, 229, .055), transparent 34%),
-        radial-gradient(circle at 74% 64%, rgba(139, 124, 246, .045), transparent 38%),
-        #070910 !important;
+      background: #0b0f14 !important;
     }
   ` });
   const frame = await page.screenshot({

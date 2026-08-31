@@ -2,8 +2,11 @@
   "schemaVersion": "pendulum-og-card/v1",
   "testsTotal": 1597,
   "formatted": "1,597",
-  "tagline": "Order, undone by chaos.",
+  "tagline": "Nonlinear dynamics workbench.",
+  "testsClaimLevel": "validated",
+  "scipyClaimLevel": "validated",
   "sourceEvidenceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
-  "baseSha256": "c45321846f2eb42cff82a5121049fdd4766fd4d8f83a96dfeff7e954d4424e0d",
-  "cardSha256": "949e0bf1948241fe1daa2ef70b6673706091552c81d5df0b460c8f6658e6cf0d"
+  "baseSha256": "9c21c5666dee3120cafd88f66fff415b614049d3837cea3ea760fc62bfc436f1",
+  "rendererSha256": "7d2a88ee733b703320a2dc62b036f31ae2682d157cc8c8df5a714a0f0c9e088f",
+  "cardSha256": "9533147f589be02df2d01c69bbbbdcf17906950471962fb8da629056a7832e34"
 }

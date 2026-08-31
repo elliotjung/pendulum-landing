@@ -45,6 +45,32 @@ const expectedHandoff = {
   ensembleCount: '12',
   method: 'rk4',
 } as const;
+const expectedSelectControls = {
+  method: 'rk4',
+  angleUnit: 'rad',
+  experimentGoal: 'sensitive-dependence',
+  ensVariable: 'th1',
+  ensPattern: 'symmetric',
+  workflowStep: 'measure',
+  trajectoryStage: 'perturbed',
+} as const;
+const expectedNumericControls = {
+  dt: 0.001,
+  th1: 2.18,
+  th2: 2.64,
+  iw1: 0,
+  iw2: 0,
+  m1: 1,
+  m2: 1,
+  l1: 1,
+  l2: 1,
+  g: 9.81,
+  gamma: 0.06,
+  ensEps: 0.001,
+  ensSeed: 20260826,
+  ensembleRequestedCount: 12,
+  ensN: 1,
+} as const;
 const headerNames = [
   'content-security-policy',
   'strict-transport-security',
@@ -403,13 +429,17 @@ async function verifyLabControls(browser: Browser, launchUrl: string, language: 
   await expect(page.locator('html')).toHaveAttribute('lang', language);
   await expect(page.locator('#tab-lab')).toHaveClass(/active/);
   await expect(page.getByTestId('control-sysType')).toHaveValue('double');
-  for (const [id, expected] of Object.entries(expectedQuery).filter(([key]) => !['goal', 'audience', 'tab', 'sysType'].includes(key))) {
-    expect(Number(await page.locator(`#${id}`).inputValue()), id).toBeCloseTo(Number(expected), 6);
+  for (const [id, expected] of Object.entries(expectedSelectControls)) {
+    await expect(page.locator(`#${id}`), id).toHaveValue(expected);
+  }
+  for (const [id, expected] of Object.entries(expectedNumericControls)) {
+    expect(Number(await page.locator(`#${id}`).inputValue()), id).toBeCloseTo(expected, 6);
   }
   for (const [name, expected] of Object.entries(expectedHandoff)) {
     expect(new URL(page.url()).searchParams.get(name), `preserved ${name}`).toBe(expected);
   }
   await expect(page.locator('#handoffContinuity')).toBeVisible();
+  await expect(page.locator('#handoffContinuity')).toContainText(/Continuing your Landing experiment|Landing 실험/);
   await expect(page.locator('#experimentGoal')).toHaveValue('sensitive-dependence');
   await expect(page.locator('#angleUnit')).toHaveValue('rad');
   await expect(page.locator('#ensVariable')).toHaveValue('th1');
@@ -435,8 +465,11 @@ async function verifyLabControls(browser: Browser, launchUrl: string, language: 
   await expect(restorePage.locator('body')).toHaveClass(/audience-beginner/);
   await expect(restorePage.locator('#tab-lab')).toHaveClass(/active/);
   await expect(restorePage.getByTestId('control-sysType')).toHaveValue('double');
-  for (const [id, expected] of Object.entries(expectedQuery).filter(([key]) => !['goal', 'audience', 'tab', 'sysType'].includes(key))) {
-    expect(Number(await restorePage.locator(`#${id}`).inputValue()), `restored ${id}`).toBeCloseTo(Number(expected), 6);
+  for (const [id, expected] of Object.entries(expectedSelectControls)) {
+    await expect(restorePage.locator(`#${id}`), `restored ${id}`).toHaveValue(expected);
+  }
+  for (const [id, expected] of Object.entries(expectedNumericControls)) {
+    expect(Number(await restorePage.locator(`#${id}`).inputValue()), `restored ${id}`).toBeCloseTo(expected, 6);
   }
   await expect(restorePage.locator('#experimentGoal')).toHaveValue('sensitive-dependence');
   await expect(restorePage.locator('#angleUnit')).toHaveValue('rad');

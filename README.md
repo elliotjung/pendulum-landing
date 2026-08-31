@@ -38,8 +38,8 @@ explanatory site as an authority.
   Korean visitors get a plain static page with identical performance.
 - `assets/i18n-core.js` - the English→Korean dictionary + translation pass;
   consumed only by `scripts/build-ko-page.mjs`, never loaded at runtime.
-- `assets/landing.css` - shared graphite/indigo/cyan visual system, responsive
-  layout, quiet reveal states, and trajectory-console styling.
+- `assets/landing.css` - flat graphite, teal, and amber editorial system,
+  responsive layout, explicit section rules, and trajectory-console styling.
 - `assets/scene.js` - Three.js hero sculpture that morphs from order to chaos.
 - `assets/pendulum-demo-kernel.js` - the `pendulum-demo-kernel/v3` browser ESM
   generated from the Lab's authoritative `rhsDouble` implementation, rather
@@ -58,7 +58,7 @@ explanatory site as an authority.
   catch-up work and DPR, and rebuilds its abortable listener/observer graph
   after a BFCache restore without duplicating handlers.
 - `assets/main.js` - deferred hero lifecycle, scroll progress, one-shot section
-  reveals, counters, attribution, and evidence JSON hydration.
+  reveals, direct measurement rendering, attribution, and evidence JSON hydration.
 - `assets/evidence-summary.json` - shared validation numbers copied from the
   main lab reports.
 - `assets/changelog-highlights.json` - three release highlights pinned to the
@@ -105,6 +105,8 @@ explanatory site as an authority.
 - `.github/workflows/evidence-sync.yml` - materializes the exact evidence and
   demo-kernel bytes from a successful, live-observed Lab Pages handoff, verifies
   every dispatched hash, re-runs the full gate, and auto-commits the sync.
+- `docs/design-system.md` - the restrained research-interface palette,
+  typography, borders, motion rules, and component conventions used here.
 
 The deployable pages are static, but two generated assets have mandatory build
 checks: `assets/scene.bundle.js` from `assets/scene.js`, and `ko.html` from the

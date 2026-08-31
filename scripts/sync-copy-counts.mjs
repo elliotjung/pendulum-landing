@@ -29,6 +29,18 @@ if (!Number.isInteger(total) || total <= 0 || !Number.isInteger(passed)) {
   console.error('evidence summary has no usable tests.total/tests.passed');
   process.exit(1);
 }
+const scipyDisplay = evidence.validation?.scipyAgreement?.display;
+const scipyCounter = typeof scipyDisplay === 'string'
+  ? scipyDisplay.match(/^~(\d+(?:\.\d+)?)e([+-]?\d+)$/)
+  : null;
+const energyProfiledMethods = evidence.energy?.profiledMethods;
+if (!scipyCounter || !Number.isInteger(energyProfiledMethods) || energyProfiledMethods <= 0) {
+  console.error('evidence summary has no usable SciPy display or energy method count');
+  process.exit(1);
+}
+const scipyMantissa = scipyCounter[1];
+const scipyExponent = scipyCounter[2];
+const scipyDecimals = scipyMantissa.includes('.') ? scipyMantissa.split('.')[1].length : 0;
 const comma = new Intl.NumberFormat('en-US').format(total);
 const freshness = evidenceFreshnessText(evidence.provenance?.expiresAt, false, evidence);
 if (!freshness) {
@@ -74,7 +86,7 @@ function claimDescription(korean = false) {
           ? '과거 테스트 근거'
           : '실패 시 닫히는 테스트 근거 원장';
     const scipyCopy = scipyLevel === 'validated' ? 'SciPy와 출판 문헌으로 검증' : 'SciPy 근거 수준을 명시';
-    return `비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. ${testsCopy}, ${scipyCopy}.`;
+    return `비선형 진자 동역학, 수치 진단, 재현 가능한 실험, 검토 가능한 검증 근거를 위한 브라우저 기반 워크벤치. ${testsCopy}, ${scipyCopy}.`;
   }
   const testsCopy = testsLevel === 'validated'
     ? `${comma} verified tests`
@@ -90,7 +102,7 @@ function claimDescription(korean = false) {
       : scipyLevel === 'informational'
         ? 'historical SciPy comparisons'
         : 'withheld SciPy claims';
-  return `Explore nonlinear pendulum dynamics in a browser lab with ${testsCopy}, ${scipyCopy}, Lyapunov analysis, WebGPU, and reproducible exports.`;
+  return `A browser-based workbench for nonlinear pendulum dynamics, numerical diagnostics, and reproducible experiments, with ${testsCopy} and ${scipyCopy}.`;
 }
 
 function syncClaimMarkup(html) {
@@ -122,6 +134,27 @@ function syncClaimMarkup(html) {
     if (caveatMatches === 0) throw new Error(`index.html has no claim caveat surface for ${id}`);
   }
 
+  if (claimVisible('validation.scipy.regular')) {
+    updated = updated.replace(
+      /(data-evidence="validation\.scipyAgreement">)[^<]*(<)/g,
+      `$1${escapeHtml(scienceDisplay())}$2`,
+    );
+    updated = updated.replace(
+      /data-count="[^"]*" data-decimals="[^"]*" data-prefix="~" data-suffix="e[^"]*" data-evidence="validation\.scipyAgreement"/g,
+      `data-count="${scipyMantissa}" data-decimals="${scipyDecimals}" data-prefix="~" data-suffix="e${scipyExponent}" data-evidence="validation.scipyAgreement"`,
+    );
+    updated = updated.replace(
+      /Regular orbits agree to ~[^ ]+ over 20 s;/g,
+      `Regular orbits agree to ${scienceDisplay()} over 20 s;`,
+    );
+  }
+  if (claimVisible('benchmark.energy.methods')) {
+    updated = updated.replace(
+      /(data-evidence="energy\.profileLabel">)[^<]*(<)/g,
+      `$1${energyProfiledMethods} methods profiled$2`,
+    );
+  }
+
   if (!claimVisible('tests.unit')) {
     updated = updated.replace(/(data-evidence="tests\.formatted">)[^<]*(<)/g, '$1withheld$2');
     updated = updated.replace(/data-count="[^"]*"([^>]*data-evidence-count="tests\.passed")/g, 'data-count="0"$1');
@@ -148,8 +181,8 @@ function syncClaimMarkup(html) {
     `$1${escapeHtml(description)}$2`,
   );
   const shareAlt = claimVisible('tests.unit') && claimVisible('validation.scipy.regular')
-    ? `Pendulum Lab — Order, undone by chaos. ${comma} tests and SciPy-validated.`
-    : 'Pendulum Lab — Order, undone by chaos. Evidence levels and limitations are disclosed.';
+    ? `Pendulum Lab nonlinear dynamics workbench — ${comma} tests and SciPy validation.`
+    : 'Pendulum Lab nonlinear dynamics workbench — evidence levels and limitations are disclosed.';
   updated = updated.replace(
     /(<meta (?:property="og:image:alt"|name="twitter:image:alt") content=")[^"]*(" \/>)/g,
     `$1${escapeHtml(shareAlt)}$2`,
@@ -179,11 +212,23 @@ function syncClaimMarkup(html) {
 function syncKoreanDiscovery(source) {
   const description = claimDescription(true);
   const shareAlt = claimVisible('tests.unit') && claimVisible('validation.scipy.regular')
-    ? `Pendulum Lab — 질서, 카오스에 무너지다. ${comma}개 테스트와 SciPy 검증.`
-    : 'Pendulum Lab — 질서, 카오스에 무너지다. 근거 수준과 한계를 공개합니다.';
+    ? `Pendulum Lab 비선형 동역학 워크벤치 — ${comma}개 테스트와 SciPy 검증.`
+    : 'Pendulum Lab 비선형 동역학 워크벤치 — 근거 수준과 한계를 공개합니다.';
   return source
     .replace(/(const META_DESCRIPTION_KO\s*=\s*)'[^']*';/, `$1'${description}';`)
-    .replace(/(const SHARE_IMAGE_ALT_KO\s*=\s*)'[^']*';/, `$1'${shareAlt}';`);
+    .replace(/(const SHARE_IMAGE_ALT_KO\s*=\s*)'[^']*';/, `$1'${shareAlt}';`)
+    .replace(
+      /'Regular orbits agree to ~[^']*':/,
+      `'Regular orbits agree to ${scienceDisplay()} over 20 s; chaotic orbits to the e^{λ₁t}-amplified tolerance floor.':`,
+    )
+    .replace(
+      /'규칙 궤도는 20초 동안 ~[^']*일치합니다\.'/,
+      `'규칙 궤도는 20초 동안 ${scienceDisplay()} 수준으로 일치하고, 카오스 궤도는 e^{λ₁t}로 증폭된 허용 하한까지 일치합니다.'`,
+    );
+}
+
+function scienceDisplay() {
+  return scipyDisplay;
 }
 
 const edits = [
@@ -191,7 +236,6 @@ const edits = [
     file: 'index.html',
     replacements: [
       [/[\d,]+ verified tests/g, `${comma} verified tests`],
-      [/[\d,]+ tests and SciPy-validated\./g, `${comma} tests and SciPy-validated.`],
       [/(data-evidence="tests\.formatted">)[^<]*(<)/, `$1${comma}$2`],
       [/(data-count=")[\d,]+(" data-decimals="0" data-evidence-count="tests\.passed")/, `$1${passed}$2`],
       [
@@ -201,13 +245,12 @@ const edits = [
       [
         /(data-evidence-freshness[^>]*>)[^<]*(<)/,
         `$1${freshness}$2`
-      ],
-      [/"dateModified": "\d{4}-\d{2}-\d{2}"/g, `"dateModified": "${evidenceDay}"`]
+      ]
     ]
   },
   {
     file: join('assets', 'i18n-core.js'),
-    replacements: [[/[\d,]+개 단위 테스트/g, `${comma}개 단위 테스트`]]
+    replacements: []
   }
 ];
 
@@ -228,15 +271,5 @@ for (const { file, replacements } of edits) {
   if (file === join('assets', 'i18n-core.js')) updated = syncKoreanDiscovery(updated);
   if (updated !== original) await writeFile(path, updated);
 }
-
-const sitemapPath = join(root, 'sitemap.xml');
-const sitemap = await readFile(sitemapPath, 'utf8');
-const sitemapLastmods = [...sitemap.matchAll(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g)];
-if (sitemapLastmods.length !== 2) {
-  console.error(`expected exactly two sitemap lastmod entries, found ${sitemapLastmods.length}`);
-  process.exit(1);
-}
-const syncedSitemap = sitemap.replace(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g, `<lastmod>${evidenceDay}</lastmod>`);
-if (syncedSitemap !== sitemap) await writeFile(sitemapPath, syncedSitemap);
 
 console.log(`copy and evidence fallbacks synced: ${comma} tests (${passed} passed), ${evidenceDay} — remember npm run build:ko`);

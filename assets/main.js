@@ -34,6 +34,37 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   if (captureMode) document.body.classList.add('capture-mode');
 
+  // Native fragment scrolling can run before a local font has fixed the
+  // document's final line breaks. Re-align after layout settles so every
+  // engine leaves the target below the persistent navigation bar.
+  function alignCurrentFragment() {
+    if (!window.location.hash) return;
+    let id;
+    try { id = decodeURIComponent(window.location.hash.slice(1)); } catch { return; }
+    const target = document.getElementById(id);
+    if (!target) return;
+    const root = document.documentElement;
+    const inset = Number.parseFloat(getComputedStyle(root).scrollPaddingTop) || 72;
+    const top = target.getBoundingClientRect().top;
+    if (Math.abs(top - inset) < 1) return;
+    const priorBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo(0, Math.max(0, window.scrollY + top - inset));
+    root.style.scrollBehavior = priorBehavior;
+  }
+  function queueFragmentAlignment() {
+    requestAnimationFrame(() => requestAnimationFrame(alignCurrentFragment));
+  }
+  const initialFragment = window.location.hash;
+  if (initialFragment) {
+    queueFragmentAlignment();
+    document.fonts?.ready
+      .then(() => { if (window.location.hash === initialFragment) queueFragmentAlignment(); })
+      .catch(() => undefined);
+    window.addEventListener('load', queueFragmentAlignment, { once: true });
+  }
+  window.addEventListener('hashchange', queueFragmentAlignment, { passive: true });
+
   // ---- Privacy-friendly referral attribution -------------------------------
   // No tracking script or cookie is needed: the app receives ordinary UTM
   // parameters and may aggregate them under its own first-party policy.
@@ -851,6 +882,7 @@
     let menuState = navMenu.open ? 'open' : 'closed';
     let menuGeneration = 0;
     let menuTimer = 0;
+    if (menuState === 'open') navMenu.classList.add('is-open');
 
     function finishMenuClose(generation) {
       if (generation !== menuGeneration || menuState !== 'closing') return;
@@ -991,33 +1023,16 @@
     }, { once: true });
   }
 
-  // ---- count-up telemetry (robust to IO non-delivery) ---------------------
-  function animateValue(el) {
-    if (el.__done) return;
-    el.__done = true;
-    const target = parseFloat(el.dataset.count);
-    const decimals = parseInt(el.dataset.decimals || '0', 10);
-    const suffix = el.dataset.suffix || '', prefix = el.dataset.prefix || '';
-    const dur = 1500, start = performance.now();
-    (function tk(now) {
-      const t = Math.min(1, (now - start) / dur);
-      const e = 1 - Math.pow(1 - t, 3);
-      el.textContent = prefix + (target * e).toFixed(decimals) + suffix;
-      if (t < 1) requestAnimationFrame(tk);
-      else el.textContent = prefix + target.toFixed(decimals) + suffix;
-    })(start);
-  }
+  // Measurements render at their final values. Delaying evidence behind a
+  // decorative count-up made the page harder to scan and could race the
+  // canonical evidence hydrator.
   const counters = $$('[data-count]');
-  if (reducedEffects || captureMode) {
-    counters.forEach((el) => { el.__done = true; el.textContent = (el.dataset.prefix || '') + parseFloat(el.dataset.count).toFixed(parseInt(el.dataset.decimals || '0', 10)) + (el.dataset.suffix || ''); });
-  } else {
-    if ('IntersectionObserver' in window) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((en) => { if (en.isIntersecting) { if (en.target.__counter) animateValue(en.target.__counter); io.unobserve(en.target); } });
-      }, { threshold: 0, rootMargin: '0px 0px -8% 0px' });
-      counters.forEach((c) => { const a = c.closest('.stat, .val-stat') || c; a.__counter = c; io.observe(a); });
-    }
-    setTimeout(() => { counters.forEach((c) => { if (!c.__done) animateValue(c); }); }, 2600);
-  }
+  counters.forEach((el) => {
+    if (el.textContent.trim()) return;
+    const target = Number.parseFloat(el.dataset.count);
+    if (!Number.isFinite(target)) return;
+    const decimals = Number.parseInt(el.dataset.decimals || '0', 10);
+    el.textContent = `${el.dataset.prefix || ''}${target.toFixed(decimals)}${el.dataset.suffix || ''}`;
+  });
 
 })();

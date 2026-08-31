@@ -1,7 +1,7 @@
 // ============================================================================
 // PENDULUM LAB — live hero instrument
 // A constrained double-spherical pendulum, rendered as a restrained scientific
-// instrument with cyan/violet trajectory memory. Both links
+// instrument with teal/amber trajectory memory. Both links
 // evolve as 3D Cartesian positions and velocities under gravity; RK4 advances
 // the system at 240 Hz and a mass-weighted projection keeps both rod lengths
 // fixed. Camera orbit is presentation-only and never feeds back into physics.
@@ -22,8 +22,8 @@ import {
   stepHeroSpatialState,
 } from './hero-physics-kernel.js';
 
-const CYAN = new THREE.Color('#72d6e5');
-const VIOLET = new THREE.Color('#8b7cf6');
+const TEAL = new THREE.Color('#75b8c7');
+const AMBER = new THREE.Color('#d2a968');
 const ICE = new THREE.Color('#c8d6e6');
 const SCROLL_ORBIT_RADIANS = THREE.MathUtils.degToRad(120);
 const canvas = document.getElementById('hero-canvas');
@@ -135,27 +135,6 @@ function publishHeroState(nextState) {
   window.dispatchEvent(new CustomEvent('pendulum:hero-state', { detail: { state: nextState } }));
 }
 
-// Soft round sprite shared by every additive point cloud — square GL points
-// read as pixels; a radial falloff reads as light.
-let glowTexture;
-function makeGlowTexture() {
-  if (glowTexture) return glowTexture;
-  const size = 64;
-  const surface = document.createElement('canvas');
-  surface.width = size;
-  surface.height = size;
-  const ctx = surface.getContext('2d');
-  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  gradient.addColorStop(0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.32, 'rgba(255,255,255,.5)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-  glowTexture = new THREE.CanvasTexture(surface);
-  glowTexture.colorSpace = THREE.SRGBColorSpace;
-  return glowTexture;
-}
-
 function createTrail(color, capacity, opacity) {
   const positions = new Float32Array(capacity * 3);
   const colors = new Float32Array(capacity * 3);
@@ -174,27 +153,12 @@ function createTrail(color, capacity, opacity) {
       depthWrite: false,
     }),
   );
-  const sprite = makeGlowTexture();
-  const sparks = new THREE.Points(
-    geometry,
-    new THREE.PointsMaterial({
-      map: sprite,
-      vertexColors: true,
-      transparent: true,
-      opacity: opacity * 0.12,
-      size: compact ? 0.016 : 0.022,
-      sizeAttenuation: true,
-      depthWrite: false,
-    }),
-  );
-
   const ring = Array.from({ length: capacity }, () => new THREE.Vector3());
   let cursor = 0;
   let count = 0;
 
   return {
     line,
-    sparks,
     push(point) {
       ring[cursor].copy(point);
       cursor = (cursor + 1) % capacity;
@@ -232,20 +196,20 @@ function createPendulum({ ghost = false } = {}) {
     emissiveIntensity: ghost ? 0.02 : 0.04,
   });
   const firstMass = new THREE.MeshStandardMaterial({
-    color: ghost ? 0x71868e : 0x72d6e5,
+    color: ghost ? 0x71868e : 0x75b8c7,
     metalness: 0.56,
-    roughness: 0.34,
-    emissive: ghost ? 0x11181c : 0x123840,
-    emissiveIntensity: ghost ? 0.03 : 0.16,
+    roughness: 0.5,
+    emissive: ghost ? 0x11181c : 0x0c1c20,
+    emissiveIntensity: ghost ? 0.02 : 0.04,
     transparent: ghost,
     opacity: ghost ? 0.09 : 1,
   });
   const secondMass = new THREE.MeshStandardMaterial({
-    color: ghost ? 0x716d85 : 0x8b7cf6,
+    color: ghost ? 0x8f8068 : 0xd2a968,
     metalness: 0.56,
-    roughness: 0.34,
-    emissive: ghost ? 0x15131d : 0x251f50,
-    emissiveIntensity: ghost ? 0.03 : 0.14,
+    roughness: 0.5,
+    emissive: ghost ? 0x18150f : 0x211a0e,
+    emissiveIntensity: ghost ? 0.02 : 0.04,
     transparent: ghost,
     opacity: ghost ? 0.08 : 1,
   });
@@ -455,28 +419,28 @@ function buildScene() {
 
   // Fixed analytic lights keep the instrument legible without bloom or
   // scroll-driven light choreography.
-  scene.add(new THREE.HemisphereLight(0x5277a9, 0x02040b, 0.82));
-  const keyLight = new THREE.DirectionalLight(0xd7e9ff, 2.25);
+  scene.add(new THREE.HemisphereLight(0x66737d, 0x05070a, 0.58));
+  const keyLight = new THREE.DirectionalLight(0xe7ebed, 1.7);
   keyLight.position.set(-3, 5, 5);
   scene.add(keyLight);
-  const rimLight = new THREE.DirectionalLight(0x9d78ff, 0.72);
+  const rimLight = new THREE.DirectionalLight(0x8aa0a8, 0.34);
   rimLight.position.set(5.5, -2, -3.5);
   scene.add(rimLight);
-  const cyanLight = new THREE.PointLight(CYAN, 3.6, 7, 2);
-  cyanLight.position.set(1.4, 1.2, 2.2);
-  scene.add(cyanLight);
-  const violetLight = new THREE.PointLight(VIOLET, 3.2, 7, 2);
-  violetLight.position.set(3.2, -1.3, 1.6);
-  scene.add(violetLight);
+  const tealLight = new THREE.PointLight(TEAL, 0.7, 7, 2);
+  tealLight.position.set(1.4, 1.2, 2.2);
+  scene.add(tealLight);
+  const amberLight = new THREE.PointLight(AMBER, 0.6, 7, 2);
+  amberLight.position.set(3.2, -1.3, 1.6);
+  scene.add(amberLight);
 
   stage = new THREE.Group();
   scene.add(stage);
 
-  firstTrail = createTrail(CYAN, compact ? 150 : 240, 0.58);
-  secondTrail = createTrail(VIOLET, compact ? 190 : 300, 0.7);
+  firstTrail = createTrail(TEAL, compact ? 150 : 240, 0.42);
+  secondTrail = createTrail(AMBER, compact ? 190 : 300, 0.46);
   shadowTrail = createTrail(ICE, compact ? 120 : 190, 0.16);
   [firstTrail, secondTrail, shadowTrail].forEach((trail) => {
-    stage.add(trail.line, trail.sparks);
+    stage.add(trail.line);
   });
 
   primary = createPendulum();

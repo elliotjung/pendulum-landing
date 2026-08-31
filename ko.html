@@ -2,14 +2,14 @@
 <html lang="ko" class="no-js js-ready"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Pendulum Lab — 질서, 카오스에 무너지다</title>
-<meta name="description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.">
+<title>Pendulum Lab — 비선형 동역학 워크벤치</title>
+<meta name="description" content="비선형 진자 동역학, 수치 진단, 재현 가능한 실험, 검토 가능한 검증 근거를 위한 브라우저 기반 워크벤치. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.">
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta name="theme-color" content="#070910">
+<meta name="theme-color" content="#0b0e12">
 <meta name="color-scheme" content="dark">
-<meta property="og:title" content="Pendulum Lab — 질서, 카오스에 무너지다">
-<meta property="og:description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.">
+<meta property="og:title" content="Pendulum Lab — 비선형 동역학 워크벤치">
+<meta property="og:description" content="비선형 진자 동역학, 수치 진단, 재현 가능한 실험, 검토 가능한 검증 근거를 위한 브라우저 기반 워크벤치. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Pendulum Lab">
 <meta property="og:url" content="https://elliotjung.github.io/pendulum-landing/ko.html">
@@ -19,12 +19,12 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Pendulum Lab — 질서, 카오스에 무너지다. 1,597개 테스트와 SciPy 검증.">
+<meta property="og:image:alt" content="Pendulum Lab 비선형 동역학 워크벤치 — 1,597개 테스트와 SciPy 검증.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Pendulum Lab — 질서, 카오스에 무너지다">
-<meta name="twitter:description" content="비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.">
+<meta name="twitter:title" content="Pendulum Lab — 비선형 동역학 워크벤치">
+<meta name="twitter:description" content="비선형 진자 동역학, 수치 진단, 재현 가능한 실험, 검토 가능한 검증 근거를 위한 브라우저 기반 워크벤치. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.">
 <meta name="twitter:image" content="https://elliotjung.github.io/pendulum-landing/assets/og-card.png">
-<meta name="twitter:image:alt" content="Pendulum Lab — 질서, 카오스에 무너지다. 1,597개 테스트와 SciPy 검증.">
+<meta name="twitter:image:alt" content="Pendulum Lab 비선형 동역학 워크벤치 — 1,597개 테스트와 SciPy 검증.">
 <link rel="canonical" href="https://elliotjung.github.io/pendulum-landing/ko.html">
 <link rel="alternate" hreflang="en" href="https://elliotjung.github.io/pendulum-landing/">
 <link rel="alternate" hreflang="ko" href="https://elliotjung.github.io/pendulum-landing/ko.html">
@@ -36,7 +36,7 @@
      pins this block by hash; scripts/check-static-assets.mjs recomputes it. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bpST98ciZlpoVEIyeUZBSU5N7A1PeIFhN8TztbWHMtI='; style-src 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script id="lang-boot">(function(){var d=document.documentElement,w=window;d.classList.remove("no-js");w.__PENDULUM_MAIN_WATCHDOG=setTimeout(function(){w.__PENDULUM_MAIN_WATCHDOG=0;if(w.__PENDULUM_MAIN_READY!==true)d.classList.add("no-js")},4000);try{var q=new URLSearchParams(location.search);if(q.get("lang")==="ko"||!localStorage.getItem("pendulum-landing/lang"))localStorage.setItem("pendulum-landing/lang","ko")}catch(e){}})();</script>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2.4' fill='%2318d4f8'/%3E%3Cpath d='M16 6.5 L23 16 L19 25' stroke='%2318d4f8' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3Ccircle cx='23' cy='16' r='2' fill='%239d78ff'/%3E%3Ccircle cx='19' cy='25' r='2.8' fill='%2318d4f8'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='5' r='2' fill='%238d99a3'/%3E%3Cpath d='M16 7 L22.5 16.5 L18.5 25' fill='none' stroke='%238d99a3' stroke-width='1.35'/%3E%3Ccircle cx='22.5' cy='16.5' r='2.2' fill='%2375b8c7'/%3E%3Ccircle cx='18.5' cy='25' r='2.8' fill='%23d2a968'/%3E%3C/svg%3E">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
 <link rel="preload" href="assets/hero-fallback.webp" as="image" type="image/webp" media="(min-width: 761px)" fetchpriority="high">
@@ -50,10 +50,10 @@
       "@type": "WebPage",
       "@id": "https://elliotjung.github.io/pendulum-landing/ko.html#webpage",
       "url": "https://elliotjung.github.io/pendulum-landing/ko.html",
-      "name": "Pendulum Lab — 질서, 카오스에 무너지다",
-      "description": "비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.",
+      "name": "Pendulum Lab — 비선형 동역학 워크벤치",
+      "description": "비선형 진자 동역학, 수치 진단, 재현 가능한 실험, 검토 가능한 검증 근거를 위한 브라우저 기반 워크벤치. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.",
       "inLanguage": "ko",
-      "dateModified": "2026-08-26",
+      "dateModified": "2026-08-31",
       "mainEntity": {
         "@id": "https://elliotjung.github.io/pendulum-landing/#software"
       }
@@ -70,7 +70,7 @@
         "@type": "Person",
         "name": "Elliot Jung"
       },
-      "dateModified": "2026-08-26",
+      "dateModified": "2026-08-31",
       "applicationCategory": "EducationalApplication",
       "inLanguage": [
         "en",
@@ -169,10 +169,10 @@
   <a class="brand" href="#top" aria-label="Pendulum Lab 홈">
     <span class="mark">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="5" r="2.4" fill="#18d4f8"></circle>
-        <path d="M16 6.5 L23 16 L19 25" stroke="#18d4f8" stroke-width="1.4" stroke-linecap="round" opacity=".85"></path>
-        <circle cx="23" cy="16" r="2" fill="#9d78ff"></circle>
-        <circle cx="19" cy="25" r="2.8" fill="#18d4f8"></circle>
+        <circle cx="16" cy="5" r="2" fill="#8d99a3"></circle>
+        <path d="M16 7 L22.5 16.5 L18.5 25" fill="none" stroke="#8d99a3" stroke-width="1.35"></path>
+        <circle cx="22.5" cy="16.5" r="2.2" fill="#75b8c7"></circle>
+        <circle cx="18.5" cy="25" r="2.8" fill="#d2a968"></circle>
       </svg>
     </span>
     <span><span class="name">Pendulum Lab</span></span>
@@ -207,14 +207,14 @@
   <div class="wrap">
     <div class="hero-grid">
       <div class="hero-copy">
-        <span class="kicker">Pendulum Lab · 비선형 동역학</span>
+        <span class="kicker">Pendulum Lab · 연구 워크벤치</span>
         <h1 class="display">
-          <span class="grad">질서,</span><br>
-          <span class="dissolve">카오스에</span><br>
-          <span class="grad">무너지다.</span>
+          <span class="grad">비선형 동역학을</span><br>
+          <span class="dissolve">브라우저에서</span><br>
+          <span class="grad">측정합니다.</span>
         </h1>
         <p class="lede">
-          거의 같은 두 진자를 놓아 보세요. 확실성이 두 개의 세계로 갈라지는 순간을 보고, 예측이 얼마나 빠르게 사라지는지 정확히 측정할 수 있습니다.
+          가까운 초기 조건을 비교하고 수치 오차를 확인한 뒤, 완전히 명시된 실험을 재현 가능한 연구 흐름으로 이어 가세요.
         </p>
         <p class="product-statement">비선형 동역학을 이해하고 측정하는 인터랙티브 실험실입니다.</p>
         <div class="hero-actions">
@@ -279,7 +279,7 @@
         <h2 id="orbit-descent-title">하나의 기준 상태에서 시작합니다.</h2>
         <p class="descent-live-copy">먼저 하나의 운동만 따라갑니다. 기준 상태는 그대로 둔 채, 아주 작은 차이가 무엇을 바꾸는지 살펴봅니다.</p>
         <p class="descent-static-copy">동작 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 정적 이미지에 같은 기준 경로가 유지됩니다.</p>
-        <span class="descent-signal descent-live-copy"><i></i> 기준 궤적 · 시안 · 변경 없음</span>
+        <span class="descent-signal descent-live-copy"><i></i> 기준 궤적 · 청록 · 변경 없음</span>
         <span class="descent-signal descent-static-copy"><i></i> 기준 궤적 · 정적 화면</span>
       </div>
     </article>
@@ -288,7 +288,7 @@
       <div class="descent-card">
         <span class="descent-index">02 · 아주 작은 차이</span>
         <h3>숫자 하나만 바꿉니다.</h3>
-        <p class="descent-live-copy">보라색 궤적은 기준 상태를 복사한 뒤 첫 번째 각도에 Δθ₁ = 8×10⁻⁴ rad만 더합니다. 나머지는 모두 같습니다.</p>
+        <p class="descent-live-copy">호박색 궤적은 기준 상태를 복사한 뒤 첫 번째 각도에 Δθ₁ = 8×10⁻⁴ rad만 더합니다. 나머지는 모두 같습니다.</p>
         <p class="descent-static-copy">정적 궤적은 애니메이션이 실행된다고 암시하지 않으면서 기준 상태와 한 변수의 섭동을 보존합니다.</p>
         <div class="descent-equation"><span>기준</span><strong>θ₁</strong><span>섭동</span><strong>θ₁ + Δθ₁</strong></div>
       </div>
@@ -298,9 +298,9 @@
       <div class="descent-card">
         <span class="descent-index">03 · 발산</span>
         <h3>두 미래가 달라지는 순간을 봅니다.</h3>
-        <p class="descent-live-copy">처음에는 두 경로가 겹칩니다. 이후 같은 결정론적 규칙이 둘을 서로 멀어지게 합니다. 시안은 언제나 기준, 보라는 언제나 섭동 상태입니다.</p>
-        <p class="descent-static-copy">시안은 기준, 보라는 섭동 경로를 나타내며, 동작만 보지 않아도 커지는 거리를 확인할 수 있습니다.</p>
-        <div class="descent-tags"><span>기준: 시안</span><span>섭동: 보라</span><span>변수 하나만 변경</span></div>
+        <p class="descent-live-copy">처음에는 두 경로가 겹칩니다. 이후 같은 결정론적 규칙이 둘을 서로 멀어지게 합니다. 청록은 언제나 기준, 호박색은 언제나 섭동 상태입니다.</p>
+        <p class="descent-static-copy">청록은 기준, 호박색은 섭동 경로를 나타내며, 동작만 보지 않아도 커지는 거리를 확인할 수 있습니다.</p>
+        <div class="descent-tags"><span>기준: 청록</span><span>섭동: 호박색</span><span>변수 하나만 변경</span></div>
       </div>
     </article>
 
@@ -417,7 +417,7 @@
         <small>전체 실험실과 검증 근거는 계속 사용할 수 있습니다.</small>
       </div>
       <canvas id="orbit-console" width="920" height="620" role="img" aria-label="이중진자 궤적 콘솔 애니메이션" aria-describedby="orbit-console-caption">
-        두 개의 이중진자가 0.001 라디안 차이로 시작합니다. 시안과 보라 궤적은 시간이 지날수록 갈라집니다.
+        두 개의 이중진자가 0.001 라디안 차이로 시작합니다. 청록과 호박색 궤적은 시간이 지날수록 갈라집니다.
       </canvas>
       <figcaption id="orbit-console-caption">
         <span data-orbit-caption-label="">기준 + 하나의 섭동</span>
@@ -509,8 +509,8 @@
             <line class="grid-line" x1="0" y1="240" x2="400" y2="240"></line>
             <line class="grid-line" x1="120" y1="0" x2="120" y2="320"></line>
             <line class="grid-line" x1="240" y1="0" x2="240" y2="320"></line>
-            <path class="draw-path glow-cyan" d="M58 168 C 104 118, 150 132, 186 164 S 250 248, 300 150 S 360 92, 384 134" stroke="#18d4f8" stroke-width="2.4"></path>
-            <path class="draw-path glow-violet" d="M58 168 C 104 118, 150 132, 186 164 S 250 96, 300 206 S 360 252, 384 212" stroke="#9d78ff" stroke-width="2.4"></path>
+            <path class="draw-path glow-cyan" d="M58 168 C 104 118, 150 132, 186 164 S 250 248, 300 150 S 360 92, 384 134" stroke="#75b8c7" stroke-width="2.4"></path>
+            <path class="draw-path glow-violet" d="M58 168 C 104 118, 150 132, 186 164 S 250 96, 300 206 S 360 252, 384 212" stroke="#d2a968" stroke-width="2.4"></path>
             <circle class="seed glow-seed" cx="58" cy="168" r="4.4"></circle>
           </svg>
           <div class="diverge-tag">
@@ -778,9 +778,9 @@
           <p><span data-claim-caveat="tests.unit" data-evidence="claim.tests.unit.caveat">성공한 전체 테스트 결과와 정확한 소스 해시가 있을 때만 검증됨으로 표시합니다.</span> 여기에 Chromium·Firefox·WebKit·모바일 E2E 스위트, 그리고 기계가 읽을 수 있는 Stryker 집계 <span data-evidence="mutation.scoreLabel">65.32% · 낮음 등급 · 29개 샤드</span> (<span data-claim-status="testing.mutation" data-evidence="claim.testing.mutation.level">정보용</span>). <span data-claim-caveat="testing.mutation" data-evidence="claim.testing.mutation.caveat">70% 품질 목표 미만이면 검증됨이 아니라 측정됨으로 낮춰 표시합니다.</span></p>
         </div>
         <div class="val-stat reveal">
-          <div class="big" data-count="6" data-decimals="0" data-prefix="~" data-suffix="e-14" data-evidence="validation.scipyAgreement">~5e-14</div>
+          <div class="big" data-count="5" data-decimals="0" data-prefix="~" data-suffix="e-14" data-evidence="validation.scipyAgreement">~5e-14</div>
           <div class="cap">Agreement vs SciPy DOP853 · <span data-claim-status="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.level">검증됨</span></div>
-          <p>규칙 궤도는 20초 동안 ~6e-14 수준으로 일치하고, 카오스 궤도는 e^{λ₁t}로 증폭된 허용 하한까지 일치합니다. <span data-claim-caveat="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.caveat">정규 궤도 비교 결과이며, 카오스 궤도의 비트 단위 일치를 주장하지 않습니다.</span></p>
+          <p>규칙 궤도는 20초 동안 ~5e-14 수준으로 일치하고, 카오스 궤도는 e^{λ₁t}로 증폭된 허용 하한까지 일치합니다. <span data-claim-caveat="validation.scipy.regular" data-evidence="claim.validation.scipy.regular.caveat">정규 궤도 비교 결과이며, 카오스 궤도의 비트 단위 일치를 주장하지 않습니다.</span></p>
         </div>
         <div class="val-stat reveal">
           <div class="big" data-count="1.0664" data-decimals="4" data-evidence-count="validation.periodDoublingComputed"></div>
@@ -878,8 +878,8 @@
 <!-- ============================== LAUNCH ============================== -->
 <section class="band launch" id="launch">
   <div class="wrap">
-    <span class="kicker center">엔진을 열다</span>
-    <h2 class="display" data-rise=""><span class="grad">놓아라. 지켜보라, </span><span class="dissolve">갈라짐을.</span></h2>
+    <span class="kicker center">Lab에서 이어서 실행</span>
+    <h2 class="display" data-rise=""><span class="grad">명시된 실험을 엽니다.</span></h2>
     <p class="lede">풀 시뮬레이터가 브라우저에서 그대로 돌아갑니다 — 15종의 주력 적분기, 모든 분석 탭, 해시 검증 연구 내보내기. 설치도 계정도 없이. 오직 가공되지 않은 카오스의 수학만.</p>
     <div class="launch-actions">
       <a class="btn primary" href="https://elliotjung.github.io/pendulum-lab/?goal=explore&amp;audience=beginner&amp;lang=ko&amp;tab=lab" data-app-link="" data-cta-goal="explore" data-cta-persona="beginner" data-utm-content="launch-explore">랩 열기 <span class="arrow">→</span></a>
@@ -897,10 +897,10 @@
     <div class="brand">
       <span class="mark">
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="16" cy="5" r="2.4" fill="#18d4f8"></circle>
-          <path d="M16 6.5 L23 16 L19 25" stroke="#18d4f8" stroke-width="1.4" stroke-linecap="round" opacity=".85"></path>
-          <circle cx="23" cy="16" r="2" fill="#9d78ff"></circle>
-          <circle cx="19" cy="25" r="2.8" fill="#18d4f8"></circle>
+          <circle cx="16" cy="5" r="2" fill="#8d99a3"></circle>
+          <path d="M16 7 L22.5 16.5 L18.5 25" fill="none" stroke="#8d99a3" stroke-width="1.35"></path>
+          <circle cx="22.5" cy="16.5" r="2.2" fill="#75b8c7"></circle>
+          <circle cx="18.5" cy="25" r="2.8" fill="#d2a968"></circle>
         </svg>
       </span>
       <span>

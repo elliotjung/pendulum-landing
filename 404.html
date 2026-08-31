@@ -5,20 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Page not found — Pendulum Lab</title>
   <meta name="robots" content="noindex,follow" />
-  <meta name="theme-color" content="#05060f" />
+  <meta name="theme-color" content="#0b0f14" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'" />
   <style>
-    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; background: #05060f; color: #eef8ff; }
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; background: #0b0f14; color: #edf1f4; }
     * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 0%, #13233b, #05060f 58%); }
-    main { width: min(42rem, calc(100% - 2rem)); padding: 3rem; border: 1px solid #294765; border-radius: 1.25rem; background: #09111ee8; box-shadow: 0 2rem 6rem #0008; }
-    .brand { color: #18d4f8; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-    .code { margin-top: 2rem; color: #9d78ff; font: 800 clamp(4rem, 20vw, 9rem)/.85 monospace; opacity: .72; }
-    h1 { margin: 1.5rem 0 .75rem; font-size: clamp(2rem, 6vw, 3.5rem); }
-    p { color: #b9cadb; line-height: 1.65; }
-    .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
-    a.button { padding: .78rem 1rem; border: 1px solid #3a5874; border-radius: 999px; color: #eaf8ff; text-decoration: none; }
-    a.primary { color: #021018; border-color: #18d4f8; background: #18d4f8; font-weight: 750; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #0b0f14; }
+    main { width: min(44rem, calc(100% - 2rem)); padding: clamp(2rem, 7vw, 4rem); border: 1px solid #36414b; border-top: 3px solid #75b8c7; border-radius: 2px; background: #10161d; }
+    .brand { color: #75b8c7; font: 700 .75rem/1.2 ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }
+    .code { margin-top: 2.5rem; color: #8d99a3; font: 700 clamp(3.5rem, 18vw, 7.5rem)/.85 ui-monospace, monospace; }
+    h1 { margin: 1.5rem 0 .75rem; max-width: 13ch; font-size: clamp(2rem, 6vw, 3.4rem); line-height: 1.05; }
+    p { max-width: 60ch; color: #b8c1c8; line-height: 1.65; }
+    .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid #2a333c; }
+    a.button { padding: .7rem .9rem; border: 1px solid #46535e; border-radius: 2px; color: #edf1f4; text-decoration: none; }
+    a.button:hover { background: #18212a; }
+    a.primary { color: #071016; border-color: #75b8c7; background: #75b8c7; font-weight: 700; }
     a:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   </style>
 </head>
@@ -26,8 +27,8 @@
   <main>
     <a class="brand" href="https://elliotjung.github.io/pendulum-landing/">Pendulum Lab</a>
     <div class="code" aria-hidden="true">404</div>
-    <h1>The trajectory left this page.</h1>
-    <p>This address no longer resolves, but the laboratory, evidence ledger, and current project home are still available.</p>
+    <h1>This page is not in the current release.</h1>
+    <p>The requested address does not resolve. The laboratory, evidence ledger, and current project home remain available.</p>
     <p lang="ko">요청한 페이지를 찾을 수 없습니다. 아래에서 최신 실험실과 검증 자료로 이동하세요.</p>
     <div class="actions">
       <a class="button primary" href="https://elliotjung.github.io/pendulum-landing/">Open the landing page</a>

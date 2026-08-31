@@ -2,7 +2,7 @@
  * i18n-core.js — the English→Korean dictionary and DOM translation pass.
  *
  * NOT loaded by the site at runtime. Runtime translation of this
- * filter/blur-heavy page costs ~300–700 ms of style/relayout inside the
+ * translated page costs avoidable style/relayout inside the
  * mobile startup window (measured via Lighthouse TBT), so the Korean page is
  * generated statically instead: scripts/build-ko-page.mjs loads this file in
  * a headless page, runs `applyKorean` against a DOMParser document of
@@ -44,16 +44,18 @@
     'starts on interaction': '조작하면 시작',
     // ---- hero --------------------------------------------------------------
     'Double-Pendulum Chaos Engine': '이중진자 카오스 엔진',
-    'Pendulum Lab · Nonlinear Dynamics': 'Pendulum Lab · 비선형 동역학',
-    'Order,': '질서,',
-    'undone by': '카오스에',
-    'chaos.': '무너지다.',
+    'Pendulum Lab · Research workbench': 'Pendulum Lab · 연구 워크벤치',
+    'Nonlinear dynamics,': '비선형 동역학을',
+    'measured in': '브라우저에서',
+    'the browser.': '측정합니다.',
     'A framework-free TypeScript engine for nonlinear pendulum dynamics — fifteen primary integrators measured at their theoretical order, full-spectrum Lyapunov diagnostics, WebGPU paths promoted only after CPU-oracle checks, and hash-verifiable research bundles with deterministic replay metadata. Rigor, engineered for the very edge of predictability.':
       '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진 — 이론 차수를 실측으로 확인한 15종의 주력 적분기, 전체 스펙트럼 랴푸노프 진단, CPU 오러클 검증을 통과해야만 승격되는 WebGPU 경로, 결정론적 재생 메타데이터를 담은 해시 검증 연구 번들. 예측 가능성의 가장자리를 위해 설계된 엄밀함.',
     'Open Chaotic Preset': '카오스 프리셋 열기',
     'View Research Evidence': '연구 증거 보기',
-    'Release two nearly identical pendulums. Watch certainty split into two universes — then measure exactly how fast prediction disappears.':
-      '거의 같은 두 진자를 놓아 보세요. 확실성이 두 개의 세계로 갈라지는 순간을 보고, 예측이 얼마나 빠르게 사라지는지 정확히 측정할 수 있습니다.',
+    'Compare nearby initial conditions, inspect numerical error, and carry a fully specified experiment into a reproducible research workflow.':
+      '가까운 초기 조건을 비교하고 수치 오차를 확인한 뒤, 완전히 명시된 실험을 재현 가능한 연구 흐름으로 이어 가세요.',
+    'Hero: constrained double-spherical RK4 illustration · Lab handoff: planar double pendulum, RK4, Δt = 0.001 s.':
+      '히어로: 길이 제약 이중 구면진자 RK4 예시 · Lab 전달: 평면 이중진자, RK4, Δt = 0.001초.',
     'Run the Experiment': '실험 실행',
     'tests': '테스트',
     '-validated': '-검증',
@@ -111,8 +113,8 @@
     'Chaos you can feel before the app even opens.': '앱을 열기도 전에 체감되는 카오스.',
     'A lightweight canvas instrument draws two nearly identical double-pendulum releases in real time. The cyan and violet traces begin together, then peel apart as sensitivity takes over.':
       '가벼운 캔버스 계기가 거의 동일한 두 이중진자 릴리스를 실시간으로 그립니다. 시안과 보라 궤적은 함께 출발하지만, 민감성이 지배하는 순간 서로 갈라집니다.',
-    'Two simulated double pendulums begin 0.001 radians apart. Their cyan and violet trajectories separate over time.':
-      '두 개의 이중진자가 0.001 라디안 차이로 시작합니다. 시안과 보라 궤적은 시간이 지날수록 갈라집니다.',
+    'Two simulated double pendulums begin 0.001 radians apart. Their teal and amber trajectories separate over time.':
+      '두 개의 이중진자가 0.001 라디안 차이로 시작합니다. 청록과 호박색 궤적은 시간이 지날수록 갈라집니다.',
     'Open primary state': '주 상태 열기',
     'Reviewer Ledger': '리뷰어 원장',
     // ---- live preview --------------------------------------------------------
@@ -253,8 +255,8 @@
     'Plus Chromium, Firefox, WebKit and mobile end-to-end suites, with a machine-readable Stryker aggregate of':
       '여기에 Chromium·Firefox·WebKit·모바일 E2E 스위트, 그리고 기계가 읽을 수 있는 Stryker 집계',
     'Agreement vs SciPy DOP853': 'SciPy DOP853 대비 일치도',
-    'Regular orbits agree to ~6e-14 over 20 s; chaotic orbits to the e^{λ₁t}-amplified tolerance floor.':
-      '규칙 궤도는 20초 동안 ~6e-14 수준으로 일치하고, 카오스 궤도는 e^{λ₁t}로 증폭된 허용 하한까지 일치합니다.',
+    'Regular orbits agree to ~5e-14 over 20 s; chaotic orbits to the e^{λ₁t}-amplified tolerance floor.':
+      '규칙 궤도는 20초 동안 ~5e-14 수준으로 일치하고, 카오스 궤도는 e^{λ₁t}로 증폭된 허용 하한까지 일치합니다.',
     'Period-doubling onset A_PD': '주기배가 시작점 A_PD',
     'Engine-measured against the published value of 1.0663 — a literature anchor, not a fit.':
       '출판값 1.0663에 맞서 엔진이 직접 측정 — 피팅이 아니라 문헌 앵커입니다.',
@@ -284,9 +286,8 @@
     'Open Lab now': '지금 랩 열기',
     'Runs in your browser · no install': '브라우저에서 실행 · 설치 없음',
     // ---- launch -------------------------------------------------------------------------
-    'Open the Engine': '엔진을 열다',
-    'Release it. Watch it': '놓아라. 지켜보라,',
-    'diverge.': '갈라짐을.',
+    'Continue in the Lab': 'Lab에서 이어서 실행',
+    'Open a specified experiment.': '명시된 실험을 엽니다.',
     'The full simulator runs in your browser — fifteen primary integrators, every analysis tab, and hash-verifiable research exports. No install, no account. Just the unvarnished mathematics of chaos.':
       '풀 시뮬레이터가 브라우저에서 그대로 돌아갑니다 — 15종의 주력 적분기, 모든 분석 탭, 해시 검증 연구 내보내기. 설치도 계정도 없이. 오직 가공되지 않은 카오스의 수학만.',
     'Source on GitHub': 'GitHub 소스',
@@ -366,24 +367,24 @@
       '먼저 하나의 운동만 따라갑니다. 기준 상태는 그대로 둔 채, 아주 작은 차이가 무엇을 바꾸는지 살펴봅니다.',
     'The still image preserves the same reference path when motion or graphics preferences keep the live renderer off.':
       '동작 또는 그래픽 환경설정으로 실시간 렌더러가 꺼져도 정적 이미지에 같은 기준 경로가 유지됩니다.',
-    'Reference trajectory · cyan · unchanged': '기준 궤적 · 시안 · 변경 없음',
+    'Reference trajectory · teal · unchanged': '기준 궤적 · 청록 · 변경 없음',
     'Reference trajectory · static view': '기준 궤적 · 정적 화면',
     '02 · Tiny difference': '02 · 아주 작은 차이',
     'Change only one number.': '숫자 하나만 바꿉니다.',
-    'The violet trajectory copies the reference, then adds Δθ₁ = 8×10⁻⁴ rad to its first angle. Everything else stays identical.':
-      '보라색 궤적은 기준 상태를 복사한 뒤 첫 번째 각도에 Δθ₁ = 8×10⁻⁴ rad만 더합니다. 나머지는 모두 같습니다.',
+    'The amber trajectory copies the reference, then adds Δθ₁ = 8×10⁻⁴ rad to its first angle. Everything else stays identical.':
+      '호박색 궤적은 기준 상태를 복사한 뒤 첫 번째 각도에 Δθ₁ = 8×10⁻⁴ rad만 더합니다. 나머지는 모두 같습니다.',
     'The static traces preserve the reference and the one-variable perturbation without implying that animation is running.':
       '정적 궤적은 애니메이션이 실행된다고 암시하지 않으면서 기준 상태와 한 변수의 섭동을 보존합니다.',
     'reference': '기준',
     'perturbed': '섭동',
     '03 · Divergence': '03 · 발산',
     'Watch the futures stop agreeing.': '두 미래가 달라지는 순간을 봅니다.',
-    'At first the two paths overlap. Then the same deterministic rules carry them apart. Cyan always means reference; violet always means perturbed.':
-      '처음에는 두 경로가 겹칩니다. 이후 같은 결정론적 규칙이 둘을 서로 멀어지게 합니다. 시안은 언제나 기준, 보라는 언제나 섭동 상태입니다.',
-    'Cyan marks the reference and violet marks the perturbed path; their growing distance is visible without relying on motion alone.':
-      '시안은 기준, 보라는 섭동 경로를 나타내며, 동작만 보지 않아도 커지는 거리를 확인할 수 있습니다.',
-    'reference: cyan': '기준: 시안',
-    'perturbed: violet': '섭동: 보라',
+    'At first the two paths overlap. Then the same deterministic rules carry them apart. Teal always means reference; amber always means perturbed.':
+      '처음에는 두 경로가 겹칩니다. 이후 같은 결정론적 규칙이 둘을 서로 멀어지게 합니다. 청록은 언제나 기준, 호박색은 언제나 섭동 상태입니다.',
+    'Teal marks the reference and amber marks the perturbed path; their growing distance is visible without relying on motion alone.':
+      '청록은 기준, 호박색은 섭동 경로를 나타내며, 동작만 보지 않아도 커지는 거리를 확인할 수 있습니다.',
+    'reference: teal': '기준: 청록',
+    'perturbed: amber': '섭동: 호박색',
     'one variable changed': '변수 하나만 변경',
     'Turn the visible split into a number.': '눈에 보이는 갈라짐을 숫자로 바꿉니다.',
     'The console below reports the wrapped angular difference |Δθ₁(t)| for a planar double pendulum. Enter its exact reference state and perturbation, then continue that exact planar experiment in the full Lab without retyping it.':
@@ -522,10 +523,10 @@
     '해시로 검증되는 연구 번들.'
   ];
 
-  const TITLE_KO = 'Pendulum Lab — 질서, 카오스에 무너지다';
+  const TITLE_KO = 'Pendulum Lab — 비선형 동역학 워크벤치';
   const META_DESCRIPTION_KO =
-    '비선형 진자 동역학을 위한 프레임워크 없는 TypeScript 엔진과 브라우저 실험실 — 15종의 주력 적분기, 전체 랴푸노프 진단, CPU 오러클로 게이트되는 WebGPU 파이프라인, 해시 검증 연구 번들. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.';
-  const SHARE_IMAGE_ALT_KO = 'Pendulum Lab — 질서, 카오스에 무너지다. 1,597개 테스트와 SciPy 검증.';
+    '비선형 진자 동역학, 수치 진단, 재현 가능한 실험, 검토 가능한 검증 근거를 위한 브라우저 기반 워크벤치. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.';
+  const SHARE_IMAGE_ALT_KO = 'Pendulum Lab 비선형 동역학 워크벤치 — 1,597개 테스트와 SciPy 검증.';
 
   function normalize(text) {
     return text.replace(/\s+/g, ' ').trim();
