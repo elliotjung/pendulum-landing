@@ -1,8 +1,8 @@
 {
   "schemaVersion": "pendulum-changelog-highlights/v1",
-  "generatedAt": "2026-08-26T02:30:53.828Z",
-  "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
-  "sourceUrl": "https://github.com/elliotjung/pendulum-lab/blob/7aa687eee5031b5f39d87a24bcb1f24271f8d893/CHANGELOG.md",
+  "generatedAt": "2026-08-31T14:24:59.685Z",
+  "sourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
+  "sourceUrl": "https://github.com/elliotjung/pendulum-lab/blob/66f80786b812ad289a993c99e7a08f7ac61d72ac/CHANGELOG.md",
   "highlights": [
     {
       "title": "Folder rename",

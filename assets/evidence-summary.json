@@ -1,6 +1,6 @@
 {
   "schemaVersion": "pendulum-evidence-summary/v1",
-  "generatedAt": "2026-08-26T02:30:53.828Z",
+  "generatedAt": "2026-08-31T14:24:59.685Z",
   "sourceReports": {
     "vitestResults": "reports/vitest-public-results.json",
     "reviewerKitManifest": "reports/reviewer-kit-manifest.json",
@@ -12,36 +12,36 @@
     "energyBenchmark": "reports/energy-benchmark.json"
   },
   "sourceReportSha256": {
-    "reports/vitest-public-results.json": "695cac558344331112dde5a049b68b9b3a07b92f09596b71fcd721e2a4670818",
-    "reports/reviewer-kit-manifest.json": "42074596fe2d85fd7d83195068976891e9b2a7159defaf607eaceed7e76dd492",
-    "reports/publication-status.json": "fda279eaf78aeee9089c0c7854bbdb41258e755b3c2f0036f9a61b550c808c5b",
-    "reports/literature-anchors.json": "ad9f3d71b09e27dbc1dd3a81fdcb8b3233a3b7bbf888e8174e9a4652920aa957",
-    "reports/cross-validation.json": "0c6098f9af933bb22a65e885dcc95abbbc932e768c5231386a2d2da0e20b18b0",
+    "reports/vitest-public-results.json": "fb5f56929cfcfb3d1049fe8ac8c793003bbba56dd8b1e4c27a80ede0174bde39",
+    "reports/reviewer-kit-manifest.json": "b31ea33ce8416fa60da242dc744c1809e2877ae40599eec0504b875f491ec068",
+    "reports/publication-status.json": "98724c120331d9484d2f3a63628d8bb5fd8ad798539a04540cc2cef240b32685",
+    "reports/literature-anchors.json": "17fa9cc216ecd5099e70b0ad166c23a7095777f5dcf81746b9225c45ebc0efb3",
+    "reports/cross-validation.json": "1a859bfdb13399d1fd22563fdb466238b0c0df2e7b98f59afab3da89c52d3703",
     "reports/gpu-adapter-matrix.json": "2dfaeed3242cc10195a98f20156906d71ce1074db71f7eb2db5ff2a8d9318ba6",
     "reports/mutation-aggregate.json": "df55d143213c022db1bb8058a24d2d198fa228c81e660acfb31c9c913acee9fb",
-    "reports/energy-benchmark.json": "fbc290cf11a023024bdeabe5d089e84078e67e5e09aac5064b8b811f18c77351"
+    "reports/energy-benchmark.json": "8d67ec72ccd24668aafa8339b29023690a37f3ffd6c6d941d71dbf4b8c724e38"
   },
   "provenance": {
-    "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
+    "sourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
     "packageVersion": "10.36.0",
     "lockfileSha256": "c19b38e230056a32b42bc9189720031accb0c214ccee7fa7c590578936ba0d33",
     "dirtyWorktree": false,
     "expiresAfterDays": 14,
-    "expiresAt": "2026-09-09T02:30:53.828Z"
+    "expiresAt": "2026-09-14T14:24:59.685Z"
   },
   "tests": {
-    "total": 1597,
-    "passed": 1597,
+    "total": 1651,
+    "passed": 1651,
     "failed": 0,
-    "suites": 662,
-    "files": 219,
+    "suites": 686,
+    "files": 230,
     "success": true,
-    "generatedAt": "2026-08-26T02:20:19.005Z",
-    "passLabel": "1597 / 1597 pass"
+    "generatedAt": "2026-08-31T14:00:52.619Z",
+    "passLabel": "1651 / 1651 pass"
   },
   "validation": {
     "scipyAgreement": {
-      "regularMaxDivergence": 5.3512749786932545e-14,
+      "regularMaxDivergence": 5.46229728115577e-14,
       "display": "~5e-14"
     },
     "periodDoubling": {
@@ -112,12 +112,12 @@
   "claims": [
     {
       "id": "tests.unit",
-      "displayValue": "1597 / 1597 pass",
+      "displayValue": "1651 / 1651 pass",
       "status": "passed",
       "uncertainty": null,
       "sourceReport": "reports/vitest-public-results.json",
-      "evidenceGeneratedAt": "2026-08-26T02:20:19.005Z",
-      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
+      "evidenceGeneratedAt": "2026-08-31T14:00:52.619Z",
+      "sourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
       "caveat": null,
       "reproduce": "npm run verify",
       "publicUrl": null
@@ -128,8 +128,8 @@
       "status": "passed",
       "uncertainty": "Maximum observed divergence for regular reference cases",
       "sourceReport": "reports/cross-validation.json",
-      "evidenceGeneratedAt": "2026-08-26T02:20:17.135Z",
-      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
+      "evidenceGeneratedAt": "2026-08-31T14:00:50.103Z",
+      "sourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
       "caveat": "Chaotic trajectories use time-amplified tolerances and are not claimed bitwise-identical.",
       "reproduce": "npm run validate:cross",
       "publicUrl": null
@@ -141,7 +141,7 @@
       "uncertainty": null,
       "sourceReport": "reports/mutation-aggregate.json",
       "evidenceGeneratedAt": "2026-07-03T16:45:41.502Z",
-      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
+      "sourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
       "caveat": "Below the 70% quality target; the 65% regression floor is enforced.",
       "reproduce": "npm run mutation:aggregate -- reports/mutation-shards --out-dir reports --break 65 --low 70 --high 85",
       "publicUrl": null
@@ -152,8 +152,8 @@
       "status": "measured",
       "uncertainty": "Method-specific drift; no universal pass envelope",
       "sourceReport": "reports/energy-benchmark.json",
-      "evidenceGeneratedAt": "2026-08-26T02:22:54.500Z",
-      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
+      "evidenceGeneratedAt": "2026-08-31T14:03:31.401Z",
+      "sourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
       "caveat": "Compare each method against its documented order and structure-preservation behavior.",
       "reproduce": "npm run benchmark:energy",
       "publicUrl": null
@@ -165,7 +165,7 @@
       "uncertainty": null,
       "sourceReport": "reports/gpu-adapter-matrix.json",
       "evidenceGeneratedAt": "2026-07-10T09:29:21.172Z",
-      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
+      "sourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
       "caveat": "The matrix is intentionally incomplete until missing physical vendor runners upload evidence. Software adapters do not satisfy this contract.",
       "reproduce": "npm run benchmark:gpu-matrix",
       "publicUrl": null
@@ -176,8 +176,8 @@
       "status": "failed",
       "uncertainty": null,
       "sourceReport": "reports/publication-status.json",
-      "evidenceGeneratedAt": "2026-08-26T02:30:23.117Z",
-      "sourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
+      "evidenceGeneratedAt": "2026-08-31T14:24:25.255Z",
+      "sourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
       "caveat": "npm registry does not resolve this exact package version. No matching public Zenodo DOI record resolves for Pendulum Lab.",
       "reproduce": "npm run release:status",
       "publicUrl": "https://elliotjung.github.io/pendulum-lab/reviewer.html"
@@ -215,11 +215,11 @@
   ],
   "claimEvidence": {
     "schemaVersion": "pendulum-claim-evidence-surface/v1",
-    "evaluatedAt": "2026-08-26T02:30:53.828Z",
+    "evaluatedAt": "2026-08-31T14:24:59.685Z",
     "loadState": "loaded",
-    "evidenceGeneratedAt": "2026-08-26T02:30:53.828Z",
-    "evidenceSourceCommit": "7aa687eee5031b5f39d87a24bcb1f24271f8d893",
-    "evidenceExpiresAt": "2026-09-09T02:30:53.828Z",
+    "evidenceGeneratedAt": "2026-08-31T14:24:59.685Z",
+    "evidenceSourceCommit": "66f80786b812ad289a993c99e7a08f7ac61d72ac",
+    "evidenceExpiresAt": "2026-09-14T14:24:59.685Z",
     "counts": {
       "withheld": 1,
       "informational": 2,
@@ -235,12 +235,12 @@
         "defaultVisibleLevel": "validated",
         "effectiveVisibleLevel": "validated",
         "validity": "current",
-        "validFrom": "2026-08-26T02:20:19.005Z",
-        "validUntil": "2026-09-09T02:20:19.005Z",
-        "displayValue": "1597 / 1597 pass",
+        "validFrom": "2026-08-31T14:00:52.619Z",
+        "validUntil": "2026-09-14T14:00:52.619Z",
+        "displayValue": "1651 / 1651 pass",
         "evidenceStatus": "passed",
         "sourceArtifact": "reports/vitest-public-results.json",
-        "sourceArtifactSha256": "695cac558344331112dde5a049b68b9b3a07b92f09596b71fcd721e2a4670818",
+        "sourceArtifactSha256": "fb5f56929cfcfb3d1049fe8ac8c793003bbba56dd8b1e4c27a80ede0174bde39",
         "reproduce": "npm run verify",
         "limitationIds": [
           "L18"
@@ -257,12 +257,12 @@
         "defaultVisibleLevel": "validated",
         "effectiveVisibleLevel": "validated",
         "validity": "current",
-        "validFrom": "2026-08-26T02:20:17.135Z",
-        "validUntil": "2026-09-09T02:20:17.135Z",
+        "validFrom": "2026-08-31T14:00:50.103Z",
+        "validUntil": "2026-09-14T14:00:50.103Z",
         "displayValue": "~5e-14",
         "evidenceStatus": "passed",
         "sourceArtifact": "reports/cross-validation.json",
-        "sourceArtifactSha256": "0c6098f9af933bb22a65e885dcc95abbbc932e768c5231386a2d2da0e20b18b0",
+        "sourceArtifactSha256": "1a859bfdb13399d1fd22563fdb466238b0c0df2e7b98f59afab3da89c52d3703",
         "reproduce": "npm run validate:cross",
         "limitationIds": [
           "L15",
@@ -319,12 +319,12 @@
         "defaultVisibleLevel": "measured",
         "effectiveVisibleLevel": "measured",
         "validity": "current",
-        "validFrom": "2026-08-26T02:22:54.500Z",
-        "validUntil": "2026-09-09T02:22:54.500Z",
+        "validFrom": "2026-08-31T14:03:31.401Z",
+        "validUntil": "2026-09-14T14:03:31.401Z",
         "displayValue": "16 methods profiled",
         "evidenceStatus": "measured",
         "sourceArtifact": "reports/energy-benchmark.json",
-        "sourceArtifactSha256": "fbc290cf11a023024bdeabe5d089e84078e67e5e09aac5064b8b811f18c77351",
+        "sourceArtifactSha256": "8d67ec72ccd24668aafa8339b29023690a37f3ffd6c6d941d71dbf4b8c724e38",
         "reproduce": "npm run benchmark:energy",
         "limitationIds": [],
         "caveats": [
@@ -383,12 +383,12 @@
         "defaultVisibleLevel": "publication-ready",
         "effectiveVisibleLevel": "withheld",
         "validity": "current",
-        "validFrom": "2026-08-26T02:30:23.117Z",
-        "validUntil": "2026-09-09T02:30:23.117Z",
+        "validFrom": "2026-08-31T14:24:25.255Z",
+        "validUntil": "2026-09-14T14:24:25.255Z",
         "displayValue": null,
         "evidenceStatus": "failed",
         "sourceArtifact": "reports/publication-status.json",
-        "sourceArtifactSha256": "fda279eaf78aeee9089c0c7854bbdb41258e755b3c2f0036f9a61b550c808c5b",
+        "sourceArtifactSha256": "98724c120331d9484d2f3a63628d8bb5fd8ad798539a04540cc2cef240b32685",
         "reproduce": "npm run release:status",
         "limitationIds": [
           "L04",

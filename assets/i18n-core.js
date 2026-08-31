@@ -525,8 +525,8 @@
 
   const TITLE_KO = 'Pendulum Lab — 비선형 동역학 워크벤치';
   const META_DESCRIPTION_KO =
-    '비선형 진자 동역학, 수치 진단, 재현 가능한 실험, 검토 가능한 검증 근거를 위한 브라우저 기반 워크벤치. 1,597개 단위 테스트, SciPy와 출판 문헌으로 검증.';
-  const SHARE_IMAGE_ALT_KO = 'Pendulum Lab 비선형 동역학 워크벤치 — 1,597개 테스트와 SciPy 검증.';
+    '비선형 진자 동역학, 수치 진단, 재현 가능한 실험, 검토 가능한 검증 근거를 위한 브라우저 기반 워크벤치. 1,651개 단위 테스트, SciPy와 출판 문헌으로 검증.';
+  const SHARE_IMAGE_ALT_KO = 'Pendulum Lab 비선형 동역학 워크벤치 — 1,651개 테스트와 SciPy 검증.';
 
   function normalize(text) {
     return text.replace(/\s+/g, ' ').trim();
