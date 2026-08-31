@@ -66,7 +66,6 @@ const expectedNumericControls = {
   l2: 1,
   g: 9.81,
   gamma: 0.06,
-  ensEps: 0.001,
   ensSeed: 20260826,
   ensembleRequestedCount: 12,
   ensN: 1,
@@ -143,6 +142,20 @@ function responseEvidence(response: Response | null) {
     status: response!.status(),
     headers: selectedHeaders(response!.headers()),
   };
+}
+
+async function expectProjectedEpsilon(page: Page, context = ''): Promise<void> {
+  const expected = Number(expectedHandoff.deltaTheta);
+  const label = context ? `${context} ` : '';
+  expect(Number(await page.locator('#ensEps').inputValue()), `${label}ensEps log10 projection`).toBeCloseTo(
+    Math.log10(expected),
+    12,
+  );
+  expect(
+    Number(await page.locator('#ensEps').getAttribute('data-precision-epsilon-canonical')),
+    `${label}ensEps canonical value`,
+  ).toBeCloseTo(expected, 12);
+  expect(Number(await page.locator('#ensEpsExact').inputValue()), `${label}ensEps exact entry`).toBeCloseTo(expected, 12);
 }
 
 function probeUrl(rawUrl: string, attempt: number, label: string): string {
@@ -447,7 +460,7 @@ async function verifyLabControls(browser: Browser, launchUrl: string, language: 
   await expect(page.locator('#ensSeed')).toHaveValue(expectedHandoff.perturbationSeed);
   await expect(page.locator('#ensembleRequestedCount')).toHaveValue(expectedHandoff.ensembleCount);
   await expect(page.locator('#method')).toHaveValue(expectedHandoff.method);
-  expect(Number(await page.locator('#ensEpsExact').inputValue())).toBe(Number(expectedHandoff.deltaTheta));
+  await expectProjectedEpsilon(page);
   await expect(page.locator('#workflowStep')).toHaveValue('measure');
   await expect(page.locator('#trajectoryStage')).toHaveValue('perturbed');
   await expect(page.locator('#trajectoryReadout')).toContainText(language === 'ko' ? '기준' : 'Reference');
@@ -477,7 +490,7 @@ async function verifyLabControls(browser: Browser, launchUrl: string, language: 
   await expect(restorePage.locator('#ensSeed')).toHaveValue(expectedHandoff.perturbationSeed);
   await expect(restorePage.locator('#ensembleRequestedCount')).toHaveValue(expectedHandoff.ensembleCount);
   await expect(restorePage.locator('#method')).toHaveValue(expectedHandoff.method);
-  expect(Number(await restorePage.locator('#ensEpsExact').inputValue())).toBe(Number(expectedHandoff.deltaTheta));
+  await expectProjectedEpsilon(restorePage, 'restored');
   const result = {
     document: responseEvidence(response),
     shareHashPrefix: hash.slice(0, 13),
