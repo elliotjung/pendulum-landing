@@ -35,9 +35,9 @@
     "test:journey:deployed": "playwright test tests/deployed-cross-repo-journey.spec.ts --config=playwright.deployed.config.js"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.10.2",
+    "@axe-core/playwright": "4.13.0",
     "@lhci/cli": "0.15.1",
-    "@playwright/test": "1.60.0",
+    "@playwright/test": "1.62.1",
     "esbuild": "^0.28.1",
     "pretendard": "^1.3.9",
     "three": "^0.185.1",
